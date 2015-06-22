@@ -1,0 +1,6 @@
+# python compiled images
+__pycache__
+# WingIDE user-specific project files
+*.wpu
+# cached info for coverage
+.coverage
