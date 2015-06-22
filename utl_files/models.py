@@ -6,16 +6,16 @@ from django.db import models
 
 class Application(models.Model):
     """A Townnews application, or group of related functionality."""
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
 
 
 class TNSite(models.Model):
     """A Townnews website, referred to by its main URL and managed as a unit."""
-    URL = models.URLField()
+    URL = models.URLField(max_length=250, unique=True)
     name = models.CharField(max_length=100)
 
 
-class Packages(models.Model):
+class Package(models.Model):
     """A Townnews module that includes files classified as includes, resources, or templates.
 
     Some packages are TN 'certified' and should always have the same content for a given name
@@ -30,9 +30,15 @@ class Packages(models.Model):
     site = models.ForeignKey(TNSite)
     app = models.ForeignKey(Application)
 
+    class Meta:  # pylint: disable=missing-docstring
+        unique_together = ["name", "version", "site", "app"]  # Too many key fields
+
 
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
     file = models.FileField(upload_to='utl_files')
     file_path = models.FilePathField(allow_folders=False)
-    pkg = models.ForeignKey(Packages)
+    pkg = models.ForeignKey(Package)
+
+    class Meta:  # pylint: disable=missing-docstring
+        unique_together = ["pkg", "file_path"]
