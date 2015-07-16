@@ -8,11 +8,23 @@ class Application(models.Model):
     """A Townnews application, or group of related functionality."""
     name = models.CharField(max_length=50, unique=True)
 
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
 
 class TNSite(models.Model):
     """A Townnews website, referred to by its main URL and managed as a unit."""
     URL = models.URLField(max_length=250, unique=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Townnews Site"
+
+    def __str__(self):
+        return self.name if self.name else self.URL
 
 
 class Package(models.Model):
@@ -33,6 +45,9 @@ class Package(models.Model):
     class Meta:  # pylint: disable=missing-docstring
         unique_together = ["name", "version", "site", "app"]  # Too many key fields
 
+    def __str__(self):
+        return "{}/{}/{} [{}]".format(self.app, self.name, self.version, self.site)
+
 
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
@@ -41,4 +56,8 @@ class UTLFile(models.Model):
     pkg = models.ForeignKey(Package)
 
     class Meta:  # pylint: disable=missing-docstring
-        unique_together = ["pkg", "file_path"]
+        unique_together = ("pkg", "file_path")
+        verbose_name = "UTL File"
+
+    def __str__(self):
+        return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
