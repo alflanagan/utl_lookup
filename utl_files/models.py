@@ -1,6 +1,8 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
 from django.db import models
 
+from papers.models import TNSite
+
 # pylint: disable=W0232,R0903
 
 
@@ -13,18 +15,6 @@ class Application(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class TNSite(models.Model):
-    """A Townnews website, referred to by its main URL and managed as a unit."""
-    URL = models.URLField(max_length=250, unique=True)
-    name = models.CharField(max_length=100, blank=True)
-
-    class Meta:
-        verbose_name = "Townnews Site"
-
-    def __str__(self):
-        return self.name if self.name else self.URL
 
 
 class Package(models.Model):
