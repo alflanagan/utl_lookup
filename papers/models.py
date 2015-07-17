@@ -1,3 +1,4 @@
+"Models for objects related to a particular newspaper."
 from django.db import models
 
 
@@ -7,7 +8,7 @@ class TNSite(models.Model):
     name = models.CharField(max_length=100, blank=True)
     paper = models.ForeignKey('NewsPaper', help_text="The paper that owns this site.")
 
-    class Meta:
+    class Meta:  # pylint: disable=C0111,R0903
         verbose_name = "Townnews Site"
 
     def __str__(self):
@@ -21,3 +22,4 @@ class NewsPaper(models.Model):
 
     def __str__(self):
         return self.name
+

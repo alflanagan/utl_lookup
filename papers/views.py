@@ -1,9 +1,9 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+
 from .models import NewsPaper, TNSite
 
 
 def index(request):
-    context = {"papers": NewsPaper.objects.all()}
+    """Main page for the site, quick access to search functionality."""
+    context = {"papers": NewsPaper.objects.all()}  # pylint: disable=E1101
     return render(request, 'papers/index.html', context=context)
-
