@@ -18,3 +18,6 @@ class NewsPaper(models.Model):
     """The newspaper organization associated with a site."""
     name = models.CharField(max_length=100,
                             unique=True, help_text="The official name of the newspaper.")
+
+    def __str__(self):
+        return self.name
