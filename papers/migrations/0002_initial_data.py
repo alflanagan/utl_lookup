@@ -9,14 +9,14 @@ def initial_data(apps, schema_editor):
     TNSite = apps.get_model("papers", "TNSite")
     init_news = {'Press of Atlantic City': (),
                  'Atlantic City Weekly': (),
-                 'Richmond Times-Dispatch': (('http://richmond.com', 'Richmond.com', ), ),
+                 'Richmond Times-Dispatch': (('http://richmond.com', 'richmond.com', ), ),
                  'The Mechanicsville Local': (),
                  'Greene County Record': (),
                  'Omaha World-Herald': (),
                  'Winston-Salem Journal': (),
-                 'Waco Tribune': (('http://www.wacotrib.com', 'Waco Tribune', ), ),
-                 'Charlottesville Daily Progress': (('http://dailyprogress.com', 'Daily Progress', ), ),
-                 'Greensboro News & Record': (('http://greensboro.com', 'Greensboro.com', ), ), }
+                 'Waco Tribune': (('http://www.wacotrib.com', 'wacotrib.com', ), ),
+                 'Charlottesville Daily Progress': (('http://dailyprogress.com', 'dailyprogress.com', ), ),
+                 'Greensboro News & Record': (('http://greensboro.com', 'greensboro.com', ), ), }
 
     news_pk = 0
     site_pk = 0
