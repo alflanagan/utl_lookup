@@ -3,8 +3,11 @@ import os
 from django.db import models
 
 from papers.models import TNSite
-
 # pylint: disable=W0232,R0903,E1101
+
+
+class PackageError(Exception):
+    "Catchall for exceptions raised by Package class"
 
 
 class Application(models.Model):
@@ -30,14 +33,13 @@ class Package(models.Model):
     name = models.CharField(max_length=250)
     version = models.CharField(max_length=20)
     is_certified = models.BooleanField()
-    site = models.ForeignKey(TNSite)
     app = models.ForeignKey(Application)
 
     class Meta:  # pylint: disable=missing-docstring
-        unique_together = ["name", "version", "site", "app"]  # Too many key fields
+        unique_together = ["name", "version"]
 
     def __str__(self):
-        return "{}/{}/{} [{}]".format(self.app, self.name, self.version, self.site)
+        return "{}/{}/{}".format(self.app, self.name, self.version)
 
     @classmethod
     def load_from(cls, directory):
@@ -48,12 +50,23 @@ class Package(models.Model):
                 key, value = line[:-1].split('=')
                 props[key] = value[1:-1]
 
+        application = Application.objects.filter(name=props["app"])
+        if not application:
+            application = Application(name=props["app"])
+            application.save()
+        else:
+            application = application[0]
         certified = os.path.exists(os.path.join(directory, '.certification'))
-        new_pkg = cls(props["name"], props["version"], certified, None, app=props["app"])
+        if Package.objects.filter(name=props["name"], version=props["version"]).exists():
+            raise PackageError("Package '{}', version '{}' is already loaded.\n To load again,"
+                               " first remove the existing package from the data."
+                               "".format(props["name"], props["version"]))
+        new_pkg = cls(name=props["name"], version=props["version"], is_certified=certified,
+                      app=application)
         new_pkg.save()
         for key in props:
             if key not in ["name", "version", "app"]:
-                new_prop = PackageProps(new_pkg, key, props[key])
+                new_prop = PackageProp(pkg=new_pkg, key=key, value=props[key])
                 new_prop.save()
 
         deps = {}
@@ -62,14 +75,14 @@ class Package(models.Model):
                 key, value = line[:-1].split('=')
                 deps[key] = value.replace('"', '')
         for key in deps:
-            new_dep = PackageDep(new_pkg, key, deps[key])
-            dep_pkg = Package.objects.query(name=key, version=deps[key])
+            new_dep = PackageDep(pkg=new_pkg, dep_name=key, dep_version=deps[key])
+            dep_pkg = Package.objects.filter(name=key, version=deps[key])
             if dep_pkg:
                 new_dep.dep_pkg = dep_pkg
             new_dep.save()
 
 
-class PackageProps(models.Model):
+class PackageProp(models.Model):
     """Properties for a package. Any key-value pair except those that have their own field in
     :py:class:`utl_files.models.Package`.
 
@@ -80,7 +93,11 @@ class PackageProps(models.Model):
 
     class Meta:  # pylint: disable=missing-docstring
         unique_together = ("pkg", "key")
-        verbose_name = "Package Properties"
+        verbose_name = "package property"
+        verbose_name_plural = "package properties"
+
+    def __str__(self):
+        return "{}: {}".format(self.key, self.value)
 
 
 class PackageDep(models.Model):
@@ -97,7 +114,8 @@ class PackageDep(models.Model):
     class Meta:  # pylint: disable=missing-docstring
         # one version of a package is dependent on at most one version of another package
         unique_together = ("pkg", "dep_name")
-        verbose_name = "Package Dependency"
+        verbose_name = "package dependency"
+        verbose_name_plural = "package dependencies"
 
     def __str__(self):
         return "{} ({})".format(self.dep_name, self.dep_version)
@@ -107,11 +125,11 @@ class PackageDep(models.Model):
         whether dependency exists and if found, adds it to the dep_pkg field.
 
         """
-        for dep in PackageDep.objects.query(dep_pkg=None):
-            # only look for certified packages for now. Handling of custom packages need to be
+        for dep in PackageDep.objects.filter(dep_pkg=None):
+            # only look for certified packages for now. Handling of custom packages needs to be
             # redone (FIXME).
-            dep_pkg = Package.objects.query(name=self.dep_name, version=self.dep_version,
-                                            is_certified=True)
+            dep_pkg = Package.objects.filter(name=self.dep_name, version=self.dep_version,
+                                             is_certified=True)
             if dep_pkg:
                 dep.dep_pkg = dep_pkg
                 dep.save()
