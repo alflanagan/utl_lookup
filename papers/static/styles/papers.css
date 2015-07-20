@@ -1,0 +1,4 @@
+/* don't display, but leave for screen readers */
+#select_paper_label {
+    display: none;
+}

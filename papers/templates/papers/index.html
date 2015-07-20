@@ -6,25 +6,42 @@
 
 {% block page_css %}
     <link href="{% static "styles/dashboard.css" %}" rel="stylesheet">
+    <link href="{% static "styles/papers.css" %}" rel="stylesheet">
 {% endblock %}
 
 {% block page_header %}Search{% endblock %}
 
 {% block page_body %}
           <div class="row">
-            <div class="col-xs-6 col-sm-3">
-              {% bootstrap_label "Paper:" %}
+            <div class="col-xs-4 col-sm-2">
+              <label for="select_paper_menu" id="select_paper_label">Paper: </label>
               <div class="dropdown">
-              <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-    Dropdown
-    <span class="caret"></span>
-  </button>
-  <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-  {% for paper in papers %}
-    <li><a href="#">{{ paper.name }}</a></li>
-  {% endfor %}
-  </ul>
-</div>
+                <button class="btn btn-default dropdown-toggle" type="button" id="select_paper_btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  {{ papers.first.name }}
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" id="select_paper_menu" aria-labelledby="select_paper_label">
+                  {% for paper in papers %}
+                    <li data-paper="{{ paper.id }}"><a href="#">{{ paper.name }}</a></li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+            <div class="col-xs-6 col-sm-3">
+              <div class="dropdown">
+                <button class="btn btn-default dropdown-toggle" type="button" id="select_site_btn"
+                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  <span class="caret">
+                  ...
+                </button>
+                <ul class="dropdown-menu" id="select_tnsite_menu">
+                {% for paper in papers %}
+                  {% for tnsite in paper.tnsite_set.all %}
+                    <li data-paper="{{ paper.id }}"><a href="#">{{ tnsite.URL }}</a></li>
+                  {% endfor %}
+                {% endfor %}
+                </ul>
+              </div>
             </div>
           </div>
           <!--
