@@ -6,3 +6,4 @@ __pycache__
 .coverage
 # we specifically don't want to store this, it should be symlink
 utl_lookup/settings.py
+data/
