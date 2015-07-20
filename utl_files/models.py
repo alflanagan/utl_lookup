@@ -39,17 +39,22 @@ class Package(models.Model):
     def __str__(self):
         return "{}/{}/{} [{}]".format(self.app, self.name, self.version, self.site)
 
-    def load_from(self, directory):
+    @classmethod
+    def load_from(cls, directory):
         """Loads a Townnews package from a directory (and subdirectories)."""
-        self.save()
         props = {}
         with open(os.path.join(directory, 'package/config.ini'), 'r') as propin:
             for line in propin:
                 key, value = line[:-1].split('=')
                 props[key] = value[1:-1]
+
+        certified = os.path.exists(os.path.join(directory, '.certification'))
+        new_pkg = cls(props["name"], props["version"], certified, None, app=props["app"])
+        new_pkg.save()
         for key in props:
-            new_prop = PackageProps(self, key, props[key])
-            new_prop.save()
+            if key not in ["name", "version", "app"]:
+                new_prop = PackageProps(new_pkg, key, props[key])
+                new_prop.save()
 
         deps = {}
         with open(os.path.join(directory, 'package/dependencies.ini'), 'r') as depin:
@@ -57,7 +62,7 @@ class Package(models.Model):
                 key, value = line[:-1].split('=')
                 deps[key] = value.replace('"', '')
         for key in deps:
-            new_dep = PackageDep(self, key, deps[key])
+            new_dep = PackageDep(new_pkg, key, deps[key])
             dep_pkg = Package.objects.query(name=key, version=deps[key])
             if dep_pkg:
                 new_dep.dep_pkg = dep_pkg
