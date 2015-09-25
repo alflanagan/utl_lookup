@@ -30,10 +30,13 @@ class Package(models.Model):
 
     Packages are always part of an Application (counting "Global" as an app).
     """
-    name = models.CharField(max_length=250)
-    version = models.CharField(max_length=20)
-    is_certified = models.BooleanField()
-    app = models.ForeignKey(Application)
+    name = models.CharField(max_length=250,
+                            help_text="TownNews name for this package.")
+    version = models.CharField(max_length=20,
+                               help_text="Version number for the package as a whole.")
+    is_certified = models.BooleanField(help_text="Is officially certified/supported by TownNews.")
+    app = models.ForeignKey(Application,
+                            help_text="The application to which this package belongs (or 'Global')")
 
     class Meta:  # pylint: disable=missing-docstring
         unique_together = ["name", "version"]
@@ -45,10 +48,16 @@ class Package(models.Model):
     def load_from(cls, directory):
         """Loads a Townnews package from a directory (and subdirectories)."""
         props = {}
+        # known config properties are:
+        # apparently required: block_types capabilities name title type version
+        # optional: app
         with open(os.path.join(directory, 'package/config.ini'), 'r') as propin:
             for line in propin:
                 key, value = line[:-1].split('=')
                 props[key] = value[1:-1]
+
+        if "app" not in props:
+            props["app"] = "Global"
 
         application = Application.objects.filter(name=props["app"])
         if not application:
@@ -147,3 +156,45 @@ class UTLFile(models.Model):
 
     def __str__(self):
         return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
+
+
+class MacroDefinition(models.Model):
+    """Reference information for a macro definition in a specific UTL file."""
+    source = models.ForeignKey(UTLFile,
+                               help_text="The file where the macro is defined.")
+    text = models.TextField(max_length=50000)
+    name = models.CharField(max_length=250)
+    start = models.IntegerField(
+        null=True,
+        help_text="Character offset in file at which macro defintion starts.")
+    end = models.IntegerField(
+        null=True,
+        help_text="Character offset in file at which macro definition ends."
+    )
+    line = models.IntegerField(
+        null=True,
+        help_text="Line number of macro definition in file."
+    )
+
+    class Meta:  # pylint: disable=C0111
+        # you'd hope source, name would be unique -- but compiler doesn't enforce that
+        unique_together = ("source", "start")
+
+
+class MacroRef(models.Model):
+    """Records a macro call in a specific UTL file."""
+    source = models.ForeignKey(UTLFile)
+    start = models.IntegerField(
+        help_text="Character offset in source file of first character of macro call.")
+    line = models.IntegerField(
+        null=True,
+        help_text="Line number of macro call in file.")
+    text = models.CharField(
+        max_length=500,
+        help_text="The actual text of the macro call, with args.")
+    macro_name = models.CharField(
+        max_length=250,
+        help_text="The ID or expression identifying the macro to be called.")
+
+    class Meta:  # pylint: disable=C0111
+        unique_together = ("source", "start")
