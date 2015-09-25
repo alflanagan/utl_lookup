@@ -1,7 +1,6 @@
 coverage
+jedi
 pep8
+pip-tools
 pylint
 Sphinx
-elpy
-importmagic
-jedi

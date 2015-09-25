@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-django-bootstrap3==6.1.0
-django==1.8.3
+django-bootstrap3==6.2.2
+django==1.8.4
 psycopg2==2.6.1
 requests==2.7.0
