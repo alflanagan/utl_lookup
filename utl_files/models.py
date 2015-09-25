@@ -1,6 +1,11 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
-import os
+
+from pathlib import Path
 from django.db import models
+
+from utl_lib.utl_yacc import UTLParser
+from utl_lib.handler_ast import UTLParseHandlerAST
+from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 
 from papers.models import TNSite
 # pylint: disable=W0232,R0903,E1101
@@ -8,6 +13,7 @@ from papers.models import TNSite
 
 class PackageError(Exception):
     "Catchall for exceptions raised by Package class"
+    pass
 
 
 class Application(models.Model):
@@ -45,50 +51,76 @@ class Package(models.Model):
         return "{}/{}/{}".format(self.app, self.name, self.version)
 
     @classmethod
-    def load_from(cls, directory):
-        """Loads a Townnews package from a directory (and subdirectories)."""
+    def _get_props(cls, directory):
+        """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
+        if not isinstance(directory, Path):
+            directory = Path(directory)
         props = {}
         # known config properties are:
         # apparently required: block_types capabilities name title type version
         # optional: app
-        with open(os.path.join(directory, 'package/config.ini'), 'r') as propin:
+        with (directory / 'package/config.ini').open() as propin:
             for line in propin:
                 key, value = line[:-1].split('=')
                 props[key] = value[1:-1]
 
         if "app" not in props:
             props["app"] = "Global"
+        return props
 
-        application = Application.objects.filter(name=props["app"])
-        if not application:
-            application = Application(name=props["app"])
-            application.save()
-        else:
-            application = application[0]
-        certified = os.path.exists(os.path.join(directory, '.certification'))
+    @classmethod
+    def load_from(cls, directory):
+        """Loads a Townnews package from a directory (and subdirectories)."""
+        props = cls._get_props(directory)
+
+        application, _ = Application.objects.get_or_create(name=props["app"])
+
+        certified = Path(directory, '.certification').exists()
+
         if Package.objects.filter(name=props["name"], version=props["version"]).exists():
+            # TODO: handle replacing existing package
             raise PackageError("Package '{}', version '{}' is already loaded.\n To load again,"
                                " first remove the existing package from the data."
                                "".format(props["name"], props["version"]))
+
         new_pkg = cls(name=props["name"], version=props["version"], is_certified=certified,
                       app=application)
         new_pkg.save()
         for key in props:
             if key not in ["name", "version", "app"]:
+                # doesn't exist since we just created package
                 new_prop = PackageProp(pkg=new_pkg, key=key, value=props[key])
                 new_prop.save()
 
         deps = {}
-        with open(os.path.join(directory, 'package/dependencies.ini'), 'r') as depin:
+        with Path(directory, 'package/dependencies.ini').open() as depin:
             for line in depin:
                 key, value = line[:-1].split('=')
                 deps[key] = value.replace('"', '')
         for key in deps:
             new_dep = PackageDep(pkg=new_pkg, dep_name=key, dep_version=deps[key])
-            dep_pkg = Package.objects.filter(name=key, version=deps[key])
-            if dep_pkg:
-                new_dep.dep_pkg = dep_pkg
+            try:
+                new_dep.dep_pkg = Package.objects.get(name=key, version=deps[key])
+            except Package.DoesNotExist:
+                pass
             new_dep.save()
+
+        new_pkg.get_utl_files(directory)
+
+        return new_pkg
+
+    def get_utl_files(self, directory):
+        """Scans `directory` and its children for files with a '.utl' extension; adds them to
+        the database as :py:class:`~utl_files.models.UTLFile` objects and sets this instance as
+        their package.
+
+        """
+        if not isinstance(directory, Path):
+            directory = Path(directory)
+
+        filenames = directory.glob('**/*.utl')
+        for filename in filenames:
+            UTLFile.create_from(filename, self)
 
 
 class PackageProp(models.Model):
@@ -114,11 +146,15 @@ class PackageDep(models.Model):
     version.
 
     """
-    pkg = models.ForeignKey(Package)
-    dep_name = models.CharField(max_length=200)  # name; always present
-    dep_pkg = models.ForeignKey(Package, null=True,
-                                related_name="dep_pkg")  # may be Null if package not in db.
-    dep_version = models.CharField(max_length=50, blank=False)
+    pkg = models.ForeignKey(Package,
+                            help_text="The package which has this dependency")
+    dep_name = models.CharField(max_length=200, blank=False,
+                                help_text="The name of the required package")
+    dep_pkg = models.ForeignKey(Package, null=True,  # may be Null if package not in db.
+                                related_name="dep_pkg",
+                                help_text="The full data on the required package (opt.)")
+    dep_version = models.CharField(max_length=50, blank=False,
+                                   help_text="The specific version required.")
 
     class Meta:  # pylint: disable=missing-docstring
         # one version of a package is dependent on at most one version of another package
@@ -156,6 +192,53 @@ class UTLFile(models.Model):
 
     def __str__(self):
         return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
+
+    # TODO: move this to a custom manager
+    @classmethod
+    def create_from(cls, filename, package):
+        """Creates and returns a new :py:class:`utl_files.models.UTLFile` instance containing
+        information about the file `filename` and designating `package` as the containing
+        package.
+
+        :param pathlib.Path filename: The filename of .utl file.
+
+        :param utl_files.models.Package package: A UTL package to which the file belongs.
+
+        """
+        new_file = cls(file_path=str(filename), pkg=package)
+        new_file.full_clean()
+        new_file.save()
+        new_file.get_macros()
+
+    def get_macros(self):
+        """Load the given UTL file and add information about macro definitions and references to
+        the database.
+
+        """
+        path = Path(self.file_path)
+        handler = UTLParseHandlerAST()
+        parser = UTLParser([handler])
+        with path.open() as utlin:
+            text = utlin.read()
+
+        utldoc = parser.parse(text, filename=self.file_path)
+        xref = UTLMacroXref(utldoc, text)
+        for macro in xref.macros:
+            isinstance(macro, UTLMacro)
+            new_macro = MacroDefinition(name=macro.name, source=self, text=text, start=macro.start,
+                                        end=macro.end, line=macro.line)
+            new_macro.full_clean()
+            new_macro.save()
+
+        for macro_name in xref.references:
+            for ref in xref.references[macro_name]:
+                new_ref = MacroRef(macro_name=macro_name,
+                                   source=self.file_path,
+                                   start=ref["start"],
+                                   line=ref["line"],
+                                   text=ref["call_text"])
+                new_ref.full_clean()
+                new_ref.save()
 
 
 class MacroDefinition(models.Model):

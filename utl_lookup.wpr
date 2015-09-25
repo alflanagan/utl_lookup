@@ -48,7 +48,7 @@ debug.launch-configs = (1,
                     ''),
          'pyrunargs': ('project',
                        '-u'),
-         'runargs': u'import_pkg data/tncertified/skin-editorial-core-base/',
+         'runargs': u'importpackage data/tncertified/skin-editorial-core-base/',
          'rundir': ('project',
                     u'')})})
 proj.debug-sub-processes = True
