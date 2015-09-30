@@ -16,6 +16,19 @@ class PackageError(Exception):
     pass
 
 
+class UTLFileError(PackageError):
+    """General error with a UTLFile object."""
+    pass
+
+
+class UTLFileImportError(UTLFileError):
+    """Exception raised when a fatal error occurs during import of an
+    :py:class:`~utl_files.models.UTLFile` file.
+
+    """
+    pass
+
+
 class Application(models.Model):
     """A Townnews application, or group of related functionality."""
     name = models.CharField(max_length=50, unique=True)
@@ -182,9 +195,13 @@ class PackageDep(models.Model):
 
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
-    file = models.FileField(upload_to='utl_files')
+    file = models.FileField(upload_to='utl_files', null=True, blank=True)
     file_path = models.FilePathField(allow_folders=False)
     pkg = models.ForeignKey(Package)
+
+    # instantiate parser once -- it's big
+    handler = UTLParseHandlerAST()
+    parser = UTLParser([handler])
 
     class Meta:  # pylint: disable=missing-docstring
         unique_together = ("pkg", "file_path")
@@ -216,12 +233,14 @@ class UTLFile(models.Model):
 
         """
         path = Path(self.file_path)
-        handler = UTLParseHandlerAST()
-        parser = UTLParser([handler])
         with path.open() as utlin:
             text = utlin.read()
 
-        utldoc = parser.parse(text, filename=self.file_path)
+        self.parser.restart()  # existing handlers are OK, don't store state
+        utldoc = self.parser.parse(text, filename=self.file_path)
+        if utldoc is None:
+            raise UTLFileImportError("Error parsing '{}'.".format(self.file_path))
+
         xref = UTLMacroXref(utldoc, text)
         for macro in xref.macros:
             isinstance(macro, UTLMacro)
@@ -230,15 +249,15 @@ class UTLFile(models.Model):
             new_macro.full_clean()
             new_macro.save()
 
-        for macro_name in xref.references:
-            for ref in xref.references[macro_name]:
-                new_ref = MacroRef(macro_name=macro_name,
-                                   source=self.file_path,
-                                   start=ref["start"],
-                                   line=ref["line"],
-                                   text=ref["call_text"])
-                new_ref.full_clean()
-                new_ref.save()
+        for ref in xref.references:
+
+            new_ref = MacroRef(macro_name=ref["macro"],
+                               source=self,
+                               start=ref["start"],
+                               line=ref["line"],
+                               text=ref["call_text"])
+            new_ref.full_clean()
+            new_ref.save()
 
 
 class MacroDefinition(models.Model):
