@@ -2,8 +2,10 @@
 
 from pathlib import Path
 from django.db import models
+from django.utils.log import logging
 
 from utl_lib.utl_yacc import UTLParser
+from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 
@@ -196,11 +198,14 @@ class PackageDep(models.Model):
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
     file = models.FileField(upload_to='utl_files', null=True, blank=True)
-    file_path = models.FilePathField(allow_folders=False)
+    file_path = models.FilePathField(
+        allow_folders=False,
+        max_length=1024,
+        help_text='The file path, relative to the package base directory.')
     pkg = models.ForeignKey(Package)
 
     # instantiate parser once -- it's big
-    handler = UTLParseHandlerAST()
+    handler = UTLParseHandlerAST(exception_on_error=True)
     parser = UTLParser([handler])
 
     class Meta:  # pylint: disable=missing-docstring
@@ -236,10 +241,19 @@ class UTLFile(models.Model):
         with path.open() as utlin:
             text = utlin.read()
 
+        if not text:
+            # file was empty. Nothing to do
+            return
+
         self.parser.restart()  # existing handlers are OK, don't store state
-        utldoc = self.parser.parse(text, filename=self.file_path)
+        try:
+            utldoc = self.parser.parse(text, filename=self.file_path)
+        except UTLParseError as upe:
+            logging.error(" parsing '{}': {}".format(self.file_path, upe))
+            return
+
         if utldoc is None:
-            raise UTLFileImportError("Error parsing '{}'.".format(self.file_path))
+            logging.error(" parsing '{}': returned None.".format(self.file_path))
 
         xref = UTLMacroXref(utldoc, text)
         for macro in xref.macros:
@@ -292,11 +306,14 @@ class MacroRef(models.Model):
         null=True,
         help_text="Line number of macro call in file.")
     text = models.CharField(
-        max_length=500,
+        max_length=1000,
         help_text="The actual text of the macro call, with args.")
     macro_name = models.CharField(
-        max_length=250,
+        max_length=500,
         help_text="The ID or expression identifying the macro to be called.")
 
     class Meta:  # pylint: disable=C0111
         unique_together = ("source", "start")
+
+    def __str__(self):
+        return '{}:{} - {}'.format(self.line, self.start, self.text[:100])
