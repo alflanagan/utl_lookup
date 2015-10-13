@@ -7,3 +7,5 @@ __pycache__
 # we specifically don't want to store this, it should be symlink
 utl_lookup/settings.py
 data/
+# softlink to utl_indexer program
+parse_file.py
