@@ -50,6 +50,21 @@ debug.launch-configs = (1,
                        '-u'),
          'runargs': u'importpackage data/tncertified/skin-editorial-core-base/',
          'rundir': ('project',
+                    u'')}),
+                         'launch-qCwp61GAzY6h1bLZ': ({},
+        {'buildcmd': ('project',
+                      None),
+         'env': ('project',
+                 [u'']),
+         'name': 'remove_pkg',
+         'pyexec': ('project',
+                    u''),
+         'pypath': ('project',
+                    ''),
+         'pyrunargs': ('project',
+                       '-u'),
+         'runargs': u'removepackage  editorial-core-base 1.45.1.0',
+         'rundir': ('project',
                     u'')})})
 proj.debug-sub-processes = True
 proj.directory-list = [{'dirloc': loc('.'),
@@ -67,6 +82,6 @@ proj.directory-list = [{'dirloc': loc('.'),
 proj.file-type = 'shared'
 proj.launch-config = {loc('manage.py'): ('custom',
         (u'',
-         'launch-PqbZfKCIXUg6Hme9'))}
+         'launch-qCwp61GAzY6h1bLZ'))}
 proj.main-file = loc('manage.py')
 testing.test-framework = {loc('manage.py'): ':internal djangotest'}
