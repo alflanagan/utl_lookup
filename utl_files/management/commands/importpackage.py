@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from utl_files.models import Package, PackageError

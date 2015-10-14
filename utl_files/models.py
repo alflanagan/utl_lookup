@@ -178,7 +178,7 @@ class PackageDep(models.Model):
         verbose_name_plural = "package dependencies"
 
     def __str__(self):
-        return "{} ({})".format(self.dep_name, self.dep_version)
+        return "{} depends on {} ({})".format(self.pkg, self.dep_name, self.dep_version)
 
     def check_for_deps(self):
         """Looks for dependencies which don't have pointer to Package table. For each, checks
@@ -293,7 +293,7 @@ class MacroDefinition(models.Model):
     )
 
     class Meta:  # pylint: disable=C0111
-        # you'd hope source, name would be unique -- but compiler doesn't enforce that
+        # source and name are NOT unique; legal to redefine macro in a file
         unique_together = ("source", "start")
 
 
@@ -306,14 +306,17 @@ class MacroRef(models.Model):
         null=True,
         help_text="Line number of macro call in file.")
     text = models.CharField(
-        max_length=1000,
+        max_length=4000,
         help_text="The actual text of the macro call, with args.")
     macro_name = models.CharField(
-        max_length=500,
+        max_length=4000,
         help_text="The ID or expression identifying the macro to be called.")
 
     class Meta:  # pylint: disable=C0111
-        unique_together = ("source", "start")
+        # can't use source, start alone as unique because, e.g.,
+        # articleItem.items('type':'image')[0].preview([300])
+        # is two macro calls
+        unique_together = ("source", "start", "macro_name")
 
     def __str__(self):
         return '{}:{} - {}'.format(self.line, self.start, self.text[:100])
