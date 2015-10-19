@@ -5,7 +5,22 @@
 ##################################################################
 [project attributes]
 debug.launch-configs = (1,
-                        {'launch-3lzqpyvFo28LuXP7': ({},
+                        {'launch-24Rl7BKYfmAoUgIO': ({},
+        {'buildcmd': ('project',
+                      None),
+         'env': ('project',
+                 [u'']),
+         'name': 'runserver',
+         'pyexec': ('project',
+                    u''),
+         'pypath': ('project',
+                    ''),
+         'pyrunargs': ('project',
+                       '-u'),
+         'runargs': u'runserver',
+         'rundir': ('project',
+                    u'')}),
+                         'launch-3lzqpyvFo28LuXP7': ({},
         {'buildcmd': ('project',
                       None),
          'env': ('project',
@@ -78,10 +93,16 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'filter': u'*',
                         'include_hidden': False,
                         'recursive': True,
+                        'watch_for_changes': True},
+                       {'dirloc': loc('../../python-environments/utl_lookup/lib/python3.5/site-packages/bootstrap3'),
+                        'excludes': (),
+                        'filter': u'*',
+                        'include_hidden': False,
+                        'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
 proj.launch-config = {loc('manage.py'): ('custom',
         (u'',
-         'launch-qCwp61GAzY6h1bLZ'))}
+         'launch-24Rl7BKYfmAoUgIO'))}
 proj.main-file = loc('manage.py')
 testing.test-framework = {loc('manage.py'): ':internal djangotest'}

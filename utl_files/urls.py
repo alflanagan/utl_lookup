@@ -20,4 +20,5 @@ from utl_files import views
 
 urlpatterns = [
     url(r'^$', views.home, name='home'),
+    url(r'^macro/(.+)/', views.search, name='search')
 ]

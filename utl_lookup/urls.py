@@ -20,5 +20,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^papers/', include('papers.urls')),
-    url(r'^$', include('utl_files.urls')),
+    url(r'^files/', include('utl_files.urls')),
 ]
