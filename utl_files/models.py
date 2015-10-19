@@ -1,5 +1,7 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
 
+import os
+
 from pathlib import Path
 from django.db import models
 from django.utils.log import logging
@@ -215,6 +217,10 @@ class UTLFile(models.Model):
     def __str__(self):
         return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
 
+    @property
+    def base_filename(self):
+        return os.path.basename(self.file_path)
+
     # TODO: move this to a custom manager
     @classmethod
     def create_from(cls, filename, package):
@@ -296,6 +302,8 @@ class MacroDefinition(models.Model):
         # source and name are NOT unique; legal to redefine macro in a file
         unique_together = ("source", "start")
 
+    def __str__(self):
+        return "{}() [{:,}]".format(self.name, self.line)
 
 class MacroRef(models.Model):
     """Records a macro call in a specific UTL file."""
