@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block navigation_sidebar %}
+<ul>
+<li>Packages</li>
+<li>Files</li>
+<li>Macros</li>
+</ul>
+{% endblock %}
+
+{% block page_body %}
+  <div id="search-bar">
+  </div>
+  <div id="package-list" class= "col-md-2">
+    <ul>
+      {% for pkg in packages %}
+      <li>{{ pkg.name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div id="macro-defn" class="col-md-4">
+    <h3>Macro Definition</h3>
+  </div>
+  <div id="right-side" class="col-md-3">
+    <h3> Other stuff </h3>
+  </div>
+</div>
+
+{% endblock %}
