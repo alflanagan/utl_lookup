@@ -1,6 +1,7 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
 
 import os
+import json
 
 from pathlib import Path
 from django.db import models
@@ -43,6 +44,9 @@ class Application(models.Model):
     def __str__(self):
         return self.name
 
+    def to_dict(self):
+        return {"name": self.name}
+
 
 class Package(models.Model):
     """A Townnews module that includes files classified as includes, resources, or templates.
@@ -66,6 +70,12 @@ class Package(models.Model):
 
     def __str__(self):
         return "{}/{}/{}".format(self.app, self.name, self.version)
+
+    def to_dict(self):
+        return {"app": self.app,
+                "name": self.name,
+                "version": self.version,
+                "is_certified": "y" if self.is_certified else "n"}
 
     @classmethod
     def _get_props(cls, directory):
@@ -157,6 +167,12 @@ class PackageProp(models.Model):
     def __str__(self):
         return "{}: {}".format(self.key, self.value)
 
+    def to_dict(self):
+        return {"name": self.pkg.name,
+                "version": self.pkg.version,
+                "key": self.key,
+                "value": self.value}
+
 
 class PackageDep(models.Model):
     """Dependency for a Townnews Package. Each dependency consists of a package name and a
@@ -178,6 +194,12 @@ class PackageDep(models.Model):
         unique_together = ("pkg", "dep_name")
         verbose_name = "package dependency"
         verbose_name_plural = "package dependencies"
+
+    def to_dict(self):
+        return {"name": self.pkg.name,
+                "version": self.pkg.version,
+                "dep_name": self.dep_name,
+                "dep_version": self.dep_version}
 
     def __str__(self):
         return "{} depends on {} ({})".format(self.pkg, self.dep_name, self.dep_version)
@@ -216,6 +238,11 @@ class UTLFile(models.Model):
 
     def __str__(self):
         return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
+
+    def to_dict(self):
+        return {"path": self.file_path,
+                "name": self.pkg.name,
+                "version": self.pkg.version}
 
     @property
     def base_filename(self):
@@ -305,6 +332,17 @@ class MacroDefinition(models.Model):
     def __str__(self):
         return "{}() [{:,}]".format(self.name, self.line)
 
+    def to_dict(self):
+        """Return a dictionary from values of model attributes, suitable for serialization."""
+        return {"pkg": self.source.pkg.name,
+                "pkg_version": self.source.pkg.version,
+                "file": self.source.file_path,
+                "name": self.name,
+                "start": self.start,
+                "end": self.end,
+                "line": self.line}
+
+
 class MacroRef(models.Model):
     """Records a macro call in a specific UTL file."""
     source = models.ForeignKey(UTLFile)
@@ -328,3 +366,26 @@ class MacroRef(models.Model):
 
     def __str__(self):
         return '{}:{} - {}'.format(self.line, self.start, self.text[:100])
+
+    def to_dict(self):
+        return {"pkg": self.source.pkg.name,
+                "pkg_version": self.source.pkg.version,
+                "file": self.source.file_path,
+                "line": self.line,
+                "text": self.text,
+                "name": self.macro_name}
+
+
+class UTLFilesJsonEncoder(json.JSONEncoder):
+    """Provide ability to encode to JSON for each model class.
+
+    (Actually will work for any object that implements to_dict() method returning a JSON-dumpable
+    dictionary.)
+
+    """
+
+    def default(self, o):
+        try:
+            return o.to_dict()
+        except:
+            return json.JSONEncoder.default(self, o)
