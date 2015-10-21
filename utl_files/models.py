@@ -145,9 +145,10 @@ class Package(models.Model):
         if not isinstance(directory, Path):
             directory = Path(directory)
 
+
         filenames = directory.glob('**/*.utl')
         for filename in filenames:
-            UTLFile.create_from(filename, self)
+            UTLFile.create_from(filename, directory, self)
 
 
 class PackageProp(models.Model):
@@ -224,8 +225,12 @@ class UTLFile(models.Model):
     file = models.FileField(upload_to='utl_files', null=True, blank=True)
     file_path = models.FilePathField(
         allow_folders=False,
-        max_length=1024,
+        max_length=2048,
         help_text='The file path, relative to the package base directory.')
+    pkg_directory = models.CharField(
+        max_length=1024,
+        help_text='The package base directory on the hard drive.'
+    )
     pkg = models.ForeignKey(Package)
 
     # instantiate parser once -- it's big
@@ -242,15 +247,21 @@ class UTLFile(models.Model):
     def to_dict(self):
         return {"path": self.file_path,
                 "name": self.pkg.name,
+                "pkg_directory": self.pkg_directory,
                 "version": self.pkg.version}
 
     @property
     def base_filename(self):
         return os.path.basename(self.file_path)
 
+    @property
+    def full_file_path(self):
+        """The full path of the file, including the package directory."""
+        return Path(self.pkg_directory).joinpath(self.file_path)
+
     # TODO: move this to a custom manager
     @classmethod
-    def create_from(cls, filename, package):
+    def create_from(cls, filename, package_directory, package):
         """Creates and returns a new :py:class:`utl_files.models.UTLFile` instance containing
         information about the file `filename` and designating `package` as the containing
         package.
@@ -260,7 +271,9 @@ class UTLFile(models.Model):
         :param utl_files.models.Package package: A UTL package to which the file belongs.
 
         """
-        new_file = cls(file_path=str(filename), pkg=package)
+        new_file = cls(file_path=str(filename.relative_to(package_directory)),  # relative_to(): very nice
+                       pkg_directory=package_directory,
+                       pkg=package)
         new_file.full_clean()
         new_file.save()
         new_file.get_macros()
@@ -270,8 +283,7 @@ class UTLFile(models.Model):
         the database.
 
         """
-        path = Path(self.file_path)
-        with path.open() as utlin:
+        with self.full_file_path.open() as utlin:
             text = utlin.read()
 
         if not text:
