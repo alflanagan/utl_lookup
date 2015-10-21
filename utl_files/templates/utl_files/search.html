@@ -1,21 +1,14 @@
 {% extends 'base.html' %}
 
-{% block navigation_sidebar %}
-<ul>
-<li>Packages</li>
-<li>Files</li>
-<li>Macros</li>
-</ul>
-{% endblock %}
-
 {% block page_body %}
-  <div id="search-bar">
-  </div>
-  <div id="pkg-file-list" class= "col-md-2 btn-group-vertical" role="group"
+  <div id="pkg-file-list" class= "col-md-3 btn-group-vertical" role="group"
        aria-label="List of files defining this macro">
+       <h3>Package Files</h3>
       {% for macro in macros %}
       <button type="button" class="btn btn-default">
-        {{ macro.source.pkg }}/{{ macro.source.file_path }}
+        {{ macro.source.pkg.name }} [{{ macro.source.pkg.version }}]
+        <br>
+        {{ macro.source.file_path }}
       </button>
       {% endfor %}
   </div>
@@ -27,4 +20,22 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block javascript_libraries %}
+<script>(function() {
+  "use strict";
+   console.log('page script');
+   $("#pkg-file-list button").on("click",
+       function(evt) {
+         console.log(evt.type);
+         var pkg_selected = this.innerHTML.trim();
+         var match = /([^ ]+) \[([0-9.]+)\]/.exec(pkg_selected);
+         var pkg_name = match[1];
+         var pkg_version = match[2];
+       });
+}).call(this);
+   /* $("#pkg-file-list button").on("click", function(evt) { console.log("received "+ evt); });
+}(); */
+</script>
 {% endblock %}
