@@ -28,34 +28,32 @@
   </head>
 
   <body>
-
-    <nav class="navbar navbar-inverse navbar-fixed-top">
+    <header>
+      <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            {% block navbar_header %} {% endblock %}
+            <a class="navbar-brand" href="#">UTL Macro Lookup</a>
+          </div>
+          <div id="navbar" class="navbar-collapse collapse">
+            <form class="navbar-form navbar-right">
+              <input type="text" class="form-control" placeholder="Search...">
+            </form>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main>
+      <div class="clear"></div>
       <div class="container-fluid">
-        <div class="navbar-header">
-          {% block navbar_header %} {% endblock %}
-          <a class="navbar-brand" href="#">UTL Macro Lookup</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <form class="navbar-form navbar-right">
-            <input type="text" class="form-control" placeholder="Search...">
-          </form>
-        </div>
-
-      </div>
-    </nav>
-
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-sm-3 col-md-2 sidebar">
-        {% block navigation_sidebar %} {% endblock %}
-        </div>
-        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-          <h1 class="page-header">{% block page_header %}{% endblock %}</h1>
-          {% block page_body %} {% endblock %}
+        <div class="row">
+          <div class="main">
+            <h1 class="page-header">{% block page_header %}{% endblock %}</h1>
+            {% block page_body %} {% endblock %}
+          </div>
         </div>
       </div>
-    </div>
-
+    </main>
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
