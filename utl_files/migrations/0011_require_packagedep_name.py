@@ -14,7 +14,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='package',
             name='app',
-            field=models.ForeignKey(to='utl_files.Application', help_text="The application to which this package belongs (or 'Global')"),
+            field=models.ForeignKey(to='utl_files.Application',
+                                    help_text="The application to which this package belongs (or 'Global')",
+                                    on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='package',
@@ -39,7 +41,9 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='packagedep',
             name='dep_pkg',
-            field=models.ForeignKey(null=True, to='utl_files.Package', related_name='dep_pkg', help_text='The full data on the required package (opt.)'),
+            field=models.ForeignKey(null=True, to='utl_files.Package', related_name='dep_pkg',
+                                    help_text='The full data on the required package (opt.)',
+                                    on_delete=models.CASCADE),
         ),
         migrations.AlterField(
             model_name='packagedep',
@@ -49,6 +53,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='packagedep',
             name='pkg',
-            field=models.ForeignKey(to='utl_files.Package', help_text='The package which has this dependency'),
+            field=models.ForeignKey(to='utl_files.Package',
+                                    help_text='The package which has this dependency',
+                                    on_delete=models.CASCADE),
         ),
     ]

@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='package',
             name='site',
-            field=models.ForeignKey(to='papers.TNSite'),
+            field=models.ForeignKey(to='papers.TNSite', on_delete=models.CASCADE),
         ),
         migrations.DeleteModel(
             name='TNSite',

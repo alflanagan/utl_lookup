@@ -23,7 +23,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', auto_created=True, primary_key=True, serialize=False)),
                 ('URL', models.URLField(max_length=250, unique=True)),
                 ('name', models.CharField(max_length=100, blank=True)),
-                ('paper', models.ForeignKey(to='papers.NewsPaper', help_text='The paper that owns this site.')),
+                ('paper', models.ForeignKey(to='papers.NewsPaper', help_text='The paper that owns this site.',
+                                            on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name': 'Townnews Site',

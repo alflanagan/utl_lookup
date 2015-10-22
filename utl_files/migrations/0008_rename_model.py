@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(primary_key=True, serialize=False, auto_created=True, verbose_name='ID')),
                 ('key', models.CharField(max_length=50)),
                 ('value', models.CharField(max_length=250)),
-                ('pkg', models.ForeignKey(to='utl_files.Package')),
+                ('pkg', models.ForeignKey(to='utl_files.Package', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'package properties',

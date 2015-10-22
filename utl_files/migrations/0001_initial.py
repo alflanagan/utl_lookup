@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=250)),
                 ('version', models.CharField(max_length=20)),
                 ('is_certified', models.BooleanField()),
-                ('app', models.ForeignKey(to='utl_files.Application')),
+                ('app', models.ForeignKey(to='utl_files.Application', on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -41,12 +41,12 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, verbose_name='ID', primary_key=True, serialize=False)),
                 ('file', models.FileField(upload_to='utl_files')),
                 ('file_path', models.FilePathField()),
-                ('pkg', models.ForeignKey(to='utl_files.Package')),
+                ('pkg', models.ForeignKey(to='utl_files.Package', on_delete=models.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='package',
             name='site',
-            field=models.ForeignKey(to='utl_files.TNSite'),
+            field=models.ForeignKey(to='utl_files.TNSite', on_delete=models.CASCADE),
         ),
     ]

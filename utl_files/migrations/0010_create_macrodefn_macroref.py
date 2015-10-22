@@ -20,7 +20,8 @@ class Migration(migrations.Migration):
                 ('start', models.IntegerField(help_text='Character offset in file at which macro defintion starts.', null=True)),
                 ('end', models.IntegerField(help_text='Character offset in file at which macro definition ends.', null=True)),
                 ('line', models.IntegerField(help_text='Line number of macro definition in file.', null=True)),
-                ('source', models.ForeignKey(to='utl_files.UTLFile', help_text='The file where the macro is defined.')),
+                ('source', models.ForeignKey(to='utl_files.UTLFile', help_text='The file where the macro is defined.',
+                                             on_delete=models.CASCADE)),
             ],
         ),
         migrations.CreateModel(
@@ -31,7 +32,8 @@ class Migration(migrations.Migration):
                 ('line', models.IntegerField(help_text='Line number of macro call in file.', null=True)),
                 ('text', models.CharField(max_length=500, help_text='The actual text of the macro call, with args.')),
                 ('macro_name', models.CharField(max_length=250, help_text='The ID or expression identifying the macro to be called.')),
-                ('source', models.ForeignKey(to='utl_files.UTLFile')),
+                ('source', models.ForeignKey(to='utl_files.UTLFile',
+                                             on_delete=models.CASCADE)),
             ],
         ),
         migrations.AlterUniqueTogether(

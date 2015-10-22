@@ -63,6 +63,7 @@ class Package(models.Model):
                                help_text="Version number for the package as a whole.")
     is_certified = models.BooleanField(help_text="Is officially certified/supported by TownNews.")
     app = models.ForeignKey(Application,
+                            on_delete=models.CASCADE,
                             help_text="The application to which this package belongs (or 'Global')")
 
     class Meta:  # pylint: disable=missing-docstring
@@ -80,6 +81,8 @@ class Package(models.Model):
     @classmethod
     def _get_props(cls, directory):
         """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
+        # would be better to do this in PackageProp, but I need property values before creating
+        # Package object, and I can't create PackageProp objects until after
         if not isinstance(directory, Path):
             directory = Path(directory)
         props = {}
@@ -145,7 +148,6 @@ class Package(models.Model):
         if not isinstance(directory, Path):
             directory = Path(directory)
 
-
         filenames = directory.glob('**/*.utl')
         for filename in filenames:
             UTLFile.create_from(filename, directory, self)
@@ -156,7 +158,7 @@ class PackageProp(models.Model):
     :py:class:`utl_files.models.Package`.
 
     """
-    pkg = models.ForeignKey(Package)
+    pkg = models.ForeignKey(Package, on_delete=models.CASCADE)
     key = models.CharField(max_length=50)
     value = models.CharField(max_length=250)
 
@@ -181,12 +183,14 @@ class PackageDep(models.Model):
 
     """
     pkg = models.ForeignKey(Package,
-                            help_text="The package which has this dependency")
+                            help_text="The package which has this dependency",
+                            on_delete=models.CASCADE)
     dep_name = models.CharField(max_length=200, blank=False,
                                 help_text="The name of the required package")
     dep_pkg = models.ForeignKey(Package, null=True,  # may be Null if package not in db.
                                 related_name="dep_pkg",
-                                help_text="The full data on the required package (opt.)")
+                                help_text="The full data on the required package (opt.)",
+                                on_delete=models.CASCADE)
     dep_version = models.CharField(max_length=50, blank=False,
                                    help_text="The specific version required.")
 
@@ -231,7 +235,7 @@ class UTLFile(models.Model):
         max_length=1024,
         help_text='The package base directory on the hard drive.'
     )
-    pkg = models.ForeignKey(Package)
+    pkg = models.ForeignKey(Package, on_delete=models.CASCADE)
 
     # instantiate parser once -- it's big
     handler = UTLParseHandlerAST(exception_on_error=True)
@@ -271,7 +275,7 @@ class UTLFile(models.Model):
         :param utl_files.models.Package package: A UTL package to which the file belongs.
 
         """
-        new_file = cls(file_path=str(filename.relative_to(package_directory)),  # relative_to(): very nice
+        new_file = cls(file_path=str(filename.relative_to(package_directory)),
                        pkg_directory=package_directory,
                        pkg=package)
         new_file.full_clean()
@@ -322,7 +326,8 @@ class UTLFile(models.Model):
 class MacroDefinition(models.Model):
     """Reference information for a macro definition in a specific UTL file."""
     source = models.ForeignKey(UTLFile,
-                               help_text="The file where the macro is defined.")
+                               help_text="The file where the macro is defined.",
+                               on_delete=models.CASCADE)
     text = models.TextField(max_length=50000)
     name = models.CharField(max_length=250)
     start = models.IntegerField(
@@ -357,7 +362,7 @@ class MacroDefinition(models.Model):
 
 class MacroRef(models.Model):
     """Records a macro call in a specific UTL file."""
-    source = models.ForeignKey(UTLFile)
+    source = models.ForeignKey(UTLFile, on_delete=models.CASCADE)
     start = models.IntegerField(
         help_text="Character offset in source file of first character of macro call.")
     line = models.IntegerField(
