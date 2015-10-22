@@ -105,6 +105,7 @@ class UTLFileTestCase(TransactionTestCase):
     PKG_DIRECTORY = "utl_files/test_data/skin-editorial-core-base"
     SIMPLE_UTL_FILE = "includes/footer-spotless.inc.utl"
     MACROS_FILE = "includes/macros.inc.utl"
+    macro_file_text = ""
 
     def setUp(self):
         self.app = Application(name=self.TEST_APP)
@@ -152,9 +153,22 @@ class UTLFileTestCase(TransactionTestCase):
         self.assertEqual(MacroDefinition.objects.count(), 0)
         self.assertEqual(MacroRef.objects.count(), 0)
 
+    def _verify_macro(self, macro_name, line, start, end):
+        macro_rcd = MacroDefinition.objects.get(name=macro_name)
+        self.assertEqual(macro_rcd.source, self.macros_utl)
+        self.assertEqual(macro_rcd.line, line)
+        self.assertEqual(macro_rcd.start, start)
+        self.assertEqual(macro_rcd.end, end)
+        if not self.macro_file_text:
+            with open(os.path.join(self.PKG_DIRECTORY, self.MACROS_FILE), 'r') as macin:
+                self.macro_file_text = macin.read()
+        self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
+
     def test_get_macros_many(self):
         """Test that :py:meth:`utl_file.models.UTLFile.get_macros` can successfully load macros."""
         self.macros_utl.get_macros()
         self.assertEqual(MacroDefinition.objects.count(), 11)
         self.assertEqual(MacroRef.objects.count(), 14)
-
+        self._verify_macro("archived_asset", 38, 1504, 2069)
+        self._verify_macro("free_archive_period", 54, 2071, 2741)
+        self._verify_macro("ifAnonymousUser", 356, 12033, 12667)  # last one in file

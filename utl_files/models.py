@@ -307,7 +307,8 @@ class UTLFile(models.Model):
         xref = UTLMacroXref(utldoc, text)
         for macro in xref.macros:
             isinstance(macro, UTLMacro)
-            new_macro = MacroDefinition(name=macro.name, source=self, text=text, start=macro.start,
+            new_macro = MacroDefinition(name=macro.name, source=self,
+                                        text=text[macro.start:macro.end], start=macro.start,
                                         end=macro.end, line=macro.line)
             new_macro.full_clean()
             new_macro.save()
