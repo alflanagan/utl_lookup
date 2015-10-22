@@ -1,4 +1,4 @@
-Django
+Django>=1.9b1
 django-bootstrap3
 ply
 psycopg2
