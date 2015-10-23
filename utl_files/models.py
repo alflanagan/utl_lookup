@@ -12,7 +12,6 @@ from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 
-from papers.models import TNSite
 # pylint: disable=W0232,R0903,E1101
 
 
@@ -45,7 +44,9 @@ class Application(models.Model):
         return self.name
 
     def to_dict(self):
-        return {"name": self.name}
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "name": self.name}
 
 
 class Package(models.Model):
@@ -73,7 +74,9 @@ class Package(models.Model):
         return "{}/{}/{}".format(self.app, self.name, self.version)
 
     def to_dict(self):
-        return {"app": self.app,
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "app": self.app,
                 "name": self.name,
                 "version": self.version,
                 "is_certified": "y" if self.is_certified else "n"}
@@ -171,7 +174,9 @@ class PackageProp(models.Model):
         return "{}: {}".format(self.key, self.value)
 
     def to_dict(self):
-        return {"name": self.pkg.name,
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "name": self.pkg.name,
                 "version": self.pkg.version,
                 "key": self.key,
                 "value": self.value}
@@ -201,7 +206,9 @@ class PackageDep(models.Model):
         verbose_name_plural = "package dependencies"
 
     def to_dict(self):
-        return {"name": self.pkg.name,
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "name": self.pkg.name,
                 "version": self.pkg.version,
                 "dep_name": self.dep_name,
                 "dep_version": self.dep_version}
@@ -249,13 +256,16 @@ class UTLFile(models.Model):
         return "{}/{}:{}".format(self.pkg.app, self.pkg.name, self.file_path)
 
     def to_dict(self):
-        return {"path": self.file_path,
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "path": self.file_path,
                 "name": self.pkg.name,
                 "pkg_directory": self.pkg_directory,
                 "version": self.pkg.version}
 
     @property
     def base_filename(self):
+        """Returns just he base filename part of :py:attr:`utl_files.models.UTLFile.file_path`."""
         return os.path.basename(self.file_path)
 
     @property
@@ -352,7 +362,8 @@ class MacroDefinition(models.Model):
 
     def to_dict(self):
         """Return a dictionary from values of model attributes, suitable for serialization."""
-        return {"pkg": self.source.pkg.name,
+        return {"id": self.pk,
+                "pkg": self.source.pkg.name,
                 "pkg_version": self.source.pkg.version,
                 "file": self.source.file_path,
                 "name": self.name,
@@ -386,7 +397,9 @@ class MacroRef(models.Model):
         return '{}:{} - {}'.format(self.line, self.start, self.text[:100])
 
     def to_dict(self):
-        return {"pkg": self.source.pkg.name,
+        """Write record attributes to a dictionary, for easy conversion to JSON."""
+        return {"id": self.pk,
+                "pkg": self.source.pkg.name,
                 "pkg_version": self.source.pkg.version,
                 "file": self.source.file_path,
                 "line": self.line,
@@ -402,8 +415,8 @@ class UTLFilesJsonEncoder(json.JSONEncoder):
 
     """
 
-    def default(self, o):
+    def default(self, o):  # pylint: disable=E0202
         try:
             return o.to_dict()
-        except:
+        except AttributeError:
             return json.JSONEncoder.default(self, o)
