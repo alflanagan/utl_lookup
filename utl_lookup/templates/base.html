@@ -1,4 +1,4 @@
-{% load static from staticfiles %}
+{% load static %}
 {% load bootstrap3 %}
 <!DOCTYPE html>
 <html{% if request.LANGUAGE_CODE %} lang="{{ request.LANGUAGE_CODE }}"{% endif %}>
@@ -15,7 +15,7 @@
 
     <!-- Bootstrap core CSS -->
     {% bootstrap_css %}
-
+    <link rel="stylesheet" href="{% static site.css %}" type="text/css" media="screen" />
 
     <!-- Custom styles for this template -->
     {% block page_css %}{% endblock %}

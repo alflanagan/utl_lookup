@@ -13,4 +13,8 @@ parse_file.py
 utl_files/test_data/skin-editorial-core-base/resources/
 utl_files/test_data/skin-editorial-core-base/templates/
 utl_files/test_data/skin-editorial-core-base/includes/
+# static files collection directory
 /static/
+# files derived from .less files
+utl_files/static/styles/*.css
+utl_files/static/styles/*.css.map
