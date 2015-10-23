@@ -131,12 +131,15 @@ class UTLFileTestCase(TransactionTestCase):
         self.assertEqual(thefile.file_path, self.SIMPLE_UTL_FILE)
         self.assertEqual(thefile.pkg_directory, self.PKG_DIRECTORY)
         self.assertEqual(thefile.pkg, self.pkg)
+        self.assertEqual(thefile.base_filename, os.path.basename(self.SIMPLE_UTL_FILE))
 
     def test_full_file_path(self):
+        """:py:meth:`utl_file.models.UTLFile instance has attribute `full_file_path`."""
         self.assertEqual(str(self.simple_utl.full_file_path),
                          os.path.join(self.PKG_DIRECTORY, self.SIMPLE_UTL_FILE))
 
     def test_to_dict(self):
+        """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`dict`."""
         self.assertDictEqual(self.simple_utl.to_dict(),
                              {'name': self.TEST_PKG,
                               'path': self.SIMPLE_UTL_FILE,
@@ -144,11 +147,12 @@ class UTLFileTestCase(TransactionTestCase):
                               'version': self.TEST_VERSION})
 
     def test_str(self):
+        """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`str`."""
         self.assertEqual(str(self.simple_utl), "{}/{}:{}".format(self.TEST_APP, self.TEST_PKG,
                                                                  self.SIMPLE_UTL_FILE))
 
     def test_get_macros_none(self):
-        """Test that :py:meth:`utl_file.models.UTLFile.get_macros` can successfully do nothing."""
+        """:py:meth:`utl_file.models.UTLFile.get_macros` can successfully do nothing."""
         self.simple_utl.get_macros()
         self.assertEqual(MacroDefinition.objects.count(), 0)
         self.assertEqual(MacroRef.objects.count(), 0)
@@ -165,7 +169,7 @@ class UTLFileTestCase(TransactionTestCase):
         self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
 
     def test_get_macros_many(self):
-        """Test that :py:meth:`utl_file.models.UTLFile.get_macros` can successfully load macros."""
+        """:py:meth:`utl_file.models.UTLFile.get_macros` can successfully load macros."""
         self.macros_utl.get_macros()
         self.assertEqual(MacroDefinition.objects.count(), 11)
         self.assertEqual(MacroRef.objects.count(), 14)
