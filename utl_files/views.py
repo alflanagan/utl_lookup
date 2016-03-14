@@ -5,11 +5,15 @@ from urllib.parse import quote_plus
 
 from django.shortcuts import render, HttpResponse, get_object_or_404
 from .models import Package, UTLFile, MacroRef, MacroDefinition, UTLFilesJsonEncoder, Application
+from .forms import XrefContextForm
+
 # pylint: disable=no-member
 
 def home(request):
     pkgs = Package.objects.all()
-    context = {"packages": pkgs}
+    the_form = XrefContextForm()
+    context = {"packages": pkgs,
+               "XrefContextForm": the_form}
     return render(request, 'utl_files/index.html', context)
 
 

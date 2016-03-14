@@ -1,15 +1,9 @@
 {% extends 'base.html' %}
-
-{% block navigation_sidebar %}
-<ul>
-<li>Packages</li>
-<li>Files</li>
-<li>Macros</li>
-</ul>
-{% endblock %}
+{% load bootstrap3 %}
 
 {% block page_body %}
-  <div id="search-bar">
+  <div id="search-bar" class="form-inline">
+  {% bootstrap_form XrefContextForm layout='inline' %}
   </div>
   <div id="package-list" class= "col-md-2">
     <ul>
