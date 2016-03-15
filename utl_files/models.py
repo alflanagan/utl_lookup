@@ -12,6 +12,8 @@ from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 
+from papers.models import TNSite
+
 # pylint: disable=W0232,R0903,E1101
 
 
@@ -50,25 +52,58 @@ class Application(models.Model):
 
 
 class Package(models.Model):
-    """A Townnews module that includes files classified as includes, resources, or templates.
+    """A Townnews package is a collection of files implementing functionality for a
+    :py:class:`TNSite`.
 
-    Some packages are TN 'certified' and should always have the same content for a given name
-    and version. Packages can be customized on a site-by-site basis and these may contain some
-    portion of custom code.
+    There are four types of packages: *global skins* contain customized files for a particular
+    site. *skins* are bundles of functionality for a specific application. *components* are
+    collections of macros for use by other packages. *blocks* are templates and associated files
+    for a specific block type.
 
-    Packages are always part of an Application (counting "Global" as an app).
+    Packages (except global skins) may be "certified" by Townnews: this means they contain only
+    the files and code provided by Townnews, and therefore can be supported by them. Packages
+    which are customized in some way are no longer "certified", and qualify for a lower level of
+    support.
+
+    This model contains fields for all the package types. Some fields don't apply to all types.
+
     """
+    # Would prefer to have an abstract AbstractPackage model, then concrete tables for each type
+    # with fields specific to that type. However, foreign keys can't point to an abstract model.
+    #
+    # One problem is that unique key for certified pkgs is name + version, but unique key for
+    # customized packages is site + name + download date/time (note TN IDE doesn't enforce
+    # bumping version number on change, and global skins don't have version)
     name = models.CharField(max_length=250,
                             help_text="TownNews name for this package.")
-    version = models.CharField(max_length=20,
+    version = models.CharField(max_length=20, blank=True,  # global skins have no version
                                help_text="Version number for the package as a whole.")
     is_certified = models.BooleanField(help_text="Is officially certified/supported by TownNews.")
+    # Skins belong to an app, and blocks can have a "block type" which is basically an app reference
+    # global skins and components don't have an application.
     app = models.ForeignKey(Application,
                             on_delete=models.CASCADE,
-                            help_text="The application to which this package belongs (or 'Global')")
-
-    class Meta:  # pylint: disable=missing-docstring
-        unique_together = ["name", "version"]
+                            help_text="The application to which this package belongs",
+                            null=True)
+    last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.")
+    disk_directory = models.FilePathField(allow_files=False, allow_folders=True, blank=True,
+                                          help_text="The location of the package's files on disk, "
+                                          "relative to some common root directory.")
+    site = models.ForeignKey(TNSite, null=True,
+                             help_text="For customized packages, the site that 'owns' the "
+                             "customizations.")
+    GLOBAL_SKIN = "g"
+    SKIN = "s"
+    BLOCK = "b"
+    COMPONENT = "c"
+    PACKAGE_TYPES = (
+        (GLOBAL_SKIN, "global skin"),
+        (SKIN, "application skin"),
+        (BLOCK, "block"),
+        (COMPONENT, "component"),
+    )
+    pkg_type = models.CharField(max_length=1,
+                                choices=PACKAGE_TYPES)
 
     def __str__(self):
         return "{}/{}/{}".format(self.app, self.name, self.version)
@@ -104,56 +139,24 @@ class Package(models.Model):
     @classmethod
     def load_from(cls, directory):
         """Loads a Townnews package from a directory (and subdirectories)."""
-        props = cls._get_props(directory)
+        # also to use new model fields
+        raise NotImplementedError("Need to rewrite load_from() to use utl_indexer.TNPackage.")
 
-        application, _ = Application.objects.get_or_create(name=props["app"])
-
-        certified = Path(directory, '.certification').exists()
-
-        if Package.objects.filter(name=props["name"], version=props["version"]).exists():
-            # TODO: handle replacing existing package
-            raise PackageError("Package '{}', version '{}' is already loaded.\n To load again,"
-                               " first remove the existing package from the data."
-                               "".format(props["name"], props["version"]))
-
-        new_pkg = cls(name=props["name"], version=props["version"], is_certified=certified,
-                      app=application)
-        new_pkg.save()
-        for key in props:
-            if key not in ["name", "version", "app"]:
-                # doesn't exist since we just created package
-                new_prop = PackageProp(pkg=new_pkg, key=key, value=props[key])
-                new_prop.save()
-
-        deps = {}
-        with Path(directory, 'package/dependencies.ini').open() as depin:
-            for line in depin:
-                key, value = line[:-1].split('=')
-                deps[key] = value.replace('"', '')
-        for key in deps:
-            new_dep = PackageDep(pkg=new_pkg, dep_name=key, dep_version=deps[key])
-            try:
-                new_dep.dep_pkg = Package.objects.get(name=key, version=deps[key])
-            except Package.DoesNotExist:
-                pass
-            new_dep.save()
-
-        new_pkg.get_utl_files(directory)
-
-        return new_pkg
-
-    def get_utl_files(self, directory):
-        """Scans `directory` and its children for files with a '.utl' extension; adds them to
-        the database as :py:class:`~utl_files.models.UTLFile` objects and sets this instance as
-        their package.
+    def get_utl_files(self, root_dir):
+        """Prefixes `root_dir` to `self.disk_directory`, scans that directory for files with a
+        '.utl' extension; adds them to the database as :py:class:`~utl_files.models.UTLFile`
+        objects and sets this instance as their package.
 
         """
-        if not isinstance(directory, Path):
-            directory = Path(directory)
+        if not isinstance(root_dir, Path):
+            root_dir = Path(root_dir)
 
-        filenames = directory.glob('**/*.utl')
+        disk_dir = root_dir / self.disk_directory
+        if not disk_dir.is_dir():
+            raise PackageError("Can't find package at {}.".format(disk_dir))
+        filenames = disk_dir.glob('**/*.utl')
         for filename in filenames:
-            UTLFile.create_from(filename, directory, self)
+            UTLFile.create_from(filename, root_dir, self)
 
 
 class PackageProp(models.Model):
@@ -394,6 +397,8 @@ class MacroRef(models.Model):
         unique_together = ("source", "start", "macro_name")
 
     def __str__(self):
+        # because pylint doesn't understand that instance 'text' is str, not CharField
+        # pylint: disable=unsubscriptable-object
         return '{}:{} - {}'.format(self.line, self.start, self.text[:100])
 
     def to_dict(self):

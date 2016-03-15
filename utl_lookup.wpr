@@ -27,6 +27,12 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'filter': '*',
                         'include_hidden': False,
                         'recursive': True,
+                        'watch_for_changes': True},
+                       {'dirloc': loc('../utl_indexer/utl_lib'),
+                        'excludes': (),
+                        'filter': u'*',
+                        'include_hidden': False,
+                        'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
 proj.launch-config = {loc('manage.py'): ('custom',
