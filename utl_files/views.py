@@ -6,14 +6,15 @@ from urllib.parse import quote_plus
 from django.shortcuts import render, HttpResponse, get_object_or_404
 from .models import Package, UTLFile, MacroRef, MacroDefinition, UTLFilesJsonEncoder, Application
 from .forms import XrefContextForm
+from papers.models import TNSite
+
 
 # pylint: disable=no-member
 
 def home(request):
     pkgs = Package.objects.all()
-    the_form = XrefContextForm()
     context = {"packages": pkgs,
-               "XrefContextForm": the_form}
+               "the_form": XrefContextForm()}
     return render(request, 'utl_files/index.html', context)
 
 
@@ -23,6 +24,10 @@ def search(request, macro_name):
                "macro_name": macro_name}
     return render(request, 'utl_files/search.html', context)
 
+def global_skins_for_site(request, site_name):
+    # skins = [global_skin.name for global_skin in ]
+    # TODO: whoops, need a way to get list of skins for a site in models
+    return UTLFilesJsonEncoder.encode({})
 
 def api_macro_refs(_, macro_name):
     refs = MacroRef.objects.filter(macro_name=macro_name)

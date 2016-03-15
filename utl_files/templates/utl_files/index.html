@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load bootstrap3 %}
 
 {% block page_body %}
   <div id="search-bar" class="form-inline">
-  {% bootstrap_form XrefContextForm layout='inline' %}
+  <form>
+  {% bootstrap_form the_form %}
+  </form>
   </div>
   <div id="package-list" class= "col-md-2">
     <ul>
@@ -20,4 +23,8 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block javascript_libraries %}
+<script src="{% static 'js/utl_files.js' %}"></script>
 {% endblock %}

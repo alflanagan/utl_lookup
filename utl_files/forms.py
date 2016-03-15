@@ -16,6 +16,7 @@ from papers.models import TNSite
 
 class XrefContextForm(forms.Form):
     """A form used to set context (site, global skin, skin) for the UTL cross-reference page."""
-    site = forms.ChoiceField(choices=[(x.name, x.name) for x in TNSite.objects.all()])
-    # g_skin = forms.Select()
-    # a_skin = forms.Select()
+    site = forms.ChoiceField(widget=forms.Select(attrs={"class": "form-control"}),
+                             choices=[(x.name, x.name) for x in TNSite.objects.all()])
+    global_skin = forms.ChoiceField(choices=[])
+    app_skin = forms.ChoiceField(choices=[])
