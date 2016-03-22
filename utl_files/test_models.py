@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+"""Module of tests for :py:mod:`utl_files.models`."""
 
 import os
+import sys
 
 from django.test import TestCase, TransactionTestCase
 from django.db.utils import DataError
@@ -9,6 +11,8 @@ from django.core.exceptions import ValidationError
 
 from .models import Application, MacroDefinition, MacroRef, Package, PackageDep, PackageProp
 from .models import PackageError, UTLFile, UTLFileError
+
+# pylint: disable=no-member
 
 
 class ApplicationTestCase(TestCase):
@@ -20,6 +24,10 @@ class ApplicationTestCase(TestCase):
     """
     def setUp(self):
         """Create a simple Application record for testing."""
+        if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 5):
+            sys.stderr.write("This code requires python with a minimum version of 3.5.\n")
+            sys.stderr.write("(Did you try running it with the 'python3' command?)\n")
+            sys.exit(2)
         app = Application(name="editorial")
         app.save()
 
@@ -66,6 +74,7 @@ class PackageTestCase(TransactionTestCase):
         pkg.save()
 
     def test_insert(self):
+        """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
         self.assertEqual(Package.objects.count(), 1)
         pkg = Package.objects.get(name=self.TEST_NAME, version=self.TEST_VERSION)
         self.assertEqual(pkg.name, self.TEST_NAME)
@@ -98,6 +107,7 @@ class PackageTestCase(TransactionTestCase):
 
 
 class UTLFileTestCase(TransactionTestCase):
+    """Unit tests for :py:class:`models.UTLFile`."""
 
     TEST_APP = "editorial"
     TEST_PKG = "skin-editorial-core-base"
