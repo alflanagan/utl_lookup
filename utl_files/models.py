@@ -2,8 +2,8 @@
 
 import os
 import json
-
 from pathlib import Path
+
 from django.db import models
 from django.utils.log import logging
 
@@ -11,8 +11,9 @@ from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.macro_xref import UTLMacroXref, UTLMacro
+from utl_lib.tn_package import TNPackage
 
-from papers.models import TNSite
+from papers.models import TownnewsSite
 
 # pylint: disable=W0232,R0903,E1101
 
@@ -53,7 +54,7 @@ class Application(models.Model):
 
 class Package(models.Model):
     """A Townnews package is a collection of files implementing functionality for a
-    :py:class:`TNSite`.
+    :py:class:`TownnewsSite`.
 
     There are four types of packages: *global skins* contain customized files for a particular
     site. *skins* are bundles of functionality for a specific application. *components* are
@@ -89,21 +90,18 @@ class Package(models.Model):
     disk_directory = models.FilePathField(allow_files=False, allow_folders=True, blank=True,
                                           help_text="The location of the package's files on disk, "
                                           "relative to some common root directory.")
-    site = models.ForeignKey(TNSite, null=True,
+    site = models.ForeignKey(TownnewsSite, null=True,
                              help_text="For customized packages, the site that 'owns' the "
                              "customizations.")
-    GLOBAL_SKIN = "g"
-    SKIN = "s"
-    BLOCK = "b"
-    COMPONENT = "c"
-    PACKAGE_TYPES = (
-        (GLOBAL_SKIN, "global skin"),
-        (SKIN, "application skin"),
-        (BLOCK, "block"),
-        (COMPONENT, "component"),
+
+    PACKAGE_CHOICES = (
+        (TNPackage.GLOBAL_SKIN, "global skin"),
+        (TNPackage.SKIN, "application skin"),
+        (TNPackage.BLOCK, "block"),
+        (TNPackage.COMPONENT, "component"),
     )
     pkg_type = models.CharField(max_length=1,
-                                choices=PACKAGE_TYPES)
+                                choices=PACKAGE_CHOICES)
 
     def __str__(self):
         return "{}/{}/{}".format(self.app, self.name, self.version)
@@ -137,10 +135,22 @@ class Package(models.Model):
         return props
 
     @classmethod
-    def load_from(cls, directory):
+    def load_from(cls, directory: Path, site: TownnewsSite, pkg_type: str) -> "Package":
         """Loads a Townnews package from a directory (and subdirectories)."""
-        # also to use new model fields
-        raise NotImplementedError("Need to rewrite load_from() to use utl_indexer.TNPackage.")
+        if pkg_type not in [pkg_type for pkg_type, _ in TNPackage.PACKAGE_TYPES]:
+            raise ValueError("pkg_type must be one of the symbolic constants defined in TNPackage")
+
+        new_pkg = TNPackage.load_from(directory, "")
+        my_pkg = Package(name=new_pkg.name,
+                         version=new_pkg.version,
+                         is_certified=new_pkg.is_certified,
+                         app=new_pkg.app,
+                         # last_download=new_pkg.
+                         # disk_directory=new_pkg.
+                         site=site,
+                         pkg_type=pkg_type)
+        my_pkg.clean()
+        my_pkg.save()
 
     def get_utl_files(self, root_dir):
         """Prefixes `root_dir` to `self.disk_directory`, scans that directory for files with a

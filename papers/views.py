@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from .models import NewsPaper, TNSite
+from .models import NewsPaper, TownnewsSite
 
 
 def index(request):
