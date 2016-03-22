@@ -5,7 +5,22 @@
 ##################################################################
 [project attributes]
 debug.launch-configs = (1,
-                        {'launch-q7oW4tueMHUGsGlK': ({},
+                        {'launch-JTah8Gp20g7NvW6W': ({},
+        {'buildcmd': ('project',
+                      None),
+         'env': ('project',
+                 [u'']),
+         'name': 'add_site',
+         'pyexec': ('project',
+                    u''),
+         'pypath': ('project',
+                    ''),
+         'pyrunargs': ('project',
+                       '-u'),
+         'runargs': u'add_site a b c',
+         'rundir': ('project',
+                    u'')}),
+                         'launch-q7oW4tueMHUGsGlK': ({},
         {'buildcmd': ('project',
                       ('',
                        '')),
@@ -35,9 +50,12 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
-proj.launch-config = {loc('manage.py'): ('custom',
+proj.launch-config = {loc('django_view.py'): ('project',
         (u'',
-         'launch-q7oW4tueMHUGsGlK'))}
+         'launch-q7oW4tueMHUGsGlK')),
+                      loc('manage.py'): ('custom',
+        (u'',
+         'launch-JTah8Gp20g7NvW6W'))}
 proj.main-file = loc('manage.py')
 testing.test-framework = {None: ':internal djangotest',
                           loc('manage.py'): ':internal djangotest'}
