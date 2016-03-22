@@ -6,7 +6,7 @@ from urllib.parse import quote_plus
 from django.shortcuts import render, HttpResponse, get_object_or_404
 from .models import Package, UTLFile, MacroRef, MacroDefinition, UTLFilesJsonEncoder, Application
 from .forms import XrefContextForm
-from papers.models import TNSite
+from papers.models import TownnewsSite
 
 
 # pylint: disable=no-member
@@ -24,10 +24,6 @@ def search(request, macro_name):
                "macro_name": macro_name}
     return render(request, 'utl_files/search.html', context)
 
-def global_skins_for_site(request, site_name):
-    # skins = [global_skin.name for global_skin in ]
-    # TODO: whoops, need a way to get list of skins for a site in models
-    return UTLFilesJsonEncoder.encode({})
 
 def api_macro_refs(_, macro_name):
     refs = MacroRef.objects.filter(macro_name=macro_name)
@@ -73,9 +69,9 @@ def api_applications(_):
     apps = Application.objects.all()
     return HttpResponse(content=json.dumps(list(apps), cls=UTLFilesJsonEncoder))
 
+
 def api_packages(_, name=None, version=None):
-    """
-    Return JSON list package names (if name is :py:attr:`None`), list available versions (if
+    """Return JSON list package names (if name is :py:attr:`None`), list available versions (if
     version is :py:attr:`None`), or list all info about a particular package (if both provided).
 
     """
@@ -95,7 +91,19 @@ def api_packages(_, name=None, version=None):
         pkg = get_object_or_404(Package, name=name, version=version)
         return HttpResponse(content=json.dumps(pkg.to_dict()))
 
+
 def api_macro_text(_, macro_id):
     """Return the text of a macro definition, identified by integer ID `macro_id`."""
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
     return HttpResponse(content=macro.text)
+
+
+def api_global_skins_for_site(_, site_name):
+    """Returns the package names of all global skins associated with the :py:class:`TownnewsSite`
+    record whose name == `site_name`.
+
+    """
+    site = get_object_or_404(TownnewsSite, name=site_name)
+    skins = Package.objects.query(site=site, pkg_type=Package.GLOBAL_SKIN)
+    skin_names = [skin.name for skin in skins]
+    return HttpResponse(content=json.dumps(skin_names))
