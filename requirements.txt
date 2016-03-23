@@ -4,9 +4,10 @@
 #
 #    pip-compile requirements.in
 #
-django-bootstrap3==7.0.0
+django-bootstrap3==7.0.1
 Django==1.9.4
 ply==3.8
 psycopg2==2.6.1
+pytz==2016.2
 requests==2.9.1
 uwsgi==2.0.12
