@@ -108,3 +108,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+
+# Custom settings unique to this site (or app)
+
+# The parent directory for all the downloaded UTL files. This will have a subdirectory named
+# "certified", and a subdirectory for each of the sites for which we have custom files.
+TNPACKAGE_FILES_ROOT = '/home/aflanagan/Devel/utl_indexer/data/exported/'
