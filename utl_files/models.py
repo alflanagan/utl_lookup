@@ -2,16 +2,22 @@
 
 import os
 import json
+import time
 from pathlib import Path
+
+import pytz
 
 from django.db import models
 from django.utils.log import logging
+from django.conf import settings
+from django.core.exceptions import ValidationError
 
 from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 from utl_lib.tn_package import TNPackage
+from utl_lib.tn_site import TNSiteMeta
 
 from papers.models import TownnewsSite
 
@@ -86,13 +92,21 @@ class Package(models.Model):
                             on_delete=models.CASCADE,
                             help_text="The application to which this package belongs",
                             null=True)
-    last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.")
-    disk_directory = models.FilePathField(allow_files=False, allow_folders=True, blank=True,
+    last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.",
+                                         null=True)
+    disk_directory = models.FilePathField(max_length=4096,
+                                          allow_files=False, allow_folders=True, blank=True,
                                           help_text="The location of the package's files on disk, "
                                           "relative to some common root directory.")
     site = models.ForeignKey(TownnewsSite, null=True,
                              help_text="For customized packages, the site that 'owns' the "
                              "customizations.")
+
+    # copy attributes from TNPackage for convenience
+    GLOBAL_SKIN = TNPackage.GLOBAL_SKIN
+    SKIN = TNPackage.SKIN
+    BLOCK = TNPackage.BLOCK
+    COMPONENT = TNPackage.COMPONENT
 
     PACKAGE_CHOICES = (
         (TNPackage.GLOBAL_SKIN, "global skin"),
@@ -102,6 +116,44 @@ class Package(models.Model):
     )
     pkg_type = models.CharField(max_length=1,
                                 choices=PACKAGE_CHOICES)
+
+    # override
+    def validate_unique(self, exclude=None):
+        """
+        Checks unique constraints on the model and raises ``ValidationError``
+        if any failed.
+        """
+        # unfortunately we're now assuming that validation_unique will use error_list property,
+        # not error_dict. if that changes we have a problem...
+        error_list = []
+        code = None
+        params = None
+        try:
+            super().validate_unique(exclude)
+        except ValidationError as verr:
+            error_list.extend(verr.error_list)
+            code = verr.code
+            params = verr.params
+
+        fields_with_class = [(self.__class__, self._meta.local_fields)]
+        if "is_certified" not in exclude:
+            if self.is_certified:
+                if "name" not in exclude and "version" not in exclude:
+                    if Package.objects.filter(name=self.name, version=self.version).exists():
+                        error_list.append("Unique constraint violation: certified package '{}', "
+                                          "version {} is already in the database."
+                                          "".format(self.name, self.version))
+            else:
+                if not set(["site", "last_download", "name"]).intersection(set(exclude)):
+                    if Package.objects.filter(name=self.name,
+                                              site=self.site,
+                                              last_download=self.last_download).exists():
+                        error_list.append("Unique constraint violation: package '{}' customized"
+                                          " for site '{}' dated {} is already in the database."
+                                          "".format(self.name, self.site.name, self.last_download))
+        if error_list:
+            raise ValidationError(error_list, code, params)
+
 
     def __str__(self):
         return "{}/{}/{}".format(self.app, self.name, self.version)
@@ -141,15 +193,33 @@ class Package(models.Model):
             raise ValueError("pkg_type must be one of the symbolic constants defined in TNPackage")
 
         new_pkg = TNPackage.load_from(directory, "")
+        last_download = None
+        if not new_pkg.is_certified:
+            custom_meta = TNSiteMeta(site.name, Path(settings.TNPACKAGE_FILES_ROOT) / site.name)
+            if (new_pkg.name in custom_meta.data
+                    and "last_download" in custom_meta.data[new_pkg.name]):
+                # Path(fname).stat().st_ctime is giving us UTC
+                # make it a structure
+                last_download = time.gmtime(custom_meta.data[new_pkg.name]["last_download"])
+                # YYYY-MM-DD HH:MM[:ss[.uuuuuu]][TZ]
+                # make it a timezone-aware string
+                last_download = time.strftime('%Y-%m-%d %H:%M:%SZ', last_download)
+
+        try:
+            app = Application.objects.get(name=new_pkg.app)
+        except Application.DoesNotExist as dne:
+            # much better error message than dne
+            raise ImportError("Application type '{}' not found.".format(new_pkg.app))
+
         my_pkg = Package(name=new_pkg.name,
                          version=new_pkg.version,
                          is_certified=new_pkg.is_certified,
-                         app=new_pkg.app,
-                         # last_download=new_pkg.
-                         # disk_directory=new_pkg.
+                         app=app,
+                         last_download=last_download,
+                         disk_directory=str(directory),
                          site=site,
                          pkg_type=pkg_type)
-        my_pkg.clean()
+        my_pkg.full_clean()
         my_pkg.save()
 
     def get_utl_files(self, root_dir):
