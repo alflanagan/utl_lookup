@@ -39,14 +39,14 @@ class Command(BaseCommand):
                 elif reply.startswith(('C', 'c')):
                     print("creating")
                     the_paper = NewsPaper(name=options['paper'])
-                    the_paper.clean()
+                    the_paper.full_clean()
                     the_paper.save()
                     print("Created NewsPaper '{}'".format(options['paper']))
 
         new_site = TownnewsSite(URL=options['domain'],
                                 name=options['name'],
                                 paper=the_paper)
-        new_site.clean()
+        new_site.full_clean()
         new_site.save()
         print("Successfully created new site {}.".format(new_site))
 
