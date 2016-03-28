@@ -1,28 +1,23 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load bootstrap3 %}
+{% load crispy_forms_tags %}
 
 {% block page_body %}
-  <div id="search-bar" class="form-inline">
-  <form>
-  {% bootstrap_form the_form %}
-  </form>
-  </div>
-  <div id="package-list" class= "col-md-2">
-    <ul>
-      {% for pkg in packages %}
-      <li>{{ pkg.name }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div id="macro-defn" class="col-md-4">
+<div class="row">
+  <div id="search-bar">
+
+  {% crispy the_form %}
+
+  </div> <!-- search-bar -->
+</div> <!-- row -->
+<div class="row">
+  <div id="macro-defn" class="col-lg-3">
     <h3>Macro Definition</h3>
   </div>
-  <div id="right-side" class="col-md-3">
+  <div id="right-side" class="col-lg-3">
     <h3> Other stuff </h3>
   </div>
 </div>
-
 {% endblock %}
 
 {% block javascript_libraries %}
