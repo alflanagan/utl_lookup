@@ -120,3 +120,4 @@ TNPACKAGE_FILES_ROOT = '/home/aflanagan/Devel/utl_indexer/data/exported/'
 
 # configuration variable for crispy forms -- don't die silently
 CRISPY_FAIL_SILENTLY = not DEBUG
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
