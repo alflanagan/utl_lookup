@@ -6,29 +6,39 @@
 <!-- for bootstrap, our  top-level <div>s have class "row" -->
 <!-- our 2nd-level <div>s must have a column class -->
 <div id="search-bar" class="row">
-  <form class="form form-inline" id="package-context-form" role="search">
-    <div id="div_id_site" class="form-group col-lg-3">
-      <label for="id_site" class="requiredField">
-      Site
-      </label>
-      <div class="form-control button" id="id_site">
-        <div>agnet.net</div>
-        <div>atlanticcityweekly.com</div>
-        <div>brazossports.com</div>
-      </div>
+  <form class="form-inline" id="package-context-form" role="search">
+
+    <div id="div_id_site" class="dropdown col-lg-2">
+      <button id="site_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+              aria-expanded="false">
+        Select Site<span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" aria_labelledby="site_label">
+        <li>agnet.net</li>
+        <li>atlanticcityweekly.com</li>
+        <li>brazossports.com</li>
+        <li>richmond.com</li>
+      </ul>
     </div>
-    <div id="div_id_global_skin" class="form-group col-lg-3">
-      <label for="id_global_skin">
-        Global skin
-      </label>
-      <div class="form-control select" id="id_global_skin">
-      </div>
+    <input type="hidden" id="selected_site"></input>
+
+    <div id="div_id_global_skin" class="dropdown col-lg-2">
+      <button id="global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+        aria-expanded="false">
+        Select Global Skin<span class="caret"></span>
+      </button>
+      <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="global_skin_label">
+      </ul>
     </div>
-    <div id="div_id_app_skin" class="form-group col-lg-3">
-      <label for="id_app_skin">App skin</label>
-      <div class="form-control select" id="id_app_skin">
-      </div>
+
+    <div id="div_id_app_skin" class="droppdown col-lg-2">
+      <button id="app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+      aria-expanded="false">Select App Skin<span class="caret"></span>
+      </button>
+      <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="app_skin_label">
+      </ul>
     </div>
+
   </form>
 </div>  <!-- #search-bar -->
 <div id="search-results" class="row">
@@ -43,4 +53,5 @@
 
 {% block javascript_libraries %}
 <script src="{% static 'js/utl_files.js' %}"></script>
+
 {% endblock %}
