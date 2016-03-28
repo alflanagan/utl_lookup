@@ -98,13 +98,28 @@ def api_macro_text(_, macro_id):
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
     return HttpResponse(content=macro.text)
 
-
 @json_view
 def api_global_skins_for_site(_, site_url):
-    """Returns the package names of all global skins associated with the :py:class:`TownnewsSite`
-    record whose name == `site_name`.
+    """Returns the package names of all global skins associated with the
+    :py:class:`TownnewsSite` record whose URL == `site_url`.
 
     """
     site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
     return [skin.name for skin in skins]
+
+@json_view
+def api_app_skins_for_site(_, site_url):
+    """Returns the package names of all application skins associated with the
+    :py:class:`TownnewsSite` record whose URL == `site_url`.
+
+    """
+    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
+    skins = Package.objects.filter(site=site, pkg_type=Package.SKIN)
+    skin_list = []
+    for skin in skins:
+        if skin.app:
+            skin_list.append("{}::{}".format(skin.app.name, skin.name))
+        else:
+            skin_list.append(skin.name)
+    return skin_list

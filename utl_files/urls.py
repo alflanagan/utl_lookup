@@ -41,5 +41,8 @@ urlpatterns = [
     url(r'api/packages/', views.api_packages, name="api_pkgs"),
 
     url(r'api/global_skins_for_site/([^/]+)/', views.api_global_skins_for_site,
-        name="api_global_skins_for_site")
+        name="api_global_skins_for_site"),
+
+    url(r'api/app_skins_for_site/([^/]+)/', views.api_app_skins_for_site,
+        name="api_app_skins_for_site"),
 ]
