@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_body %}
+<!-- This is a static demo page where I am working out proper HTML/CSS for my search page -->
+<!-- for bootstrap, our  top-level <div>s have class "row" -->
+<!-- our 2nd-level <div>s must have a column class -->
+<div id="search-bar" class="row">
+  <form class="form form-inline" id="package-context-form" role="search">
+    <div id="div_id_site" class="form-group col-lg-3">
+      <label for="id_site" class="requiredField">
+      Site
+      </label>
+      <div class="form-control button" id="id_site">
+        <div>agnet.net</div>
+        <div>atlanticcityweekly.com</div>
+        <div>brazossports.com</div>
+      </div>
+    </div>
+    <div id="div_id_global_skin" class="form-group col-lg-3">
+      <label for="id_global_skin">
+        Global skin
+      </label>
+      <div class="form-control select" id="id_global_skin">
+      </div>
+    </div>
+    <div id="div_id_app_skin" class="form-group col-lg-3">
+      <label for="id_app_skin">App skin</label>
+      <div class="form-control select" id="id_app_skin">
+      </div>
+    </div>
+  </form>
+</div>  <!-- #search-bar -->
+<div id="search-results" class="row">
+  <div id="macro-defn" class="col-lg-3">
+    <h3>Macro Definition</h3>
+  </div>
+  <div id="right-side" class="col-lg-3">
+    <h3> Other stuff </h3>
+  </div>
+</div>  <!-- #search-results -->
+{% endblock %}
+
+{% block javascript_libraries %}
+<script src="{% static 'js/utl_files.js' %}"></script>
+{% endblock %}

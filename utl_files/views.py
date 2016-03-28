@@ -1,10 +1,11 @@
 # -*- coding:utf-8 -*-
 """Views of models in :py:mod:`utl_files`."""
-import json
 from urllib.parse import quote_plus
 
 from django.shortcuts import render, HttpResponse, get_object_or_404
-from .models import Package, UTLFile, MacroRef, MacroDefinition, UTLFilesJsonEncoder, Application
+from jsonview.decorators import json_view
+
+from .models import Package, UTLFile, MacroRef, MacroDefinition, Application
 from .forms import XrefContextForm
 from papers.models import TownnewsSite
 
@@ -12,29 +13,39 @@ from papers.models import TownnewsSite
 # pylint: disable=no-member
 
 def home(request):
+    """Display the main page: user selects site, skins, and that sets context for searches."""
     pkgs = Package.objects.all()
     context = {"packages": pkgs,
                "the_form": XrefContextForm()}
     return render(request, 'utl_files/index.html', context)
 
 
+def demo(request):
+    """Display a hand-crafted demo page for figuring out what generated output should be."""
+    context = {"sites": TownnewsSite.objects.all(),
+               "pkgs": Package.objects.all(),
+               "apps": Application.objects.all(), }
+    return render(request, 'utl_files/demo.html', context)
+
+
 def search(request, macro_name):
+    """A page to do macro searches -- will probably become tab on home."""
     macros = MacroDefinition.objects.filter(name=macro_name)
     context = {"macros": macros,
                "macro_name": macro_name}
     return render(request, 'utl_files/search.html', context)
 
 
+@json_view
 def api_macro_refs(_, macro_name):
+    """API call to find references to a specific macro."""
     refs = MacroRef.objects.filter(macro_name=macro_name)
-    if refs:
-        response = HttpResponse(content=json.dumps(list(refs), cls=UTLFilesJsonEncoder))
-    else:
-        response = HttpResponse(content='{}')
-    return response
+    return list(refs) if refs else []
 
 
+@json_view
 def api_macro_defs(_, macro_name, pkg_name=None, pkg_version=None, file_path=None):
+    """API call to find the definition(s) of a macro."""
     utl_file = None
     source_pkg = None
     if file_path is not None and '/' in file_path:
@@ -58,18 +69,16 @@ def api_macro_defs(_, macro_name, pkg_name=None, pkg_version=None, file_path=Non
         except ValueError:
             defs = MacroDefinition.objects.filter(name=macro_name)
 
-    if defs:
-        response = HttpResponse(content=json.dumps(list(defs), cls=UTLFilesJsonEncoder))
-    else:
-        response = HttpResponse(content='{}')
-    return response
+    return [mdef.to_dict() for mdef in defs]
 
 
+@json_view
 def api_applications(_):
-    apps = Application.objects.all()
-    return HttpResponse(content=json.dumps(list(apps), cls=UTLFilesJsonEncoder))
+    """API call to return list of known applications."""
+    return [app.name for app in Application.objects.all()]
 
 
+@json_view
 def api_packages(_, name=None, version=None):
     """Return JSON list package names (if name is :py:attr:`None`), list available versions (if
     version is :py:attr:`None`), or list all info about a particular package (if both provided).
@@ -77,19 +86,11 @@ def api_packages(_, name=None, version=None):
     """
     if name is None:
         pkgs = Package.objects.all()
-        version_list = []
-        for pkg in pkgs:
-            version_list.append({"name": pkg.name, "version": pkg.version})
-        return HttpResponse(content=json.dumps(version_list))
     elif version is None:
-        pkgs = Package.objects.all(name=name)
-        version_list = []
-        for pkg in pkgs:
-            version_list.append({"name": pkg.name, "version": pkg.version})
-        return HttpResponse(content=json.dumps(version_list))
+        pkgs = Package.objects.filter(name=name)
     else:
-        pkg = get_object_or_404(Package, name=name, version=version)
-        return HttpResponse(content=json.dumps(pkg.to_dict()))
+        pkgs = [get_object_or_404(Package, name=name, version=version)]
+    return [{"name": pkg.name, "version": pkg.version} for pkg in pkgs]
 
 
 def api_macro_text(_, macro_id):
@@ -98,12 +99,12 @@ def api_macro_text(_, macro_id):
     return HttpResponse(content=macro.text)
 
 
+@json_view
 def api_global_skins_for_site(_, site_url):
     """Returns the package names of all global skins associated with the :py:class:`TownnewsSite`
     record whose name == `site_name`.
 
     """
-    site = get_object_or_404(TownnewsSite, URL=site_url)
+    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
-    skin_names = [skin.name for skin in skins]
-    return HttpResponse(content=json.dumps(skin_names))
+    return [skin.name for skin in skins]
