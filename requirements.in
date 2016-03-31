@@ -11,3 +11,4 @@ ply
 # standard Postgres integration
 psycopg2
 pytz
+uwsgi
