@@ -1,23 +1,55 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %}
+{% load bootstrap3 %}
 
 {% block page_body %}
-<div class="row">
+<div class="row center-block">
   <div id="search-bar">
+{% comment %} after a LOT of work, I've concluded it is easier to describe the form manually here than
+ it is to create custom forms, fields, widgets, templates, etc. for bootstrap 3 (which even
+ crispy forms does not seem to handle as well as it should). {% endcomment %}
+ {% autoescape on %}
+  <form class="form-inline" id="package-context-form" role="search">
 
-  {% crispy the_form %}
+    <div id="id_site_div" class="dropdown col-lg-2">
+      <button id="id_site_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+              aria-expanded="false">
+        Site<span class="caret"></span>
+      </button>
+      <ul id="id_site" class="dropdown-menu" aria_labelledby="site_label">
+      {% for site in active_sites %}
+        <li value="{{ site }}">{{ site }}</li>
+      {% endfor %}
+      </ul>
+    </div> {# id_site_div #}
+    <input type="hidden" id="selected_site"></input>
+
+    <div id="id_global_skin_div" class="dropdown col-lg-4">
+      <button id="id_global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+        aria-expanded="false" disabled="true">
+        Global Skin<span class="caret"></span>
+      </button>
+      <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="global_skin_label">
+      </ul>
+    </div>
+
+    <div id="id_app_skin_div" class="droppdown col-lg-4">
+      <button id="id_app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+      aria-expanded="false" disabled="true">App Skin<span class="caret"></span>
+      </button>
+      <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="app_skin_label">
+      </ul>
+    </div>
 
   </div> <!-- search-bar -->
 </div> <!-- row -->
-<div class="row">
-  <div id="macro-defn" class="col-lg-3">
-    <h3>Macro Definition</h3>
+<div class="row center-block">
+  <div id="tree-panel" class="co-lg-2">
   </div>
-  <div id="right-side" class="col-lg-3">
-    <h3> Other stuff </h3>
+  <div id="tab-panel" class="co-lg-10">
   </div>
 </div>
+{% endautoescape %}
 {% endblock %}
 
 {% block javascript_libraries %}

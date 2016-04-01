@@ -6,7 +6,6 @@ from django.shortcuts import render, HttpResponse, get_object_or_404
 from jsonview.decorators import json_view
 
 from .models import Package, UTLFile, MacroRef, MacroDefinition, Application
-from .forms import XrefContextForm
 from papers.models import TownnewsSite
 
 
@@ -15,8 +14,11 @@ from papers.models import TownnewsSite
 def home(request):
     """Display the main page: user selects site, skins, and that sets context for searches."""
     pkgs = Package.objects.all()
-    context = {"packages": pkgs,
-               "the_form": XrefContextForm()}
+    active_sites = set()
+    for pkg in pkgs:
+        active_sites.add(pkg.site.domain)
+
+    context = {"active_sites": active_sites}
     return render(request, 'utl_files/index.html', context)
 
 
@@ -98,6 +100,7 @@ def api_macro_text(_, macro_id):
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
     return HttpResponse(content=macro.text)
 
+
 @json_view
 def api_global_skins_for_site(_, site_url):
     """Returns the package names of all global skins associated with the
@@ -107,6 +110,7 @@ def api_global_skins_for_site(_, site_url):
     site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
     return [skin.name for skin in skins]
+
 
 @json_view
 def api_app_skins_for_site(_, site_url):

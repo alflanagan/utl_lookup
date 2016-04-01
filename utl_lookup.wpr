@@ -70,7 +70,7 @@ proj.launch-config = {loc('django_view.py'): ('project',
          'launch-q7oW4tueMHUGsGlK')),
                       loc('manage.py'): ('custom',
         (u'',
-         'launch-RWsBt1yFBH7tE3mo')),
+         'launch-q7oW4tueMHUGsGlK')),
                       loc('utl_files/test_views.py'): ('project',
         (u'',
          'launch-lqz0gMPTsJab1BhF'))}

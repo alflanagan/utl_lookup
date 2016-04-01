@@ -18,6 +18,10 @@ class TownnewsSite(models.Model):
     def __str__(self):
         return self.name if self.name else self.URL
 
+    @property
+    def domain(self):
+        return self.URL.replace('http://', '')
+
 
 class NewsPaper(models.Model):
     """The newspaper organization associated with a site."""

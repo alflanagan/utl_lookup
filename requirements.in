@@ -1,14 +1,13 @@
 Django>=1.9
 # simple tags for bootstrap
 django-bootstrap3
-# bootstrap likes <div>s, not standard HTML elements like <select>
-# so, either write custom widgets or use
-django-crispy-forms
-# the totally awesome json_view decorator
+# decorator to convert python object to json automatically for API calls
 django-jsonview
 # lexical analysis and parsing of UTL files
 ply
 # standard Postgres integration
 psycopg2
+# enhanced timezone support
 pytz
+# the WSGI server used to serve site with nginx
 uwsgi

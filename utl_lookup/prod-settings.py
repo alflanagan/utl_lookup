@@ -38,7 +38,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'bootstrap3',
-    'crispy_forms',
     'utl_files',
     'papers',
 )
@@ -122,7 +121,3 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # The parent directory for all the downloaded UTL files. This will have a subdirectory named
 # "certified", and a subdirectory for each of the sites for which we have custom files.
 TNPACKAGE_FILES_ROOT = '/var/utl_indexer/data/exported/'
-
-# configuration variable for crispy forms -- don't die silently
-CRISPY_FAIL_SILENTLY = not DEBUG
-CRISPY_TEMPLATE_PACK = 'bootstrap3'
