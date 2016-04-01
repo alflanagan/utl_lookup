@@ -14,9 +14,10 @@ from papers.models import TownnewsSite
 def home(request):
     """Display the main page: user selects site, skins, and that sets context for searches."""
     pkgs = Package.objects.all()
-    active_sites = set()
+    active_sites = set(["certified"])
     for pkg in pkgs:
-        active_sites.add(pkg.site.domain)
+        if pkg.site:
+            active_sites.add(pkg.site.domain)
 
     context = {"active_sites": active_sites}
     return render(request, 'utl_files/index.html', context)
