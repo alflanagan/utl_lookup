@@ -93,12 +93,12 @@ class Package(models.Model):
                             help_text="The application to which this package belongs",
                             null=True)
     last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.",
-                                         null=True)
+                                         null=True, blank=True)
     disk_directory = models.FilePathField(max_length=4096,
                                           allow_files=False, allow_folders=True, blank=True,
                                           help_text="The location of the package's files on disk, "
                                           "relative to some common root directory.")
-    site = models.ForeignKey(TownnewsSite, null=True,
+    site = models.ForeignKey(TownnewsSite, null=True, blank=True,
                              help_text="For customized packages, the site that 'owns' the "
                              "customizations.")
 
