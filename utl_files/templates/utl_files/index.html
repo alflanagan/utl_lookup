@@ -24,7 +24,8 @@
     </div> {# id_site_div #}
     <input type="hidden" id="selected_site"></input>
 
-    <div id="id_global_skin_div" class="dropdown col-lg-4">
+    {# crazy idea: set col- classes based on widest content #}
+    <div id="id_global_skin_div" class="dropdown col-lg-3">
       <button id="id_global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
         aria-expanded="false" disabled="true">
         Global Skin<span class="caret"></span>
@@ -44,9 +45,11 @@
   </div> <!-- search-bar -->
 </div> <!-- row -->
 <div class="row center-block">
-  <div id="tree-panel" class="co-lg-2">
+  <div id="tree-panel" class="col-lg-2">
+    <p></p>
   </div>
-  <div id="tab-panel" class="co-lg-10">
+  <div id="tab-panel" class="col-lg-10">
+    <p></p>
   </div>
 </div>
 {% endautoescape %}
