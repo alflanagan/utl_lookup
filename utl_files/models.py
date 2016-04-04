@@ -135,7 +135,6 @@ class Package(models.Model):
             code = verr.code
             params = verr.params
 
-        fields_with_class = [(self.__class__, self._meta.local_fields)]
         if "is_certified" not in exclude:
             if self.is_certified:
                 if "name" not in exclude and "version" not in exclude:
@@ -153,7 +152,6 @@ class Package(models.Model):
                                           "".format(self.name, self.site.name, self.last_download))
         if error_list:
             raise ValidationError(error_list, code, params)
-
 
     def __str__(self):
         return "{}/{}/{}".format(self.app, self.name, self.version)
@@ -196,8 +194,8 @@ class Package(models.Model):
         last_download = None
         if not new_pkg.is_certified:
             custom_meta = TNSiteMeta(site.name, Path(settings.TNPACKAGE_FILES_ROOT) / site.name)
-            if (new_pkg.name in custom_meta.data
-                    and "last_download" in custom_meta.data[new_pkg.name]):
+            if (new_pkg.name in custom_meta.data and
+                    "last_download" in custom_meta.data[new_pkg.name]):
                 # Path(fname).stat().st_ctime is giving us UTC
                 # make it a structure
                 last_download = time.gmtime(custom_meta.data[new_pkg.name]["last_download"])
@@ -207,9 +205,11 @@ class Package(models.Model):
 
         try:
             app = Application.objects.get(name=new_pkg.app)
-        except Application.DoesNotExist as dne:
-            # much better error message than dne
+        except Application.DoesNotExist:
+            # much better error message than original
             raise ImportError("Application type '{}' not found.".format(new_pkg.app))
+
+        directory = directory.relative_to(settings.TNPACKAGE_FILES_ROOT)
 
         my_pkg = Package(name=new_pkg.name,
                          version=new_pkg.version,
@@ -221,22 +221,22 @@ class Package(models.Model):
                          pkg_type=pkg_type)
         my_pkg.full_clean()
         my_pkg.save()
+        my_pkg.get_utl_files()
 
-    def get_utl_files(self, root_dir):
-        """Prefixes `root_dir` to `self.disk_directory`, scans that directory for files with a
-        '.utl' extension; adds them to the database as :py:class:`~utl_files.models.UTLFile`
-        objects and sets this instance as their package.
+    def get_utl_files(self):
+        """Scans the disk directory for files with a '.utl' extension; adds them to the database
+        as :py:class:`~utl_files.models.UTLFile` objects and sets this instance as their
+        package.
 
         """
-        if not isinstance(root_dir, Path):
-            root_dir = Path(root_dir)
-
-        disk_dir = root_dir / self.disk_directory
+        disk_dir = Path(settings.TNPACKAGE_FILES_ROOT) / self.disk_directory
         if not disk_dir.is_dir():
             raise PackageError("Can't find package at {}.".format(disk_dir))
         filenames = disk_dir.glob('**/*.utl')
         for filename in filenames:
-            UTLFile.create_from(filename, root_dir, self)
+            new_file = UTLFile.create_from(filename, disk_dir, self)
+            new_file.full_clean()
+            new_file.save()
 
 
 class PackageProp(models.Model):
@@ -374,6 +374,7 @@ class UTLFile(models.Model):
         new_file.full_clean()
         new_file.save()
         new_file.get_macros()
+        return new_file
 
     def get_macros(self):
         """Load the given UTL file and add information about macro definitions and references to

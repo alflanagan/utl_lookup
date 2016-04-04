@@ -115,4 +115,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 # The parent directory for all the downloaded UTL files. This will have a subdirectory named
 # "certified", and a subdirectory for each of the sites for which we have custom files.
-TNPACKAGE_FILES_ROOT = '/home/aflanagan/Devel/utl_indexer/data/exported/'
+TNPACKAGE_FILES_ROOT = '/mnt/extra/Devel/utl_indexer/data/exported/'
