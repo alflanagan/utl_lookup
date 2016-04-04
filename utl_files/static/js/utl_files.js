@@ -83,18 +83,28 @@ $(function() {
         $("#id_global_skin li").detach();
         $("#id_app_skin li").detach();
 
-        $.getJSON("api/global_skins_for_site/" + the_site + "/",
+        $.getJSON("api/global_skins_for_site/" + the_site + "/").done(
             function(data) {
                 enable_if_data(data, $("#id_global_skin_label"));
                 add_li_from_data(data, $("#id_global_skin"), global_skin_onclick);
             }
-        );
+        ).fail(function() {
+            console.log("ERROR in api call to global_skins_for_site.");
+            for (var i = 0; i < arguments.length; i++) {
+                console.log(arguments[i]);
+            }
+        });
 
-        $.getJSON("api/app_skins_for_site/" + the_site + "/",
+        $.getJSON("api/app_skins_for_site/" + the_site + "/").done(
             function(data) {
                 enable_if_data(data, $("#id_app_skin_label"));
                 add_li_from_data(data, $("#id_app_skin"), app_skin_onclick);
             }
-        );
+        ).fail(function() {
+            console.log("ERROR in api call to app_skins_for_site.");
+            for (var i = 0; i < arguments.length; i++) {
+                console.log(arguments[i]);
+            }
+        });
     });
 });
