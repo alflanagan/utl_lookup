@@ -12,15 +12,25 @@ do
                 do
                     for PKG in ${APP}/*
                     do
-                        echo importing ${PKG}
+                        # echo importing ${PKG}
                         ./manage.py importpackage ${PKG}
+                        ERR=$?
+                        if [ ${ERR} -ne 0 ]; then
+                            echo "${PKG} import failed with code ${ERR}." >&2
+                            exit ${ERR}
+                        fi
                     done
                 done
             else
                 for PKG in ${PKG_TYPE}/*
                 do
-                    echo Importing ${PKG}
+                    # echo Importing ${PKG}
                     ./manage.py importpackage ${PKG}
+                    ERR=$?
+                    if [ ${ERR} -ne 0 ]; then
+                        echo "${PKG} import failed with code ${ERR}." >&2
+                        exit ${ERR}
+                    fi
                 done
             fi
         fi
