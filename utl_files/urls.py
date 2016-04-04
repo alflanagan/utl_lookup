@@ -20,15 +20,29 @@ from utl_files import views
 
 urlpatterns = [
     url(r'^$', views.home, name='home'),
+
+    url(r'^demo/$', views.demo, name='demo'),
+
     url(r'^macro/(.+)/', views.search, name='search'),
+
     url(r'api/macro_refs/(.+)/', views.api_macro_refs, name="api_macro_refs"),
+
     url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/(.+)/', views.api_macro_defs, name="api_macro_defs_file"),
     url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/', views.api_macro_defs, name="api_macro_defs_ver"),
     url(r'api/macro_defs/([^/]+)/([^/]+)/', views.api_macro_defs, name="api_macro_defs_pkg"),
     url(r'api/macro_defs/([^/]+)/', views.api_macro_defs, name="api_macro_defs"),
+
     url(r'api/macro_def_text/(\d+)/', views.api_macro_text, name="api_macro_text"),
+
     url(r'api/applications/', views.api_applications, name="api_applications"),
-    url(r'api/packages/', views.api_packages, name="api_pkgs"),
-    url(r'api/packages/([^/]+)/', views.api_packages, name="api_pkgs_by_name"),
+
     url(r'api/packages/([^/]+)/([^/]+)/', views.api_packages, name="api_pkgs_name_version"),
+    url(r'api/packages/([^/]+)/', views.api_packages, name="api_pkgs_by_name"),
+    url(r'api/packages/', views.api_packages, name="api_pkgs"),
+
+    url(r'api/global_skins_for_site/([^/]+)/', views.api_global_skins_for_site,
+        name="api_global_skins_for_site"),
+
+    url(r'api/app_skins_for_site/([^/]+)/', views.api_app_skins_for_site,
+        name="api_app_skins_for_site"),
 ]

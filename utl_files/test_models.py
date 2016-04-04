@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+"""Module of tests for :py:mod:`utl_files.models`."""
 
 import os
+import sys
 
 from django.test import TestCase, TransactionTestCase
 from django.db.utils import DataError
@@ -9,6 +11,9 @@ from django.core.exceptions import ValidationError
 
 from .models import Application, MacroDefinition, MacroRef, Package, PackageDep, PackageProp
 from .models import PackageError, UTLFile, UTLFileError
+from papers.models import TownnewsSite, NewsPaper
+
+# pylint: disable=no-member
 
 
 class ApplicationTestCase(TestCase):
@@ -20,7 +25,11 @@ class ApplicationTestCase(TestCase):
     """
     def setUp(self):
         """Create a simple Application record for testing."""
-        app = Application(name="editorial")
+        if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 5):
+            sys.stderr.write("This code requires python with a minimum version of 3.5.\n")
+            sys.stderr.write("(Did you try running it with the 'python3' command?)\n")
+            sys.exit(2)
+        app = Application(name="testing")
         app.save()
 
     def test_insert(self):
@@ -28,17 +37,16 @@ class ApplicationTestCase(TestCase):
         :py:meth:`utl_files.models.Application.save`.
 
         """
-        self.assertEqual(Application.objects.count(), 1)
-        the_app = Application.objects.all()[0]
-        self.assertEqual(the_app.name, "editorial")
+        the_app = Application.objects.get(name="testing")
+        self.assertEqual(the_app.name, "testing")
 
     def test_delete(self):
         """Unit test for :py:meth:`models.Application.delete`."""
-        self.assertEqual(Application.objects.count(), 1)
-        the_app = Application.objects.get(name="editorial")
+        count_before = Application.objects.count()
+        the_app = Application.objects.get(name="testing")
         the_app.delete()
-        self.assertEqual(Application.objects.count(), 0)
-        self.assertRaises(Application.DoesNotExist, Application.objects.get, name="editorial")
+        self.assertEqual(Application.objects.count(), count_before - 1)
+        self.assertRaises(Application.DoesNotExist, Application.objects.get, name="testing")
 
     def test_bad(self):
         """Test that we get expected errors when name is too long."""
@@ -50,7 +58,7 @@ class ApplicationTestCase(TestCase):
 class PackageTestCase(TransactionTestCase):
     """Unit tests for :py:class:`utl_files.models.Package`."""
 
-    TEST_APP = "editorial"
+    TEST_APP = "testing"
     TEST_NAME = "some_totally_bogus_package"
     TEST_VERSION = "1.10.0.3"
 
@@ -58,14 +66,35 @@ class PackageTestCase(TransactionTestCase):
         """Create a package object for tests."""
         app = Application(name=self.TEST_APP)
         app.save()
+
+        try:
+            paper = NewsPaper.objects.get(name='Richmond Times-Dispatch')
+        except NewsPaper.DoesNotExist:
+            paper = NewsPaper(name='Richmond Times-Dispatch')
+            paper.full_clean()
+            paper.save()
+
+        try:
+            thesite = TownnewsSite.objects.get(URL='http://richmond.com')
+        except TownnewsSite.DoesNotExist:
+            thesite = TownnewsSite(URL='http://richmond.com', name='RTD', paper=paper)
+            thesite.full_clean()
+            thesite.save()
+
         pkg = Package(name=self.TEST_NAME,
                       version=self.TEST_VERSION,
                       is_certified=True,
-                      app=app)
+                      app=app,
+                      last_download="2015-05-01 13:00:00Z",
+                      disk_directory="/data/exported/richmond.com/skins/testing/some_totally_bogus_package",
+                      site=thesite,
+                      pkg_type=Package.SKIN
+                      )
         pkg.full_clean()
         pkg.save()
 
     def test_insert(self):
+        """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
         self.assertEqual(Package.objects.count(), 1)
         pkg = Package.objects.get(name=self.TEST_NAME, version=self.TEST_VERSION)
         self.assertEqual(pkg.name, self.TEST_NAME)
@@ -98,6 +127,7 @@ class PackageTestCase(TransactionTestCase):
 
 
 class UTLFileTestCase(TransactionTestCase):
+    """Unit tests for :py:class:`models.UTLFile`."""
 
     TEST_APP = "editorial"
     TEST_PKG = "skin-editorial-core-base"
@@ -140,11 +170,15 @@ class UTLFileTestCase(TransactionTestCase):
 
     def test_to_dict(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`dict`."""
-        self.assertDictEqual(self.simple_utl.to_dict(),
-                             {'name': self.TEST_PKG,
-                              'path': self.SIMPLE_UTL_FILE,
-                              'pkg_directory': self.PKG_DIRECTORY,
-                              'version': self.TEST_VERSION})
+        # assertDictContainsSubset is deprecated because args are in wrong order,
+        # but we'll keept this until a good replacement comes along
+        self.assertDictContainsSubset({'name': self.TEST_PKG,
+                                       'path': self.SIMPLE_UTL_FILE,
+                                       'pkg_directory': self.PKG_DIRECTORY,
+                                       'version': self.TEST_VERSION},
+                                      self.simple_utl.to_dict())
+        # don't in general know what ID was assigned, just that there is one
+        self.assertIn("id", self.simple_utl.to_dict())
 
     def test_str(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`str`."""

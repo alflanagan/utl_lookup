@@ -2,18 +2,25 @@
 from django.db import models
 
 
-class TNSite(models.Model):
+class TownnewsSite(models.Model):
     """A Townnews website, referred to by its main URL and managed as a unit."""
-    URL = models.URLField(max_length=250, unique=True)
-    name = models.CharField(max_length=100, blank=True)
+    URL = models.URLField(max_length=250, unique=True,
+                          help_text="The sites main URL")
+    name = models.CharField(max_length=100, blank=True,
+                            help_text="The site brand (may be same as URL)")
+    """Some sites refer to their site by the domain. Others brand it with the paper's name. Still
+    others have a separate name they use.
+
+    """
     paper = models.ForeignKey('NewsPaper', help_text="The paper that owns this site.",
                               on_delete=models.CASCADE)
 
-    class Meta:  # pylint: disable=C0111,R0903
-        verbose_name = "Townnews Site"
-
     def __str__(self):
         return self.name if self.name else self.URL
+
+    @property
+    def domain(self):
+        return self.URL.replace('http://', '')
 
 
 class NewsPaper(models.Model):
@@ -23,4 +30,3 @@ class NewsPaper(models.Model):
 
     def __str__(self):
         return self.name
-

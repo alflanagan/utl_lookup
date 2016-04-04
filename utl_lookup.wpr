@@ -50,7 +50,13 @@ proj.directory-list = [{'dirloc': loc('.'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
-proj.launch-config = {loc('manage.py'): ('custom',
+proj.launch-config = {loc('django_view.py'): ('project',
+        (u'',
+         'launch-q7oW4tueMHUGsGlK')),
+                      loc('manage.py'): ('custom',
+        (u'',
+         'launch-q7oW4tueMHUGsGlK')),
+                      loc('utl_files/test_views.py'): ('project',
         (u'',
          'launch-ccPH3YE4wY434o9g'))}
 proj.main-file = loc('manage.py')

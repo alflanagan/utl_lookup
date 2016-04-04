@@ -3,26 +3,56 @@
 {% load bootstrap3 %}
 
 {% block page_body %}
-  <div id="search-bar" class="form-inline">
-  <form>
-  {% bootstrap_form the_form %}
-  </form>
-  </div>
-  <div id="package-list" class= "col-md-2">
-    <ul>
-      {% for pkg in packages %}
-      <li>{{ pkg.name }}</li>
+<div class="row center-block">
+  <div id="search-bar">
+{% comment %} after a LOT of work, I've concluded it is easier to describe the form manually here than
+ it is to create custom forms, fields, widgets, templates, etc. for bootstrap 3 (which even
+ crispy forms does not seem to handle as well as it should). {% endcomment %}
+ {% autoescape on %}
+  <form class="form-inline" id="package-context-form" role="search">
+
+    <div id="id_site_div" class="dropdown col-lg-2">
+      <button id="id_site_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+              aria-expanded="false">
+        Site<span class="caret"></span>
+      </button>
+      <ul id="id_site" class="dropdown-menu" aria_labelledby="site_label">
+      {% for site in active_sites %}
+        <li value="{{ site }}">{{ site }}</li>
       {% endfor %}
-    </ul>
+      </ul>
+    </div> {# id_site_div #}
+    <input type="hidden" id="selected_site"></input>
+
+    {# crazy idea: set col- classes based on widest content #}
+    <div id="id_global_skin_div" class="dropdown col-lg-3">
+      <button id="id_global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+        aria-expanded="false" disabled="true">
+        Global Skin<span class="caret"></span>
+      </button>
+      <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="global_skin_label">
+      </ul>
+    </div>
+
+    <div id="id_app_skin_div" class="droppdown col-lg-4">
+      <button id="id_app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+      aria-expanded="false" disabled="true">App Skin<span class="caret"></span>
+      </button>
+      <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="app_skin_label">
+      </ul>
+    </div>
+
+  </div> <!-- search-bar -->
+</div> <!-- row -->
+<div class="row center-block">
+  <div id="tree-panel" class="col-lg-2">
+    <p></p>
   </div>
-  <div id="macro-defn" class="col-md-4">
-    <h3>Macro Definition</h3>
-  </div>
-  <div id="right-side" class="col-md-3">
-    <h3> Other stuff </h3>
+  <div id="tab-panel" class="col-lg-10">
+    <p></p>
   </div>
 </div>
-
+{% endautoescape %}
 {% endblock %}
 
 {% block javascript_libraries %}

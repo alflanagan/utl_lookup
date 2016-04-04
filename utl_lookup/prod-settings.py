@@ -20,7 +20,7 @@ SITE_DIR = os.path.dirname(os.path.abspath(__file__))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'fgxemr6rpt6hf*^^p*a*)1k=z29zve=sz(_$bw67(sntyc)x&0'
+SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,7 +37,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.admindocs',
     'bootstrap3',
     'utl_files',
     'papers',
@@ -52,7 +51,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.admindocs.middleware.XViewMiddleware',
 )
 
 ROOT_URLCONF = 'utl_lookup.urls'
@@ -70,7 +68,14 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'loaders': [
+                ('django.template.loaders.cached.Loader', [
+                    'django.template.loaders.filesystem.Loader',
+                    'django.template.loaders.app_directories.Loader',
+                ]),
+            ],
         },
+
     },
 ]
 
@@ -86,7 +91,7 @@ DATABASES = {
         'HOST': '',
         'NAME': 'utl_lookup',
         'USER': 'utl_lookup',
-        'PASSWORD': 'utl_lookup',
+        'PASSWORD': '',
     }
 }
 
@@ -115,4 +120,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 # The parent directory for all the downloaded UTL files. This will have a subdirectory named
 # "certified", and a subdirectory for each of the sites for which we have custom files.
-TNPACKAGE_FILES_ROOT = '/home/aflanagan/Devel/utl_indexer/data/exported/'
+TNPACKAGE_FILES_ROOT = '/var/utl_indexer/data/exported/'

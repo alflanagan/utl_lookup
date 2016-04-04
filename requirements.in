@@ -1,6 +1,13 @@
-Django>=1.9b1
+Django>=1.9
+# simple tags for bootstrap
 django-bootstrap3
+# decorator to convert python object to json automatically for API calls
+django-jsonview
+# lexical analysis and parsing of UTL files
 ply
+# standard Postgres integration
 psycopg2
-requests
+# enhanced timezone support
+pytz
+# the WSGI server used to serve site with nginx
 uwsgi
