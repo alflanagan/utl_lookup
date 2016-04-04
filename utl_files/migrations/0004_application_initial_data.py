@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.db import migrations
 
 INITIAL_APPS = ["adowl", "business", "calendar", "classifieds", "editorial", "eedition",
-                "electionstats", "form", "global", "mailinglist", "search", "sportstats",
+                "electionsstats", "form", "global", "mailinglist", "search", "sportsstats",
                 "staticpages", "user", ]
 
 
