@@ -5,9 +5,12 @@
 #    pip-compile emacs-requirements.in
 #
 autopep8==1.2.2
+elpy==1.11.0
+flake8==2.5.4             # via elpy
 importmagic==0.1.7
-pep8==1.7.0               # via autopep8
-yapf==0.6.3
+mccabe==0.4.0             # via flake8
+pep8==1.7.0               # via autopep8, flake8
+pyflakes==1.0.0           # via flake8
 
 # The following packages are commented out because they are
 # considered to be unsafe in a requirements file:

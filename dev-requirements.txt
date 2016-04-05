@@ -7,7 +7,7 @@
 alabaster==0.7.7          # via sphinx
 astroid==1.4.5            # via pylint
 babel==2.2.0              # via sphinx
-click==6.4                # via pip-tools
+click==6.6                # via pip-tools
 colorama==0.3.7           # via pylint
 coverage==4.0.3
 decorator==4.0.9          # via ipython, traitlets
@@ -35,6 +35,7 @@ snowballstemmer==1.2.1    # via sphinx
 Sphinx==1.4
 traitlets==4.2.1          # via ipython
 wrapt==1.10.7             # via astroid
+yapf==0.6.3
 
 # The following packages are commented out because they are
 # considered to be unsafe in a requirements file:

@@ -1,7 +1,16 @@
+# coverage reports for tests
 coverage
+# a better interpreter environment
 ipython
+# autocomplete for python code
 jedi
+# check python code for style
 pep8
+# support defining external package requirements
 pip-tools
+# check for possible errors in code
 pylint
+# Generate documentation
 Sphinx
+# standard formatting for python code
+yapf
