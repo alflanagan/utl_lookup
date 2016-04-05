@@ -1,6 +1,8 @@
 "Models for objects related to a particular newspaper."
 from django.db import models
 
+# pylint: disable=no-member
+
 
 class TownnewsSite(models.Model):
     """A Townnews website, referred to by its main URL and managed as a unit."""
@@ -23,6 +25,7 @@ class TownnewsSite(models.Model):
 
     @property
     def domain(self):
+        """The URL without the 'http://' prefix, occasionally useful."""
         return self.URL.replace('http://', '')
 
 
