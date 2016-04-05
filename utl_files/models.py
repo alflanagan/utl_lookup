@@ -234,7 +234,7 @@ class Package(models.Model):
             raise PackageError("Can't find package at {}.".format(disk_dir))
         filenames = disk_dir.glob('**/*.utl')
         for filename in filenames:
-            new_file = UTLFile.create_from(filename, disk_dir, self)
+            new_file = UTLFile.create_from(filename, self)
             new_file.full_clean()
             new_file.save()
 
@@ -316,15 +316,10 @@ class PackageDep(models.Model):
 
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
-    file = models.FileField(upload_to='utl_files', null=True, blank=True)
     file_path = models.FilePathField(
         allow_folders=False,
         max_length=2048,
         help_text='The file path, relative to the package base directory.')
-    pkg_directory = models.CharField(
-        max_length=1024,
-        help_text='The package base directory on the hard drive.'
-    )
     pkg = models.ForeignKey(Package, on_delete=models.CASCADE)
 
     # instantiate parser once -- it's big
@@ -342,9 +337,7 @@ class UTLFile(models.Model):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
         return {"id": self.pk,
                 "path": self.file_path,
-                "name": self.pkg.name,
-                "pkg_directory": self.pkg_directory,
-                "version": self.pkg.version}
+                "package": self.pkg.id, }
 
     @property
     def base_filename(self):
@@ -354,22 +347,19 @@ class UTLFile(models.Model):
     @property
     def full_file_path(self):
         """The full path of the file, including the package directory."""
-        return Path(self.pkg_directory).joinpath(self.file_path)
+        return Path(self.pkg.disk_directory).joinpath(self.file_path)
 
     # TODO: move this to a custom manager
     @classmethod
-    def create_from(cls, filename, package_directory, package):
-        """Creates and returns a new :py:class:`utl_files.models.UTLFile` instance containing
-        information about the file `filename` and designating `package` as the containing
-        package.
+    def create_from(cls, filename, package):
+        """Creates and returns a new :py:class:`utl_files.models.UTLFile` instance.
 
         :param pathlib.Path filename: The filename of .utl file.
 
         :param utl_files.models.Package package: A UTL package to which the file belongs.
 
         """
-        new_file = cls(file_path=str(filename.relative_to(package_directory)),
-                       pkg_directory=package_directory,
+        new_file = cls(file_path=str(filename.relative_to(package.disk_directory)),
                        pkg=package)
         new_file.full_clean()
         new_file.save()
