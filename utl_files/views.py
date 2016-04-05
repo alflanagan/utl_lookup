@@ -128,3 +128,21 @@ def api_app_skins_for_site(_, site_url):
         else:
             skin_list.append(skin.name)
     return skin_list
+
+
+@json_view
+def api_files_for_custom_pkg(_, site_url, pkg_name, pkg_last_download):
+    """Returns a list of files in the customized package.
+
+    :param str site_url: The site's main URL, omitting the 'http://' prefix
+
+    :param str pkg_name: The name of the package in BLOX ('true' name, not displayed name)
+
+    :param str pkg_last_download: The date/time of the package's last download
+
+    :returns: Returns a list of files (as path names relative to the package)
+
+    """
+    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
+    pkg = Package.objects.get(site=site, name=pkg_name, last_download=pkg_last_download)
+    return [f.file_path for f in UTLFile.objects.filter(pkg=pkg)]
