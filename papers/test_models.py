@@ -46,3 +46,21 @@ class TownnewsSiteTestCase(TestCase):
                              name=self.TEST_NAME,
                              paper=paper)
         self.assertEqual(item1.domain, 'toaddagger.com')
+
+    def test_str(self):
+        """Unit test for :py:meth:`~papers.models.TownnewsSite.__str__`."""
+        for site in TownnewsSite.objects.all():
+            if site.name:
+                self.assertEqual(site.name, str(site))
+            else:
+                self.assertEqual(site.URL, str(site))
+
+
+class NewsPaperTestCase(TestCase):
+    """Unit test cases for :py:class:`papers.models.NewsPaper`."""
+
+    def test_str(self):
+        """Unit tests for :py:meth:`papers.models.NewsPaper.__str__`."""
+        self.assertGreater(NewsPaper.objects.count(), 20)  # just to make sure we have test data
+        for paper in NewsPaper.objects.all():
+            self.assertEqual(str(paper), paper.name)
