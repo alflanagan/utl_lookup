@@ -128,9 +128,9 @@ class Package(models.Model):
         error_list = []
         code = None
         params = None
-        try:
+        try:  # pragma: no cover
             super().validate_unique(exclude)
-        except ValidationError as verr:
+        except ValidationError as verr:  # pragma: no cover
             error_list.extend(verr.error_list)
             code = verr.code
             params = verr.params
@@ -222,6 +222,7 @@ class Package(models.Model):
         my_pkg.full_clean()
         my_pkg.save()
         my_pkg.get_utl_files()
+        return my_pkg
 
     def get_utl_files(self):
         """Scans the disk directory for files with a '.utl' extension; adds them to the database
@@ -359,7 +360,7 @@ class UTLFile(models.Model):
         :param utl_files.models.Package package: A UTL package to which the file belongs.
 
         """
-        new_file = cls(file_path=str(filename.relative_to(package.disk_directory)),
+        new_file = cls(file_path=str(filename.relative_to(Path(settings.TNPACKAGE_FILES_ROOT) / package.disk_directory)),
                        pkg=package)
         new_file.full_clean()
         new_file.save()

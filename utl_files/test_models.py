@@ -4,10 +4,13 @@
 
 import os
 import sys
+from pathlib import Path
+from warnings import simplefilter
 
 from django.test import TestCase, TransactionTestCase
 from django.db.utils import DataError
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from .models import Application, MacroDefinition, MacroRef, Package
 from .models import UTLFile
@@ -60,6 +63,14 @@ class ApplicationTestCase(TestCase):
         self.assertRaises(DataError, bad_app.save)
         self.assertRaises(ValidationError, bad_app.full_clean)
 
+    def test_to_dict(self):
+        """Unit tests for :py:meth:`utl_files.models.Application.to_dict'.`"""
+        self.assertGreater(Application.objects.count(), 10)
+        for app in Application.objects.all():
+            appdict = app.to_dict()
+            self.assertIn('id', appdict)
+            self.assertEqual(app.name, appdict['name'])
+
 
 class PackageTestCase(TransactionTestCase):
     """Unit tests for :py:class:`utl_files.models.Package`."""
@@ -67,6 +78,9 @@ class PackageTestCase(TransactionTestCase):
     TEST_APP = "testing"
     TEST_NAME = "some_totally_bogus_package"
     TEST_VERSION = "1.10.0.3"
+
+    TEST_PKG = "editorial-core-base"
+    PKG_DIRECTORY = "utl_files/test_data/skin-editorial-core-base"
 
     def setUp(self):
         """Create a package object for tests."""
@@ -103,9 +117,24 @@ class PackageTestCase(TransactionTestCase):
         pkg.full_clean()
         pkg.save()
 
+        non_cert_pkg = Package(
+            name='non-certified-package',
+            version='1.2.3',
+            is_certified=False,
+            app=self.test_app,
+            last_download="2015-05-01 13:00:00Z",
+            disk_directory=("/data/exported/richmond.com/skins/testing/"
+                            "some_totally_bogus_package"),
+            site=thesite,
+            pkg_type=Package.SKIN)
+        non_cert_pkg.full_clean()
+        non_cert_pkg.save()
+        # load files from our test directory, not system directory
+        settings.TNPACKAGE_FILES_ROOT = os.path.realpath('.')
+
     def test_insert(self):
         """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
-        self.assertEqual(Package.objects.count(), 1)
+        self.assertEqual(Package.objects.count(), 2)
         pkg = Package.objects.get(name=self.TEST_NAME,
                                   version=self.TEST_VERSION)
         self.assertEqual(pkg.name, self.TEST_NAME)
@@ -127,7 +156,7 @@ class PackageTestCase(TransactionTestCase):
         pkg = Package.objects.get(name='short-lived-pkg',
                                   version=self.TEST_VERSION)
         pkg.delete()
-        self.assertEqual(Package.objects.count(), 1)
+        self.assertEqual(Package.objects.count(), 2)
         self.assertRaises(Package.DoesNotExist,
                           Package.objects.get,
                           name='short-lived-pkg',
@@ -149,6 +178,68 @@ class PackageTestCase(TransactionTestCase):
                       app=app)
         self.assertRaises(DataError, pkg.save)
         self.assertRaises(ValidationError, pkg.full_clean)
+
+    def test_errors(self):
+        """Unit tests for :py:class:`utl_files.models.Package` error cases."""
+        dup_certified_pkg = Package(
+            name=self.TEST_NAME,
+            version=self.TEST_VERSION,
+            is_certified=True,
+            app=self.test_app,
+            last_download="2015-05-01 13:00:00Z",
+            disk_directory=("/data/exported/richmond.com/skins/testing/"
+                            "some_totally_bogus_package"),
+            site=self.test_site,
+            pkg_type=Package.SKIN)
+        self.assertRaises(ValidationError, dup_certified_pkg.full_clean)
+        # create package which duplicates existing record only in fields that are part of PK
+        new_app = Application(name='error-test')
+        new_app.full_clean()
+        new_app.save()
+        try:
+            non_cert_pkg = Package(
+                name=self.TEST_NAME,
+                version='1.3',
+                is_certified=False,
+                app=new_app,
+                last_download="2015-05-01 13:00:00Z",
+                disk_directory=("/should/be/different/for/test"),
+                site=self.test_site,
+                pkg_type=Package.COMPONENT)
+            # then try to validate it
+            self.assertRaises(ValidationError, non_cert_pkg.full_clean)
+        finally:
+            new_app.delete()
+
+    def test_str(self):
+        """Unit test for :py:meth:`~utl_files.models.Package.__str__`."""
+        self.assertEqual(Package.objects.count(), 2)
+        for pkg in Package.objects.all():
+            self.assertEqual(str(pkg), "{}/{}/{}".format(pkg.app, pkg.name, pkg.version))
+
+    def test_to_dict(self):
+        """Unit test for :py:meth:`~utl_files.models.Package.to_dict`."""
+        for pkg in Package.objects.all():
+            pkgdict = pkg.to_dict()
+            self.assertSetEqual(set(pkgdict.keys()), set(["id", "app", "name",
+                                                          "version", "is_certified"]))
+            self.assertEqual(pkgdict["id"], pkg.id)
+            self.assertEqual(pkgdict["app"], pkg.app)
+            self.assertEqual(pkgdict["name"], pkg.name)
+            self.assertEqual(pkgdict["version"], pkg.version)
+            self.assertEqual(pkgdict["is_certified"], 'y' if pkg.is_certified else 'n')
+
+    def test_load_from(self):
+        """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""
+        editorial = Application(name='editorial')
+        editorial.full_clean()
+        editorial.save()
+        # TODO: capture warning message and verify
+        simplefilter('ignore')
+
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
+        the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
+        self.assertEqual(the_pkg.name, self.TEST_PKG)
 
 
 class UTLFileTestCase(TestCase):
@@ -235,8 +326,8 @@ class UTLFileTestCase(TestCase):
         self.assertEqual(macro_rcd.end, end)
         if not self.macro_file_text:
             with open(
-                    os.path.join(self.PKG_DIRECTORY,
-                                 self.MACROS_FILE), 'r') as macin:
+                os.path.join(self.PKG_DIRECTORY,
+                             self.MACROS_FILE), 'r') as macin:
                 self.macro_file_text = macin.read()
         self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
 
