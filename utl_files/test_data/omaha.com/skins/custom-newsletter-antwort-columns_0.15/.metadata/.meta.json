@@ -1,0 +1,255 @@
+{
+    "type": "app",
+    "name": "custom-newsletter-antwort-columns",
+    "app": "editorial",
+    "title": "Custom Newsletter Skin (Antwort Columns)",
+    "description": "<p>Based on the Antwort email \u00a0newsletter template\n(https:\/\/github.com\/InterNations\/antwort), with block regions for\nmultiple columns.<\/p>\n",
+    "version": "0.15",
+    "certified": false,
+    "dependencies": {
+        "custom_newsletter": "0.27"
+    },
+    "capabilities": ["custom_properties", "customization_inheritance"],
+    "blockTypes": [],
+    "breakpoints": [],
+    "properties": {
+        "newsletter_width": {
+            "type": "number",
+            "label": "",
+            "group": null,
+            "description": "",
+            "default": "680"
+        },
+        "view_in_browser": {
+            "type": "bool",
+            "label": "Display \"View in Browser\" message",
+            "group": null,
+            "description": "",
+            "default": ""
+        },
+        "content_padding": {
+            "type": "number",
+            "label": "Content Container Padding (in Pixels)",
+            "group": null,
+            "description": "",
+            "default": "30"
+        },
+        "custom_css": {
+            "type": "textarea",
+            "label": "Custom CSS",
+            "group": null,
+            "description": "",
+            "default": ""
+        },
+        "use_custom_header": {
+            "type": "bool",
+            "label": "Use Custom Header",
+            "group": "Custom Header",
+            "description": "",
+            "default": ""
+        },
+        "custom_header_block": {
+            "type": "bool",
+            "label": "Use Block for Custom Header",
+            "group": "Custom Header",
+            "description": "",
+            "default": ""
+        },
+        "header_in_content": {
+            "type": "bool",
+            "label": "Place Header in Content",
+            "group": "Header",
+            "description": "If true, the header is placed in the content's container above the content. Otherwise, it sits on top of the content container  on the outside.",
+            "default": ""
+        },
+        "header_color": {
+            "type": "color",
+            "label": "Header BG Color",
+            "group": "Header",
+            "description": "Default is no background color.",
+            "default": ""
+        },
+        "header_padding": {
+            "type": "number",
+            "label": "Header Container Padding (in Pixels))",
+            "group": "Header",
+            "description": "",
+            "default": "20"
+        },
+        "top_ad": {
+            "type": "bool",
+            "label": "Top Ad",
+            "group": "Ads",
+            "description": "Whether or not to include a top ad",
+            "default": ""
+        },
+        "top_ad_in_content": {
+            "type": "bool",
+            "label": "Top Ad In Content",
+            "group": "Ads",
+            "description": "Whether to place top ad in content",
+            "default": ""
+        },
+        "top_ad_pos": {
+            "type": "string",
+            "label": "Top Ad Position",
+            "group": "Ads",
+            "description": "Position to user for the Top ad",
+            "default": "Top3"
+        },
+        "top_ad_url": {
+            "type": "string",
+            "label": "Top Ad URL (if Custom)",
+            "group": "Ads",
+            "description": "If blank, will default to current url.",
+            "default": ""
+        },
+        "top_ad_dimensions": {
+            "type": "enumeration",
+            "label": "Top Ad Dimension (in Pixels)",
+            "group": "Ads",
+            "description": "",
+            "default": "640x80",
+            "enumeration": [{
+                "value": "728x90",
+                "description": "728x90"
+            }, {
+                "value": "640x80",
+                "description": "640x80"
+            }, {
+                "value": "640x30",
+                "description": "640x30"
+            }, {
+                "value": "300x250",
+                "description": "300x250"
+            }]
+        },
+        "newsletter_brand_url": {
+            "type": "string",
+            "label": "Brand URL",
+            "group": "Branding",
+            "description": "If left blank, custom site property \"url\" will be used instead.",
+            "default": ""
+        },
+        "teaser": {
+            "type": "string",
+            "label": "Teaser",
+            "group": "Branding",
+            "description": "Used to customize the text preview in Outlook, Gmail, and other email clients that use text previews.",
+            "default": ""
+        },
+        "bg_color": {
+            "type": "color",
+            "label": "Newsletter (Outside Area) BG Color",
+            "group": "BG Colors",
+            "description": "",
+            "default": "#ebebeb"
+        },
+        "container_bg_color": {
+            "type": "color",
+            "label": "Columns Container (Inside area) BG Color",
+            "group": "BG Colors",
+            "description": "",
+            "default": "#fff"
+        },
+        "use_custom_footer": {
+            "type": "bool",
+            "label": "Use Custom Footer",
+            "group": "Footer",
+            "description": "Use a custom footer",
+            "default": ""
+        },
+        "custom_footer_block": {
+            "type": "bool",
+            "label": "Use Blocks for Custom Footer",
+            "group": "Footer",
+            "description": "",
+            "default": ""
+        },
+        "footer_in_content": {
+            "type": "bool",
+            "label": "Place Footer in Content",
+            "group": "Footer",
+            "description": "If true, the footer is placed in the content's container above the content. Otherwise, it sits on the bottom of the content container on the outside.",
+            "default": "1"
+        },
+        "email_optout_text": {
+            "type": "string",
+            "label": "Email info and Opt-Out Text",
+            "group": "Footer",
+            "description": "Change this to something else or leave blank if you have text elsewhere. HTML is allowed",
+            "default": "This message was sent to %EmailAddress%. | %OptOutText%"
+        },
+        "gmail_promo_image_url": {
+            "type": "string",
+            "label": "Gmail Promo Image URL",
+            "group": "Branding (Gmail Experimental Grid-View Promotions Tab)",
+            "description": "",
+            "default": ""
+        },
+        "gmail_promo": {
+            "type": "bool",
+            "label": "Customize Gmail Grid-View Promotions Tab",
+            "group": "Branding (Gmail Experimental Grid-View Promotions Tab)",
+            "description": "",
+            "default": ""
+        },
+        "facebook_account": {
+            "type": "string",
+            "label": "Facebook Account",
+            "group": "Social",
+            "description": "Will default to facebook_account custom site property if not set.",
+            "default": ""
+        },
+        "twitter_account": {
+            "type": "string",
+            "label": "Twitter Account",
+            "group": "Social",
+            "description": "Will default to facebook_account custom site property if not set",
+            "default": ""
+        },
+        "custom_css_fullwidth1": {
+            "type": "textarea",
+            "label": "full-width-1",
+            "group": "Custom CSS (per region)",
+            "description": "Any custom CSS will be placed in the style attribute in the <td> element that contains the associated region.",
+            "default": ""
+        },
+        "custom_css_customfooter": {
+            "type": "textarea",
+            "label": "custom-footer (if Use Custom Footer and Use Blocks for Custom Footer are set to \"True\")",
+            "group": "Custom CSS (per region)",
+            "description": "Any custom CSS will be placed in the style attribute in the <div> element that contains the associated region.",
+            "default": ""
+        }
+    },
+    "propertyGroups": {
+        "Custom Header": {
+            "collapsed": false
+        },
+        "Header": {
+            "collapsed": false
+        },
+        "Ads": {
+            "collapsed": false
+        },
+        "Branding": {
+            "collapsed": false
+        },
+        "BG Colors": {
+            "collapsed": false
+        },
+        "Footer": {
+            "collapsed": false
+        },
+        "Branding (Gmail Experimental Grid-View Promotions Tab)": {
+            "collapsed": false
+        },
+        "Social": {
+            "collapsed": false
+        },
+        "Custom CSS (per region)": {
+            "collapsed": false
+        }
+    }
+}

@@ -164,25 +164,27 @@ class Package(models.Model):
                 "version": self.version,
                 "is_certified": "y" if self.is_certified else "n"}
 
-    @classmethod
-    def _get_props(cls, directory):
-        """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
-        # would be better to do this in PackageProp, but I need property values before creating
-        # Package object, and I can't create PackageProp objects until after
-        if not isinstance(directory, Path):
-            directory = Path(directory)
-        props = {}
-        # known config properties are:
-        # apparently required: block_types capabilities name title type version
-        # optional: app
-        with (directory / 'package/config.ini').open() as propin:
-            for line in propin:
-                key, value = line[:-1].split('=')
-                props[key] = value[1:-1]
+    # for now we're not using package/config.ini, but leaving this as I'm not sure we don't need
+    # it
+    # @classmethod
+    # def _get_props(cls, directory):
+        # """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
+        # # would be better to do this in PackageProp, but I need property values before creating
+        # # Package object, and I can't create PackageProp objects until after
+        # if not isinstance(directory, Path):
+            # directory = Path(directory)
+        # props = {}
+        # # known config properties are:
+        # # apparently required: block_types capabilities name title type version
+        # # optional: app
+        # with (directory / 'package/config.ini').open() as propin:
+            # for line in propin:
+                # key, value = line[:-1].split('=')
+                # props[key] = value[1:-1]
 
-        if "app" not in props:
-            props["app"] = "Global"
-        return props
+        # if "app" not in props:
+            # props["app"] = "Global"
+        # return props
 
     @classmethod
     def load_from(cls, directory: Path, site: TownnewsSite, pkg_type: str) -> "Package":
@@ -360,7 +362,8 @@ class UTLFile(models.Model):
         :param utl_files.models.Package package: A UTL package to which the file belongs.
 
         """
-        new_file = cls(file_path=str(filename.relative_to(Path(settings.TNPACKAGE_FILES_ROOT) / package.disk_directory)),
+        new_file = cls(file_path=str(filename.relative_to(Path(settings.TNPACKAGE_FILES_ROOT) /
+                                                          package.disk_directory)),
                        pkg=package)
         new_file.full_clean()
         new_file.save()

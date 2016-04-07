@@ -1,0 +1,19 @@
+<!-- The custom.header.inc.utl included here is from the Editorial app folder -->
+[%/* 
+  * Custom header file
+  * 
+  * Use this code in your Global skin folder in _custom-newsletter/custom.header.inc.utl to create a custom header or multiple ones. 
+  * For example, by routing custom header files based on their location (example below)
+  *
+  */
+  
+  /* An example on how to choose/differentiate custom headers:
+  
+  if cms.url | endswith('newsletter/outdoorsheadlines_bhonly_test/');
+      include 'custom.header.outdoorsheadlines.inc.utl';   
+  else if cms.url | endswith('newsletter/another/url/'); 
+      include 'custom.header.custom2.inc.utl';
+  end;
+ 
+  */
+%]

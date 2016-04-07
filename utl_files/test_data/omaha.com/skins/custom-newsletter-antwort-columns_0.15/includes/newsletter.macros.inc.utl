@@ -1,0 +1,89 @@
+[% /* settings file */ %] 
+[%       
+    custom = cms.url.custom;
+
+    /*  Custom Newsletter Width */
+    newsletter_width = custom.newsletter_width; 
+    /* Calculations for half and third-width columns */  
+    newsletter_half_width =  newsletter_width / 2.296; 
+    newsletter_third_width =  newsletter_width / 3.329; 
+
+    /* Current Width of Region  
+    
+       newsletter_region_width;
+       
+       This is a variable I found in another custom email block that was used.
+       Let's use it in index.html.utl and change it when the regions widths 
+       change (see above)
+    */
+
+    /* Set these so that they can be used in blocks, etc. */
+    newsletter_header_padding = custom.header_padding;
+    newsletter_content_padding = custom.content_padding;
+
+    /*  Custom Top Ad URL */
+    /* Will default to current URL if not set in template. */
+    if custom.top_ad_url != '';
+       custom_top_ad_url = custom.top_ad_url;
+    else;
+       custom_top_ad_url = cms.site.brand_url | lowercase | trim + cms.url.path;
+    end; 
+    
+    /* For Custom Newsletter Logos */
+    if custom.custom_image_url;
+        custom_image_url = custom.custom_image_url;
+    else;
+        custom_image_url = "#"; /* default newsletter logo */
+    end;
+    newsletter_logobgcolor = "inherit";
+    
+    /* Newsletter Business/Contact info */
+    /* Will default to site if not set in template. */
+    newsletter_business_name = cms.site.business_name;
+    newsletter_email = cms.site.email;
+    if custom.newsletter_title;
+        newsletter_title = custom.newsletter_title;
+    else;
+        newsletter_title = cms.site.title;
+    end;
+    if custom.newsletter_brand_url;
+        newsletter_brand_url = custom.newsletter_brand_url;
+    else;
+        newsletter_brand_url = cms.site.brand_url;
+    end;
+    /* This defaults anyway, no custom options available ATM */
+    newsletter_address = cms.site.address;
+    newsletter_city = cms.site.city;
+    newsletter_state = cms.site.state;
+    newsletter_postal_code = cms.site.postal_code;
+    newsletter_phone = cms.site.phone;
+    newsletter_country = cms.site.country;
+    newsletter_custom_name = cms.site.custom.name;
+    newsletter_icon_url = cms.site.icon_url;
+    newsletter_motto = cms.site.motto;
+    newsletter_domain = cms.system.domain;
+    
+    /* Social Media Accounts */
+    /* Will default to site if not set in template. */
+    twitter_url = 'https://twitter.com/';
+    if custom.twitter_account == null;
+        newsletter_twitter_account = twitter_url+cms.site.custom.twitter_account;
+    else; 
+        newsletter_twitter_account = twitter_url+custom.twitter_account; 
+    end;
+    /* Added to be compatible with custom-newsletter "Newsletter (custom)" template on Omaha.com - Robert Dundon */
+    nl_twitter_link = newsletter_twitter_account;
+    
+    fb_url = 'https://facebook.com/';
+    if custom.facebook_account == null; 
+        newsletter_facebook_account = fb_url+cms.site.custom.facebook_account; 
+    else;
+        newsletter_facebook_account = fb_url+custom.facebook_account;
+    end;   
+    /* Added to be compatible with custom-newsletter "Newsletter (custom)" template on Omaha.com - Robert Dundon */
+    nl_facebook_link = newsletter_facebook_account;
+    
+    newsletter_alerts_link = null;
+    newsletter_show_type_alert = true;
+    
+%]

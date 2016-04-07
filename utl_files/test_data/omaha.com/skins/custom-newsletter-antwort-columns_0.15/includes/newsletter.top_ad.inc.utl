@@ -1,0 +1,16 @@
+[% call cms.component.load('custom_newsletter');
+
+ad_options = ['ad_pos': custom.top_ad_pos,'ad_url': custom_top_ad_url];
+
+%]
+<table border="0" width="[%- newsletter_width; -%]" cellpadding="0" cellspacing="0" class="container" bgcolor="[%- custom.header_color -%]" style="background: [%- custom.header_color -%]; text-align: center; mso-table-lspace:0pt; mso-table-rspace:0pt;">
+        <tr>
+          <td style="width:[%- newsletter_width; -%]px; margin: 0; padding: 16px 0 16px 0;" width="[%- newsletter_width; -%]" class="container-padding">
+              <p style="margin: 0; text-align: center;">
+                  <a style="height: 80px;" height="80" href="[%- custom_newsletter_ad_url(ad_options); -%]">
+                      <img class="leaderboard-image" alt="[%- custom.top_ad_pos -%]" src="[%- custom_newsletter_image_ad_url(ad_options); -%]" border="0" alt="[%- custom.top_ad_pos -%] Ad" style="margin:5px 0 0 0;" />
+                  </a>
+                </p>
+          </td>
+        </tr>
+      </table>

@@ -1,0 +1,19 @@
+<!-- The custom.footer.content.inc.utl included here is from the Editorial app folder -->
+[%/* 
+  * Custom footer (content) file
+  * 
+  * Use this code in your Global skin folder in _custom-newsletter/custom.footer.content.inc.utl to create custom footer content or multiple ones. 
+  * For example, by routing custom footer content files based on their location (example below)
+  *
+  */
+  
+  /* An example on how to choose/differentiate custom headers:
+  
+  if cms.url | endswith('newsletter/outdoorsheadlines_bhonly_test/');
+      include 'custom.footer.content.outdoorsheadlines.inc.utl';   
+  else if cms.url | endswith('newsletter/another/url/'); 
+      include 'custom.footer.content.custom2.inc.utl';
+  end;
+ 
+  */
+%]

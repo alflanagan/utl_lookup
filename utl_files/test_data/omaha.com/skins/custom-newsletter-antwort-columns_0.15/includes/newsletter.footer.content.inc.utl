@@ -1,0 +1,29 @@
+[% include 'newsletter.macros.inc.utl'; %]
+<table>
+    <tr>
+            [% if (custom.use_custom_footer); %]
+            <td>
+                <!-- Custom Footer Content Begin -->
+                [% if (custom.custom_footer_block); %]
+                    <div style="[% custom.custom_css_customfooter; %]">
+                      [% cms.region('name':'custom-footer'); %]
+                    </div>
+                [% else; %]
+                    [% include '_custom-newsletter/custom.footer.content.inc.utl'; %]
+                [% end; %]
+            </td>
+            <!-- Custom Footer Content End -->
+        [% else;  %]
+            <!-- No Custom Footer Content Used -->
+            <td id="newsletter_info">
+                <a class="newsletter_domaintitle" href="http://[%- newsletter_domain -%]">[% newsletter_title %]</a> &copy;&nbsp; [%- cms.system.time('Y') + ' BH Media Group, Inc.' -%]<br />
+                [%- newsletter_business_name + ' - ' + newsletter_address + ', ' + newsletter_city + ', ' + newsletter_state -%]
+            </td>
+       [% end; %]
+     </tr>
+     <tr>
+         [% if (custom.email_optout_text != ''); %]
+             <td align="center" width="100%" style="width:100%; font-size:12px; padding:5px 0 5px 0; color:[% optout_text_color; %];">[%- custom.email_optout_text -%]</td>
+         [% end; %]
+     </tr>
+</table>

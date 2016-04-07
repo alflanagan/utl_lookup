@@ -82,6 +82,10 @@ class PackageTestCase(TransactionTestCase):
     TEST_PKG = "editorial-core-base"
     PKG_DIRECTORY = "utl_files/test_data/skin-editorial-core-base"
 
+    UNCERT_PKG = "custom-newsletter-antwort-columns"
+    UNCERT_SITE = "omaha.com"
+    UNCERT_DIR = "utl_files/test_data/omaha.com/skins/custom-newsletter-antwort-columns_0.15"
+
     def setUp(self):
         """Create a package object for tests."""
         self.test_app = Application(name=self.TEST_APP)
@@ -229,7 +233,7 @@ class PackageTestCase(TransactionTestCase):
             self.assertEqual(pkgdict["version"], pkg.version)
             self.assertEqual(pkgdict["is_certified"], 'y' if pkg.is_certified else 'n')
 
-    def test_load_from(self):
+    def test_load_from_certified(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""
         editorial = Application(name='editorial')
         editorial.full_clean()
@@ -240,6 +244,27 @@ class PackageTestCase(TransactionTestCase):
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
         the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
         self.assertEqual(the_pkg.name, self.TEST_PKG)
+        self.assertRaises(ValueError, Package.load_from, full_load_path, self.test_site,
+                          'NoSuchType')
+
+    def test_load_from_non_cert(self):
+        """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)` when package
+        is non-certified, loads meta info.
+
+        """
+        try:
+            editorial = Application.objects.get(name='editorial')
+        except Application.DoesNotExist:
+            editorial = Application(name='editorial')
+            editorial.full_clean()
+            editorial.save()
+
+        # TODO: capture warning message and verify
+        simplefilter('ignore')
+
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
+        the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
+        self.assertEqual(the_pkg.name, self.UNCERT_PKG)
 
 
 class UTLFileTestCase(TestCase):
