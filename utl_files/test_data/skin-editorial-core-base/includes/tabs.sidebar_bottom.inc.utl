@@ -1,0 +1,10 @@
+[%  
+/* get number of tabs from url properties */
+tabs_sidebar_bottom = 0;
+if cms.url('/').custom.tabs_sidebar_bottom_default; tabs_sidebar_bottom = cms.url('/').custom.tabs_sidebar_bottom_default; end;
+if this.url.custom.tabs_sidebar_bottom; tabs_sidebar_bottom = this.url.custom.tabs_sidebar_bottom; end;
+
+/* create tabs */
+if tabs_sidebar_bottom > 0 %]
+	[% core_base_library_tabbed_regions('id':'sidebar_bottom','total_tabs':tabs_sidebar_bottom) %]
+[% end %]

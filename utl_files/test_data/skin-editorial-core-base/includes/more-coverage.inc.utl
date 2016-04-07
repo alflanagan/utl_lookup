@@ -1,0 +1,56 @@
+[% if this.asset.items('relationship' : 'sibling') %]
+    <div id="more-coverage-list">
+        <h3 class="more-keywords">More Coverage</h3>
+    [% siblings = this.asset.items('relationship' : 'sibling') %]
+    [% if siblings | length > 0 %]
+      <ul class="bull-list">
+      [% foreach siblings as sibling;
+        if sibling.type == 'link' %]
+         <li><a href="[%- if sibling.url | startswith("http"); echo sibling.url; else; echo "http://" + sibling.url; end; -%]">[% sibling.title %]</a></li>
+        [% else %]
+         <li><a href="[% sibling.url %]">[% sibling.title %]</a></li>
+        [% end %]
+      [% end %]
+      </ul>
+    [% end %]
+    </div>
+[% end %]
+
+[% if cms.site.custom.more_about_number; keyNum = cms.site.custom.more_about_number; else; keyNum = 3; end;
+   if keyNum != 'none';
+   foreach this.asset.tags('keyword') as keywords %]
+    [% if keywords | startswith('#') != 'true';
+        if keywords | iterpos == keyNum;
+            break;
+        else;
+        keywords_relArray = cms.assets('limit':5,'sort':['start_time':'desc'],'field.tag_keyword':'"'+keywords+'"');
+        foreach keywords_relArray as keyword_related %]
+            [% if (this.asset.uuid == keyword_related.uuid);
+                if keywords_relArray | length > 1;
+                    if keyword_related | iterfirst %]
+                        <h3 class="more-keywords">More about <em><span class="blox-icon-tag-link-story-container"><span class="ui-icon ui-icon-tag blox-icon-tag-link-story"></span></span><a class="blox-tag-related-keywords" rel="tag" href="/topic/?q=&quot;[% keywords %]&quot;&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=desc&amp;s=start_time">[% keywords | strip_tags | html | titlecase %]</a></em></h3>
+                        <ul class="bull-list">
+                    [% end;
+                    if keyword_related | iterlast %]
+                        </ul>
+                    [% end;
+                end;
+            else;
+                if keyword_related | iterfirst %]
+                    <h3 class="more-keywords">More about <em><span class="blox-icon-tag-link-story-container"><span class="ui-icon ui-icon-tag blox-icon-tag-link-story"></span></span><a class="blox-tag-related-keywords" rel="tag" href="/topic/?q=&quot;[% keywords %]&quot;&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=desc&amp;s=start_time">[% keywords | strip_tags | html | titlecase %]</a></em></h3>
+                    <ul class="bull-list">
+                [% end %]
+				[% if keyword_related.type == 'image' %]
+					<li class="listItemImagePreview"><a href="[% keyword_related.url %]" title="[% keyword_related.title | html %]"><img src="[% core_base_library_assetThumb('asset':keyword_related).url %]" alt="[% keyword_related.title | strip_tags %]"> [% keyword_related.title | strip_tags %]</a></li>
+				[% else %]
+					<li><strong>[% keyword_related.type | uppercase | html %]</strong>: <a href="[% keyword_related.url %]" title="[% keyword_related.title | html %]">[% keyword_related.title | strip_tags %]</a></li>
+				[% end %]
+                [% if keyword_related | iterlast %]
+                    </ul>
+                [% end;
+            end;   
+        end;
+          end; 
+    end;
+    end;
+end %]

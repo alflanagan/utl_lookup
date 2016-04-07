@@ -1,0 +1,168 @@
+[% if cms.url.path | contains('online_features') %]
+
+<div id="online-features-bottom-menu">
+    <h6 class="fitness"><a class="level-one" href="/online_features/health_and_fitness_front/">Fitness</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/health_and_fitness_front/exercise_videos/">Exercise Videos</a>
+            </li>
+            <li>
+                <a href="/online_features/fashion_beauty_fitness/">Fashion Beauty &amp; Fitness</a>
+            </li>
+            <li>
+                <a href="/online_features/health_and_wellness/">Health &amp; Wellness</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="travel"><a class="level-one" href="/online_features/travel_front/">Travel</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/travel_front/flight_tracking/">Flight Tracking</a>
+            </li>
+            <li>
+                <a href="/online_features/travel/">Travel</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="auto"><a class="level-one" href="/online_features/automotive_front/">Automotive</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/automotive/">Automotive</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="games"><a class="level-one" href="/online_features/fun_and_games_front/">Fun &amp; Games</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/fun_and_games_front/sudoku/">Sudoku</a>
+            </li>
+            <li>
+                <a href="/online_features/fun_and_games_front/crossword/">Crossword</a>
+            </li>
+            <li>
+                <a href="/online_features/fun_and_games_front/quotes/">Quotes</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="home"><a class="level-one" href="/online_features/around_the_home_front/">Around The Home</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/home_decorating/">Home Decorating</a>
+            </li>
+            <li>
+                <a href="/online_features/green_living/">Green Living</a>
+            </li>
+            <li>
+                <a href="/online_features/lawn_and_garden/">Lawn &amp; Garden</a>
+            </li>
+            <li>
+                <a href="/online_features/kitchen_bed_bath/">Kitchen Bed &amp; Bath</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="real_estate"><a class="level-one" href="/online_features/real_estate_front/">Real Estate</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/home_improvement/">Home Improvement</a>
+            </li>
+            <li>
+                <a href="/online_features/real_estate/">Real Estate</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="finance"><a class="level-one" href="/online_features/business_and_finance_front/">Business &amp; Finance</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/business_and_finance_front/jobs/">Jobs</a>
+            </li>
+            <li>
+                <a href="/online_features/business_and_careers/">Business &amp; Careers</a>
+            </li>
+            <li>
+                <a href="/online_features/money_and_finance/">Money &amp; Finance</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="living"><a class="level-one" href="/online_features/living_front/">Living</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/bridal/">Bridal</a>
+            </li>
+            <li>
+                <a href="/online_features/community_cares/">Community Cares</a>
+            </li>
+            <li>
+                <a href="/online_features/education/">Education</a>
+            </li>
+            <li>
+                <a href="/online_features/family_living/">Family Living</a>
+            </li>
+            <li>
+                <a href="/online_features/senior_living/">Senior Living</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="entertainment"><a class="level-one" href="/online_features/food_and_entertaining_front/">Food &amp; Entertaining</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/food_recipes_entertaining/">Food Recipes &amp; Entertaining</a>
+            </li>
+            <li>
+                <a href="/online_features/gift_ideas/">Gift Ideas</a>
+            </li>
+            <li>
+                <a href="/online_features/seasonal/">Seasonal</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="pets"><a class="level-one" href="/online_features/pets/">Pets</a></h6>
+    <div class="clear"></div>
+
+    <h6 class="tech"><a class="level-one" href="/online_features/tech_talk_and_innovation">Technology</a></h6>
+    <div class="clear"></div>
+
+    <h6 class="news"><a class="level-one" href="/online_features/news_front/">News</a></h6>
+    <div>
+        <ul>
+            <li>
+                <a href="/online_features/hot_topics/">Hot Topics</a>
+            </li>
+        </ul>
+    </div>
+    <div class="clear"></div>
+
+    <h6 class="howto"><a class="level-one" href="/online_features/how_to/">How To</a></h6>
+    <div class="clear"></div>
+
+    <h6 class="espanol"><a class="level-one" href="/online_features/espanol/">Espanol</a></h6>
+    <div class="clear"></div>
+</div>
+
+[% end %]

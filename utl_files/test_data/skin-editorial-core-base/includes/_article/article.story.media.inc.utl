@@ -1,0 +1,76 @@
+[%-
+    if serviceRestricted && !use_tracker;
+        sServiceClass = ' service-members p402_hide';
+    else if use_tracker;
+        sServiceClass = ' managed-service';
+    end;  %]
+<div id="blox-story-media" class="p402_hide [% if (sPresentation != 'long_form' || use_tracker) then sServiceClass %]" [% if (servicerestricted && !use_tracker && sPresentation != 'long_form') then ' style="display:none"'; %]>
+[%- /**
+     * @desc determined at the top of this file by a check against all images excluding masthead presentation & showcase type
+     */
+    if hasImages; %]
+        <div class="story-media-item [% sServiceClass %]">
+            [% include 'article.photos.inc.utl'; %]
+        </div>
+    [% end;
+
+    if hasAssets || hasQuotes || hasMiddleTables || hasMainContent || hasBusinesses || hasEvents || hasBiz || sPresentation == 'long_form'; %]
+        <div class="story-media-item [% sServiceClass %]">
+            [% include 'article.related.inc.utl'; %]
+        </div>
+
+        [% if hasImages || hasQuotes || pagination && mode != 'print';
+            hasInstoryInMediaBox = true; %]
+            <div class="advertisement">
+                [% include '_ads/in-media-box.inc.utl'; %]
+            </div>
+        [% end;
+    elseif pagination;
+        hasInstoryInMediaBox = true; %]
+        <div class="advertisement">
+            [% include '_ads/in-media-box.inc.utl'; %]
+        </div>
+   [% end;
+
+    /* Adding quote. */ %]
+    <div class="story-media-item [% sServiceClass %]">
+        [% foreach rContentQuote as quote %]
+            <dl class="blox-related blox-related-[% quote.type %] [% quote.title | lowercase | replace(' ','_') %] [% core_base_library_iterPosClasses(quote) %] quote service-members">
+                <dt>[% quote.title | html %]</dt>
+                    <dd>
+                        [%
+                            foreach quote.content as content;
+                                echo content | autolink;
+                            end;
+                        %]
+                    </dd>
+                <div class="clear"></div>
+            </dl>
+        [% end; %]
+    </div>
+
+    <div class="story-media-item [% sServiceClass %]">
+        [% call cms.component.load("core_external_map");
+        if this.asset.latitude && this.asset.longitude || this.asset.address && this.asset.city %]
+            <h3>Location</h3>
+            [%- core_external_map_get_map(
+                    'points': [
+                                [
+                                  this.asset.latitude,
+                                  this.asset.longitude,
+                                  this.asset.address,
+                                  this.asset.city,
+                                  this.asset.state
+                                 ]
+                              ],
+                    'id': 'story-location',
+                    'height': '150px',
+                    'width': '300px',
+                    'infoWindow': false
+                );
+            if this.asset.address && this.asset.city;
+                this.asset.address; echo ' '; this.asset.city; echo ' '; this.asset.state;
+            end;
+        end %]
+    </div>
+</div>[% /* [END] blox-story-media */

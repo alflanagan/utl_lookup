@@ -1,0 +1,2 @@
+[% if !cms.component.load('core_base_navigation'); echo '<!--Failed to load core_base_navigation component.-->'; end; 
+core_base_nav_buildFooterMenuBoard(this.nav.tree) %]

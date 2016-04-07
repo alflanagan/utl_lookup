@@ -1,0 +1,88 @@
+[%- 
+call cms.component.load('core_base_editorial');
+call cms.component.load('core_base_library');
+
+	/* Subscription: Gather subscription/metering/surveys information */
+	aServiceInfo = core_base_library_getServiceInfo; 
+	
+include 'header.inc.utl' %]
+
+    [%    if left_col_on == true %]
+
+    <div id="blox-super-left" class="grid_[% grid_set_blox_left %]">
+        [% include 'sidebar-left.inc.utl' %]
+    </div>
+    [% end %]
+    
+    <div id="blox-left-col" class="grid_[% grid_set_blox_med_span %][% if cms.site.custom.alpha_omega == 'true' %] alpha[% end %]">
+    [% include 'site-option-one-index.inc.utl' %]
+    [% core_base_library_breadcrumbs %]
+    [% if cms.site.custom.assets_region == 'true'; cms.region('name':'center-one-index-and-assets'); end; %]
+        <div id="blox-story" class="blox-content">
+
+            <[% asset_title_tag %] id="blox-asset-title">
+                [% if asset.custom.custom_hide_headline == 'true' || asset.custom.hide_headline == 'true'; continue; else %]
+                    <span class="blox-headline entry-title">[% this.asset.title %]</span>
+                [% end %]
+            </[% asset_title_tag %]>
+            [% include '_collection/collection-links.inc.utl'; %] 
+            [% if this_asset.subheadline %]<p class="sub-headline">[% this_asset.subheadline | tidy %]</p>[% end %]
+
+
+            <p class="byline">[% if this.asset.byline; this.asset.byline +' | '; end; %] Posted: [% this.asset.starttime('l, F j, Y g:i a') %]</p>
+            <p>[% this.asset.description %]</p>
+     [%	/* Subscription: service notice */
+		core_base_library_serviceGetNotice; 
+		
+		/* Subscription: premium content */ %]
+		<div class="p402_premium p402_hide [% aServiceInfo['sServiceClass'] %]">
+            <object type="application/x-shockwave-flash" data="[% this.asset.resource_url %]" height="[% this.asset.height %]" width="[% this.asset.width %]">
+                <param name="movie" value="[% this.asset.resource_url %]" />
+                <param name="quality" value="high" />
+                <param name="wmode" value="transparent" />
+                <param name="allowScriptAccess" value="always" />
+                <param name="flashVars" value="[% this.block.custom.flashvars %]" />
+                
+                <p><a href="http://www.adobe.com/go/getflashplayer">Download Flash Player</a></p>
+            </object>
+		</div> 
+		<div class="clear"></div>
+	[%	/* Subscription: Decrypt and run service member scripts */
+		core_base_library_serviceDecrypt;
+		
+		/* Subscription: Show/hide service memeber content */ 
+		core_base_library_manageServiceContentScript('aUrlServices':aServiceInfo['aServices']);
+	
+		/* Subscription: Google Survey */
+		if aServiceInfo['bGoogleSurvey'] = true;
+			core_base_editorial_googleSurveyAgentFailScript;
+			core_base_editorial_googleSurveyCall;
+		end;	           
+		
+		/* parent business */
+		if cms.asset.items('relationship' : 'parent', 'type' : 'business')|length > 0 %][% core_base_library_business_logo(this.asset,'small'); %] [% end %]
+        [% fb_like_location = 'bottom';
+        include '_article/article.social_share_horizontal.inc.utl';
+        if cms.site.custom.social_share_style == 'vertical' && cms.site.custom.facebook_app_id;
+            core_base_library_assetLike(
+                'coupleWithFacebook':true,
+                'ajaxSubmit':true,
+                'showCount':false,
+                'id':fb_like_location);
+        end; %]
+            [%
+            /* ::: commenting ::::::::::::::::::::::::::::::: */
+            blox_comments = core_base_library_getCustomProperty("blox_comments", "string", "false");
+                if blox_comments != 'false' && blox_comments != 'other' && mode != 'print';
+                    include 'article.comments.inc.utl';
+                end;
+            /* ::::::::::::::::::::::::::: end commenting ::: */
+            %]
+        </div>
+    </div>
+
+<div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms.site.custom.alpha_omega == 'true' %] omega[% end %]">
+    [% include 'sidebar.inc.utl' %]
+</div>
+
+[% include 'footer.inc.utl' %]

@@ -1,0 +1,45 @@
+[%-
+call cms.component.load('core_commenting');
+call cms.component.load('core_commenting_extension_social');
+
+/* VARIABLES */
+bloxComments = core_base_library_getCustomProperty('blox_comments', 'value', 'blox');
+anonymousCommenting = core_base_library_getCustomProperty('blox_comments_anonymous_allow', 'boolean', false);
+
+/* ANONYMOUS COMMENTING */
+
+if anonymousCommenting || cms.request.param('ninja') == 'on' && cms.request.param('enableAnonymous') == 'true';
+    call cms.component.load('core_commenting_extension_anonymous');
+end;
+
+if bloxComments == 'blox' || bloxComments == 'other';
+    core_commenting(
+		'asset':cms.asset, 
+		'welcome_message_unrecognized':'Welcome to the discussion.', 
+		'showRules':true);
+                
+comment_descriptor_plural = 'comments';
+if cms.url('path':'/').custom.comment_descriptor_plural; comment_descriptor_plural = cms.url('path':'/').custom.comment_descriptor_plural; end;
+if cms.url.custom.comment_descriptor_plural; comment_descriptor_plural = cms.url.custom.comment_descriptor_plural; end;
+
+use_tracker = core_base_library_getCustomProperty("use_tracker_service", "boolean", false);
+url_services = core_base_library_subscriptionServices;
+
+-%]
+<ul class="story-tools-sprite service-members[% if use_tracker && url_services | length != 0; echo " managed-service hide"; end; %]">
+    <li class="print-button-sprite">
+        <span class="float-left">Print [% comment_descriptor_plural %]</span>
+        <a href="[% asset.url %]?mode=print-comments" rel="nofollow external"><span class="icon"></span></a>
+    </li>
+</ul>
+[%-
+
+else if bloxComments == 'facebook' && cms.site.custom.facebook_app_id;
+    call cms.component.load('core_commenting_extension_3rd_party'); 
+    core_commenting_extension_3rdPartyFacebook;
+else if bloxComments == 'all';
+    call cms.component.load('core_commenting_extension_3rd_party');
+    core_commenting_extension_3rdPartyTabs;
+end;
+
+-%]

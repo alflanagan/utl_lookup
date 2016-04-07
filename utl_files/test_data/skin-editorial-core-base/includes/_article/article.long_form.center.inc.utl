@@ -1,0 +1,7 @@
+[%- /** long form presentation content advertisement */
+    if (sPresentation == 'long_form')
+    &&  ((p| iterpos) + 1) == iContentMiddle %]
+        <div class="long-form-center" style="text-align: center;">
+            [% core_advertising_adPosition('in-story-long-form','300x50'); %]
+        </div>
+[%- end; %]

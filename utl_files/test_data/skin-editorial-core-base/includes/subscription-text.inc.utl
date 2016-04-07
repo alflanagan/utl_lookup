@@ -1,0 +1,27 @@
+<h3 class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix">
+	<span class="ui-icon ui-icon-locked float-left"></span>
+	[% site_business_name %] Print/Online Subscribers Only!
+</h3>
+	<p class="notice">This content is available to Online Subscribers only.</p>
+
+	<ul class="online-package-options service-options unauthorized-user">
+	<li><span class="ui-icon ui-icon-help float-right subscribe-help" title="Help - An Online Subscriber is a registered user who has also signed up for a site service found in the list below."></span><span class="ui-icon ui-icon-person float-left"></span>
+		<p>Already have an active Online Subscriber account?</p>
+		<a class="login-button" href="[%- cms.url('app': 'user') | html -%]login/?referer_url=[%- cms.url | urlencode | html -%]">Login now</a>
+	</li>
+	</ul>
+	<script type="text/javascript">
+		$("a.login-button").button();
+	</script>
+
+	<ul class="online-package-options service-options authorized-user" style="display:none;">
+		<li><span class="ui-icon ui-icon-help float-right subscribe-help" title="Help - An Online Subscriber is a registered user who has also signed up for a site service found in the list below."></span><span class="ui-icon ui-icon-alert float-left"></span>
+		You are logged in, but require a service package below to view this page's content.
+		</li>
+	</ul>
+
+	<p class="notice">
+	Want to become an Online Subscriber?
+	<br />
+	Choose one of the following services:<a name="services-area"></a>
+	</p>

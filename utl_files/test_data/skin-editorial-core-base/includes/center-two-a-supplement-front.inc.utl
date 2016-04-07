@@ -1,0 +1,1 @@
+[% if cms.url.path == '/'; include 'section-slider.inc.utl'; end; %]

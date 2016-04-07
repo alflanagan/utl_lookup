@@ -1,0 +1,49 @@
+[%-
+/**
+ * article.tools-sprite.inc.utl
+ * Discuss, share, print, font-size bottom of asset
+ */
+enable_commenting = true;
+foreach cms.site.custom.comments_exclude_sections_list | splittrim(',') as excluded;
+    if excluded == cms.url.path;
+        enable_commenting = false;
+        break;
+    end;
+end %]
+<ul class="story-tools-sprite service-members">
+[%-
+/**
+ * Filters out sections according to the "comments_exclude_sections_list variable" in site settings
+ */
+if enable_commenting && core_base_library_getCustomProperty("blox_comments", "string", "false") != 'false' && !this_asset.no_comments; %]
+    <li class="discuss-button-sprite">
+        <a class="button" href="[%this.url%][% if core_base_library_getCustomProperty("blox_comments", "string", "false") == 'other' %]?mode=comments[% else %]#user-comment-area[% end %]">
+            Discuss
+        </a>
+    </li>
+[%-
+end;
+/* We no longer like this */
+/*
+    <li class="text-button-sprite">
+        <span>Font Size:</span>
+        <a class="text-down decrease-font-size" href="javascript:void(0);">-</a>
+        <a class="text-up increase-font-size" href="javascript:void(0);">+</a>
+    </li>
+*/ %]    
+    <li class="print-button-sprite">
+        <span class="float-left">Print</span>
+        <a href="[% this.asset.url %]?mode=print" rel="nofollow external">
+            <span class="icon"></span>
+        </a>
+    </li>
+    [% if ((cms.site.custom.twitter_count_exclude ||
+            cms.site.custom.facebook_count_exclude ||
+            cms.site.custom.google_plus_one_count_exclude)
+           && !cms.site.custom.addthis_count_exclude); %]
+               <li class="share-button-sprite share-widget">
+                   [% core_base_library_assetTools('linkID':'addthis-widget-low','extraText':'Share') %]
+               </li>
+    [% end %]
+    <li class="clear"></li>
+</ul>

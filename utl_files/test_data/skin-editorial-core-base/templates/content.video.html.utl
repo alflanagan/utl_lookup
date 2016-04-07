@@ -1,0 +1,275 @@
+[%-
+mode = cms.request.param('mode') | trim;
+/* touch 5 */
+if mode == 'jqm' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/content.video.inc.utl';
+
+/* standard display */
+else;
+	call cms.component.load('core_base_editorial');
+	call cms.component.load('core_base_library');
+	call cms.component.load('core_external_jquery'); 
+	call cms.component.load("core_video_player"); 
+	
+	/* Subscription: Gather subscription/metering/surveys information */
+	aServiceInfo = core_base_library_getServiceInfo; 
+	
+	/* get keyword tags */
+    aKeywords = cms.asset.tags('keyword');
+
+    /* get sections tags */
+    aSections = cms.asset.tags('sections');
+
+	/* collection video */
+	if mode == 'collection_video';
+        include 'header-spotless.inc.utl' %]
+        <div id="collection-video-player">
+ 
+ [%	/* standard video */
+ 	else;
+		include 'header.inc.utl';
+        
+		if left_col_on == true %]
+        
+		<div id="blox-left-sidebar" class="grid_[% grid_set_blox_left %]">
+            [% include 'sidebar-left.inc.utl' %]
+        </div>
+     [%	end %]
+        
+		<div id="blox-left-col" class="grid_[% grid_set_blox_med_span %][% if cms.site.custom.alpha_omega == 'true' %] alpha[% end %]">
+        [% include 'site-option-one-index.inc.utl' %]    
+        
+		<div id="blox-story" class="blox-content">
+        [%	/* bread crumbs */
+			core_base_library_breadcrumbs;
+        	
+			/* asset region */
+			if cms.site.custom.assets_region == 'true'; 
+				cms.region('name':'center-one-index-and-assets'); 
+			end; 
+			
+			/* title */ %]
+            <[% asset_title_tag %] id="blox-asset-title">
+                [% if cms.asset.custom.custom_hide_headline == 'true' || cms.asset.custom.hide_headline == 'true'; continue; else %]
+                    <span class="blox-headline entry-title">[% cms.asset.title %]</span>
+                [% end %]
+            </[% asset_title_tag %]>
+            [% include '_collection/collection-links.inc.utl'; %] 
+            
+			[%	/* subhead */
+				if cms.asset.subheadline %]
+				<p class="sub-headline">[% cms.asset.subheadline | tidy %]</p>
+			[%	end 
+			
+				/* byline */ %]
+   				<p class="byline">
+					[% if cms.asset.byline; cms.asset.byline +' | '; end; %] Posted: [% cms.asset.starttime('l, F j, Y g:i a') %]
+				</p>
+    [% end /* collection/standard video conditional */ %]
+ 
+		<script type="text/javascript">
+			[% if cms.asset.preview[playerWidth];
+				previewWidth = playerWidth;
+			else;
+				previewWidth = 300;
+			end; %]
+		
+			var playerWidth = [% grid_set_blox_med_span_px %];
+			var playerHeight = ((playerWidth/16)*9)+32;
+			[%- if cms.asset.preview[previewWidth] -%]
+				var previewHeight = [% cms.asset.preview.height %];
+				var hCenter =(playerWidth-previewWidth)/2;
+				var vCenter =(playerHeight-previewHeight)/2;
+			[% else -%]
+				var hCenter = playerWidth/2;
+				var vCenter = playerHeight/2;
+			[%- end -%]
+		</script>
+
+[%-		/* Subscription: service notice */
+		core_base_library_serviceGetNotice; 
+		
+		/* Subscription: premium content */ %]
+		<div class="p402_premium">
+			<div class="p402_hide [% aServiceInfo['sServiceClass'] %]">
+			[%	core_video_player(
+					'assets':[cms.asset],
+					'style':'hd',
+					'id':'video-asset-player',
+					'mode':'embedded',
+					'player_width': grid_set_blox_med_span_px); -%]
+				<div id="video-description">
+                                [% if cms.asset.content | length;
+                                    foreach cms.asset.content as p;
+                                        echo p;
+                                    end;
+                                else;
+                                    echo cms.asset.description;
+                                end;
+                                -%]
+                                </div>
+			</div>		
+		</div>	
+	[%	/* Subscription: Google Survey */
+		if aServiceInfo['bGoogleSurvey'] = true;
+			core_base_editorial_googleSurveyAgentFailScript;
+			core_base_editorial_googleSurveyCall;
+		end;
+		
+		/* Subscription: Decrypt and run service member scripts */
+		core_base_library_serviceDecrypt;
+		
+		/* Subscription: Show/hide service memeber content */ 
+		core_base_library_manageServiceContentScript('aUrlServices':aServiceInfo['aServices']);
+	
+		/* related business */
+		if cms.asset.items('relationship' : 'parent', 'type' : 'business')|length > 0; 
+			core_base_library_business_logo(cms.asset,'small');
+		end;
+		
+		/* keywords */
+     	if aKeywords;
+        	foreach aKeywords as keyword_tag;
+            if keyword_tag | startswith('#') != 'true';
+                if keyword_tag | iterpos == 4;
+                    break;
+                else;
+                    kVideos = cms.assets('field.tag_keyword':keyword_tag,'field.type':'video', 'limit': 15);
+                    if kVideos | length > 1 -%]
+                        [% foreach kVideos as kVideo;
+                            if kVideo.uuid == cms.asset.uuid;
+                                if kVideo | iterfirst; %]
+                                    <h6 class="tn-more-images">[% (kVideos | length) - 1 %] MORE VIDEO[% if ((kVideos | length) - 1) > 1 %]S[% end %] TAGGED WITH "[% keyword_tag | uppercase %]"</h6>
+                                    <ul id="blox-story-photos-keywords">
+                                [% end;
+                                
+                                if kVideo | iterlast %]
+                                    </ul><div class="clear"></div>
+                                [% else;
+                                    continue;
+                                end;
+                            else;
+                                if kVideo | iterfirst; %]
+                                    <h6 class="tn-more-images">[% (kVideos | length) - 1 %] MORE VIDEO[% if ((kVideos | length) - 1) > 1 %]S[% end %] TAGGED WITH "[% keyword_tag | uppercase %]"</h6>
+                                    <ul id="blox-story-photos-keywords">
+                                [% end;
+                                
+                                preview = kVideo.preview([100]);
+                                if preview.width > preview.height;
+                                    orientation = 'horizontal';
+                                else;
+                                    orientation = 'vertical';
+                                end;
+                                if preview %]
+                                    <li><a href="[% kVideo.url %]"><img class="[%- orientation -%]" alt="[% kVideo.title | html %]" src="[% preview.url %]" /></a></li>
+                                [% end;
+                                
+                                if kVideo | iterlast %]
+                                    </ul><div class="clear"></div>
+                                [% end;
+                            end;
+                        end;
+                    end;
+                end;
+            end;
+        end;
+    end;
+    
+    /* section tags */
+	if aSections;
+    	foreach aSections as section_tag;
+            if section_tag | iterpos == 4;
+                break;
+            else;
+                sVideos = cms.assets('field.tag_section':section_tag,'field.type':'video', 'limit': 15);
+                if sVideos | length > 1 -%]
+                    [% foreach sVideos as sVideo;
+                        if sVideo.uuid == cms.asset.uuid;
+                            if sVideo | iterfirst; %]
+                                <h6 class="tn-more-images">[% (sVideos | length) - 1 %] MORE VIDEO[% if ((sVideos | length) - 1) > 1 %]S[% end %] FROM THE "[% section_tag | uppercase %]" SECTION</h6>
+                                <ul id="blox-story-photos-keywords">
+                            [% end;
+                            
+                            if sVideo | iterlast %]
+                                </ul><div class="clear"></div>
+                            [% else;
+                                continue;
+                            end;
+                        else;
+                            if sVideo | iterfirst; %]
+                                <h6 class="tn-more-images">[% (sVideos | length) - 1 %] MORE IMAGE[% if ((sVideos | length) - 1) > 1 %]S[% end %] FROM THE "[% section_tag | uppercase %]" SECTION</h6>
+                                <ul id="blox-story-photos-keywords">
+                            [% end;
+                            
+                            preview = sVideo.preview([100]);
+                            if preview.width > preview.height;
+                                orientation = 'horizontal';
+                            else;
+                                orientation = 'vertical';
+                            end;
+                            
+                            if preview %]
+                                <li><a href="[% sVideo.url %]"><img class="[%- orientation -%]" alt="[% sVideo.title | html %]" src="[% preview.url %]" /></a></li>
+                            [% end;
+                            
+                            if sVideo | iterlast %]
+                                </ul><div class="clear"></div>
+                            [% end;
+                        end;
+                    end;
+                end;
+            end;
+        end;
+    end %]
+
+
+        <div id="blox-story-text">
+            
+            [% if buy_video == true %]<a id="video-buy" class="more moz-border" href="">Buy this video</a>[% end %]
+
+[%    /* multimedia button */
+    mode = cms.request.param('mode') | trim;
+    mode = mode | lowercase;
+    
+    if mode == 'multimedia' %]
+		<a class="backtrack more-grey moz-border pad-top pad-bottom" href="[%- cms.site.custom.multimedia_url -%]?mode=multimedia">See more videos</a>
+	<div class="clear"></div>
+[%	end %]
+        
+            
+        </div>
+        <div class="clear"></div>
+        [% fb_like_location = 'bottom';
+        include '_article/article.social_share_horizontal.inc.utl';
+        if cms.site.custom.social_share_style == 'vertical' && cms.site.custom.facebook_app_id;
+            core_base_library_assetLike(
+                'coupleWithFacebook':true,
+                'ajaxSubmit':true,
+                'showCount':false,
+                'id':fb_like_location);
+        end;
+
+ 
+            /* commenting */
+            blox_comments = core_base_library_getCustomProperty("blox_comments", "string", "false");
+			if blox_comments != 'false' 
+				&& blox_comments != 'other' 
+				&& mode != 'print';
+				include 'article.comments.inc.utl';
+            end;
+			
+            /* collection footer */
+			if mode == 'collection_video';
+                include 'footer-spotless.inc.utl' %]
+                </div>
+		[%	else %]
+				<div class="clear"></div>
+					</div>
+				</div>
+					
+				<div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms.site.custom.alpha_omega == 'true' %] omega[% end %]">
+					[% include 'sidebar.inc.utl' %]
+				</div>
+		[%	include 'footer.inc.utl';
+			end; /* end collection stripdown */ 
+end;

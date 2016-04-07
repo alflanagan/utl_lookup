@@ -1,0 +1,363 @@
+[%     include 'header.inc.utl';
+       include 'index-custom-full-width-top.inc.utl';
+ 
+if !cms.component.load("core_services_manager"); echo "<!-- error loading Services Component -->"; end;
+core_services_manager_tracker_resurrector;
+
+    cms_url_path = cms.url.path;
+    cms_site_custom_alpha_omega = cms.site.custom.alpha_omega;
+    
+    /* prepare variables for blox_grid_single_column */
+    blox_grid_single_column = ',' + cms.site.custom.blox_grid_single_column + ',';
+    section_modified = cms.url.path | regex('/^\//', '') | regex( '/\/$/', '' );
+    section_modified = ',' + section_modified + ',';
+    if blox_grid_single_column | contains(section_modified);
+        single_column = true; 
+    else; 
+        single_column = false; 
+    end;    
+    /* additional page variables */
+    if cms_url_path == '/frame';
+        frame_location = cms.request.param('l') | trim;
+        frame_source = cms.request.param('s') | trim;
+        frame_source = frame_source | lowercase;
+        frame_height = cms.request.param('h') | trim;
+        frame_height = frame_height | lowercase;
+    /* yp specific calls to append to s (the source param for frame) */    
+        ypPag = cms.request.param('pag') | trim;
+        ypBRD = cms.request.param('BRD') | trim;
+        
+        /* frame macro */    
+        macro frame_macro -%]
+            <iframe id="bloxFrame" name="bloxFrame" height="[% frame_height %]" width ="100%" frameborder="0" scrolling="auto" src="http://[% frame_source | html %][% if ypPag; echo '&pag='+ypPag; end; if ypBRD; echo '&BRD='+ypBRD; end %]" ></iframe>
+    [%    end; 
+        /* end frame_macro */
+    end;        
+    
+    /* begin index layout */
+        if left_col_on == true && single_column == false %]
+            <div id="blox-left-sidebar" class="grid_[% grid_set_blox_left %]">
+                [% include 'sidebar-left.inc.utl' %]
+            </div>
+        [% end %]
+            <div id="blox-left-col" class="grid_[% if single_column == true; grid_set_blox_grid_system_max; else; grid_set_blox_med_span; end %][% if cms_site_custom_alpha_omega == 'true' %] alpha[% end %]">
+            
+                [%    include 'site-option-one-index.inc.utl' %]
+                <div id="blox-index" class="blox-content">
+                [% core_base_library_breadcrumbs %]
+                [% if this.url == '/marketplace/award/' || this.url == '/marketplace/coupon/' || this.url == '/marketplace/menu/' || this.url == '/marketplace/photo/' || this.url == '/marketplace/product/' || this.url == '/marketplace/staff/' || this.url == '/marketplace/testimonial/' %]
+                    [% cms.system.redirect ( 'url' : '/marketplace/'); %]
+                [% end %]
+                [%    if this.url == '/frame/';
+                        frame_title = cms.request.param('fttl');
+                    end; %]
+            [%    if frame_title != 'false' %]    
+                <div id="index-section-title">
+                    <[% index_title_tag %] class="index-section-flag">
+                        [%    if frame_title; 
+                                frame_title; 
+                            else; 
+                                this.url.title; 
+                            end; %]
+                    </[% index_title_tag %]>
+                [%    include 'index-title.inc.utl'; 
+                    include '_ads/section-sponsor.inc.utl' -%]
+                </div>
+            [%    end; /* [END] index-section-title */ %]        
+                    
+                    [%    include 'center-one-a-index.inc.utl' %]
+                        <div id="center-one-index">
+                            [% cms.region('name':'center-one-index');
+                                include 'tabs.main.inc.utl'; %]
+                        </div>
+                    [%     if cms.site.custom.assets_region == 'true'; 
+                            cms.region('name':'center-one-index-and-assets'); 
+                        end;
+                        include 'center-one-b-index.inc.utl';
+                        include '_ads/center-top.inc.utl';
+         if cms_url_path == '/frame' && frame_location == 'leftcol';
+            frame_macro;    
+        end;            
+        if single_column == false;                        
+                    if three_group_set_on == true %]
+                    <div id="center-a-index" class="grid_[% grid_set_blox_left %] alpha">
+                    [%    include 'center-A-a-index.inc.utl';
+                            cms.region('name':'center-A-index');
+                        include 'center-A-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-b-index" class="grid_[% grid_set_blox_inner_right_two %] omega">
+                    [%    include 'center-B-a-index.inc.utl';
+                            cms.region('name':'center-B-index');
+                        include 'center-B-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-alpha-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-alpha-a-index.inc.utl';
+                            cms.region('name':'center-alpha-index');
+                        include 'center-alpha-b-index.inc.utl' %]    
+                    </div>
+                [%     end %]
+            
+                    <div id="blox-top-left" class="grid_[% grid_set_blox_inner_left %] alpha clear-left">
+                    [%    include 'center-two-a-index.inc.utl';
+                            cms.region('name':'center-two-index');
+                        include 'center-two-b-index.inc.utl' %]    
+                    </div>
+                    
+                    <div id="blox-top-right" class="grid_[% grid_set_blox_inner_right %] omega">
+                    [%    include '_ads/center-three-a-index.inc.utl';
+                            cms.region('name':'center-three-index');
+                        include '_ads/center-three-b-index.inc.utl' %]
+                    </div>
+                
+                [%    if three_group_set_on == true %]
+                <div class="clear"></div>
+                    <div id="center-beta-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-beta-a-index.inc.utl';
+                            cms.region('name':'center-beta-index');
+                        include 'center-beta-b-index.inc.utl' %]    
+                    </div>
+                    <div id="center-c-index" class="grid_[% grid_set_blox_left_sub %] alpha">
+                    [%    include 'center-C-a-index.inc.utl';
+                            cms.region('name':'center-C-index');
+                        include 'center-C-b-index.inc.utl' %]    
+                    </div>
+                    <div id="center-d-index" class="grid_[% grid_set_blox_inner_right_sub %]">
+                    [%    include 'center-D-a-index.inc.utl';
+                            cms.region('name':'center-D-index');
+                        include 'center-D-b-index.inc.utl' %]    
+                    </div>
+                    <div id="center-e-index" class="grid_[% grid_set_blox_inner_right %] omega">
+                    [%    include 'center-E-a-index.inc.utl';
+                            cms.region('name':'center-E-index');
+                        include 'center-E-b-index.inc.utl' %]    
+                    </div>
+                [%    else if pixel_sub_grid_on == true %]
+                <div class="clear"></div>
+                    <div id="center-c-index" class="grid_pixels_[% grid_set_blox_left_pixels %] alpha">
+                    [%    include 'center-C-a-index.inc.utl';
+                            cms.region('name':'center-C-index');
+                        include 'center-C-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-d-index" class="grid_pixels_[% grid_set_blox_small_span_pixels %] omega">
+                    [%    include 'center-D-a-index.inc.utl';
+                            cms.region('name':'center-D-index');
+                        include 'center-D-b-index.inc.utl' %]
+                        <div id="center-e-index" class="grid_pixels_[% grid_set_blox_inner_left_pixels %] alpha">
+                        [%    include 'center-E-a-index.inc.utl';
+                                cms.region('name':'center-E-index');
+                            include 'center-E-b-index.inc.utl' %]
+                        </div>
+                        <div id="center-f-index" class="grid_pixels_[% grid_set_blox_inner_right_pixels %] omega">
+                        [%    include 'center-F-a-index.inc.utl';
+                                cms.region('name':'center-F-index');
+                            include 'center-F-b-index.inc.utl' %]
+                        </div><div class="clear"></div>
+                    [%    include 'center-G-a-index.inc.utl';
+                            cms.region('name':'center-G-index');
+                        include 'center-G-b-index.inc.utl' %]    
+                    </div>    
+                [% end %]    
+                    
+                    <div class="clear"></div>
+                    
+                    [%     include '_online_features/center-online-features-top.inc.utl';
+            include 'center-four-a-index.inc.utl' %]
+                    <div id="center-four-index">
+                        [% cms.region('name':'center-four-index') %]
+                    </div>        
+                    [%    include 'center-four-b-index.inc.utl';
+                     /* new */
+                     if three_group_set_on == true %]
+                    <div id="center-aa-index" class="grid_[% grid_set_blox_left_major %] alpha">
+                    [%    include 'center-AA-a-index.inc.utl';
+                            cms.region('name':'center-AA-index');
+                        include 'center-AA-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-bb-index" class="grid_[% grid_set_blox_right_minor %] omega">
+                    [%    include '../includes/_ads/inner_right-top.inc.utl';
+                        include 'center-BB-a-index.inc.utl';
+                        cms.region('name':'center-BB-index');
+                        include 'center-BB-b-index.inc.utl';
+                        include '../includes/_ads/inner_right-bottom.inc.utl' %]
+                    </div>
+
+                    <div id="center-alphaab-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-alphaAB-a-index.inc.utl';
+                            cms.region('name':'center-alphaAB-index');
+                        include 'center-alphaAB-b-index.inc.utl' %]    
+                    </div>
+                [%    end;
+                    
+                    include '_ads/center-middle.inc.utl'  %]
+            
+                [%    if three_group_set_on == true %]
+                <div class="clear"></div>
+                    <div id="center-f-index" class="grid_[% grid_set_blox_left %] alpha">
+                    [%     include 'center-F-a-index.inc.utl';
+                            cms.region('name':'center-F-index');
+                        include 'center-F-b-index.inc.utl'  %]    
+                    </div>
+                    <div id="center-g-index" class="grid_[% grid_set_blox_inner_right_two %] omega">
+                    [%     include 'center-G-a-index.inc.utl';
+                            cms.region('name':'center-G-index');
+                        include 'center-G-b-index.inc.utl'  %]    
+                    </div>
+                    <div id="center-gamma-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-gamma-a-index.inc.utl';
+                            cms.region('name':'center-gamma-index');
+                        include 'center-gamma-b-index.inc.utl' %]    
+                    </div>
+                [%     end %]    
+            
+                    <div id="blox-bottom-left" class="grid_[% grid_set_blox_inner_left %] alpha clear-left">
+                    [%     include 'center-five-a-index.inc.utl';
+                            cms.region('name':'center-five-index');
+                        include 'center-five-b-index.inc.utl'  %]    
+                    </div>
+                    
+                    <div id="blox-bottom-right" class="grid_[% grid_set_blox_inner_right %] omega">
+                    [%     include 'center-six-a-index.inc.utl';
+                            cms.region('name':'center-six-index');
+                        include 'center-six-b-index.inc.utl'  %]
+                    </div>
+                    
+                [%    if three_group_set_on == true %]
+                <div class="clear"></div>
+                    <div id="center-delta-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-delta-a-index.inc.utl';
+                            cms.region('name':'center-delta-index');
+                        include 'center-delta-b-index.inc.utl' %]    
+                    </div>
+                    <div id="center-h-index" class="grid_[% grid_set_blox_left_sub %] alpha">
+                    [%     include 'center-H-a-index.inc.utl';
+                            cms.region('name':'center-H-index');
+                        include 'center-H-b-index.inc.utl'  %]    
+                    </div>
+                    <div id="center-i-index" class="grid_[% grid_set_blox_inner_right_sub %]">
+                    [%     include 'center-I-a-index.inc.utl';
+                            cms.region('name':'center-I-index');
+                        include 'center-I-b-index.inc.utl'  %]    
+                    </div>
+                    <div id="center-j-index" class="grid_[% grid_set_blox_inner_right %] omega">
+                    [%  include 'center-J-a-index.inc.utl';
+                            cms.region('name':'center-J-index');
+                        include 'center-J-b-index.inc.utl'  %]    
+                    </div>
+                [%     end %]
+                    <div class="clear"></div>
+                    [%     include 'center-seven-a-index.inc.utl' %]
+                    <div id="center-seven-index"> 
+                        [% cms.region('name':'center-seven-index') %]
+                    </div>    
+                    [%  include 'center-seven-b-index.inc.utl';
+                    
+                    if three_group_set_on == true %]
+                    <div id="center-ff-index" class="grid_[% grid_set_blox_left_major %] alpha">
+                    [%    include 'center-FF-a-index.inc.utl';
+                            cms.region('name':'center-FF-index');
+                        include 'center-FF-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-gg-index" class="grid_[% grid_set_blox_right_minor %] omega">
+                    [%    include 'center-GG-a-index.inc.utl';
+                            cms.region('name':'center-GG-index');
+                        include 'center-GG-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-gamafg-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-gamaFG-a-index.inc.utl';
+                            cms.region('name':'center-gamaFG-index');
+                        include 'center-gamaFG-b-index.inc.utl' %]    
+                    </div>
+                [%    end;
+                        include '_ads/center-bottom.inc.utl';
+                     if three_group_set_on == true %]
+                    <div id="center-k-index" class="grid_[% grid_set_blox_left %] alpha">
+                    [%    include 'center-K-a-index.inc.utl';
+                            cms.region('name':'center-K-index');
+                        include 'center-K-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-l-index" class="grid_[% grid_set_blox_inner_right_two %] omega">
+                    [%    include 'center-L-a-index.inc.utl';
+                            cms.region('name':'center-L-index');
+                        include 'center-L-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-epsilon-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-epsilon-a-index.inc.utl';
+                            cms.region('name':'center-epsilon-index');
+                        include 'center-epsilon-b-index.inc.utl' %]    
+                    </div>
+                [%    end; %]      
+                <div id="blox-bottom-lower-left" class="grid_[% grid_set_blox_inner_left %] alpha clear-left">
+                    [%    include 'center-eight-a-index.inc.utl';
+                            cms.region('name':'center-eight-index');
+                        include 'center-eight-b-index.inc.utl'; %]
+                </div>
+                
+                <div id="blox-bottom-lower-right" class="grid_[% grid_set_blox_inner_right %] omega">
+                    [%    include 'center-nine-a-index.inc.utl';
+                            cms.region('name':'center-nine-index');
+                        include 'center-nine-b-index.inc.utl'; %]
+                </div>
+                
+                [%    if three_group_set_on == true %]
+                <div class="clear"></div>
+                    <div id="center-zeta-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-zeta-a-index.inc.utl';
+                            cms.region('name':'center-zeta-index');
+                        include 'center-zeta-b-index.inc.utl' %]    
+                    </div>
+                    <div id="center-m-index" class="grid_[% grid_set_blox_left_sub %] alpha">
+                        [%    include 'center-M-a-index.inc.utl';
+                                cms.region('name':'center-M-index');
+                            include 'center-M-b-index.inc.utl'; %]
+                    </div>
+                    <div id="center-n-index" class="grid_[% grid_set_blox_inner_right_sub %]">
+                        [%    include 'center-N-a-index.inc.utl';
+                                cms.region('name':'center-N-index');
+                            include 'center-N-b-index.inc.utl'; %]
+                    </div>
+                    <div id="center-o-index" class="grid_[% grid_set_blox_inner_right %] omega">
+                        [%    include 'center-O-a-index.inc.utl';
+                                cms.region('name':'center-O-index');
+                            include 'center-O-b-index.inc.utl'; %]
+                    </div>
+                [%    end %]    
+                    
+                    <div class="clear"></div>
+                    [% include 'center-ten-a-index.inc.utl'; %]
+                    <div id="center-ten-index">
+                        [%    cms.region('name':'center-ten-index'); %]
+                    </div>
+                    [% include 'center-ten-b-index.inc.utl';
+                    
+                    if three_group_set_on == true %]
+                    <div id="center-kk-index" class="grid_[% grid_set_blox_left_major %] alpha">
+                    [%    include 'center-KK-a-index.inc.utl';
+                            cms.region('name':'center-KK-index');
+                        include 'center-KK-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-ll-index" class="grid_[% grid_set_blox_right_minor %] omega">
+                    [%    include 'center-LL-a-index.inc.utl';
+                            cms.region('name':'center-LL-index');
+                        include 'center-LL-b-index.inc.utl' %]
+                    </div>
+                    <div id="center-epsilonkl-index" class="grid_[%  grid_set_blox_med_span %] alpha">
+                    [%    include 'center-epsilonKL-a-index.inc.utl';
+                        cms.region('name':'center-epsilonKL-index');
+                    include 'center-epsilonKL-b-index.inc.utl' %]    
+                    </div>
+                [%    end;
+        end; /* end single column conditional [around main content] */ %]            
+                </div>[% /* end blox-index */ %]
+            [% include '_online_features/center-online-features-bottom.inc.utl'; %]
+            </div>[% /* end blox-left-col */
+        if single_column == false && right_col_on == true %]   
+            <div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms_site_custom_alpha_omega == 'true' %] omega[% end %]">
+                [% include 'sidebar.inc.utl' %]
+            </div>
+    [%    end /*  end single column conditional [around right_col] */ %]        
+            <div class="clear"></div>
+   
+    [%     if cms_url_path == '/frame' && frame_location != 'leftcol';
+            frame_macro;    
+        end;
+    include 'footer.inc.utl'  %]

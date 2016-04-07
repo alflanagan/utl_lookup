@@ -1,0 +1,7 @@
+[%  core_base_nav_show_leftcol_menu;
+    include '_ads/left-rail-top.inc.utl';
+      cms.region('mode': 'blocks', 'name': 'left-rail-top');
+   include '_ads/left-rail-middle.inc.utl';
+      cms.region('mode': 'blocks', 'name': 'left-rail-middle');
+   include '_ads/left-rail-bottom.inc.utl';
+      cms.region('mode': 'blocks', 'name': 'left-rail-bottom');%]

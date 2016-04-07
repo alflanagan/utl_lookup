@@ -1,0 +1,31 @@
+<dl id="story-font-size" class="moz-border[% if cms.site.custom.social_share_style == 'horizontal' %] blox-social-tools-horizontal[% end %][% if servicerestricted && !use_tracker %] service-members[% else if use_tracker %] managed-service[% end %]" [% if serviceRestricted && !use_tracker; echo ' style="display:none;"'; end; %]>
+    [% if ((cms.site.custom.twitter_count_exclude ||
+            cms.site.custom.facebook_count_exclude ||
+            cms.site.custom.google_plus_one_count_exclude)
+           && !cms.site.custom.addthis_count_exclude); %]
+               <dd id="share-page" class="share-widget">
+                   [% core_base_library_assetTools('extraText':'Share') %]
+               </dd>
+    [% end %]
+    <dt>
+        Print
+    </dt>
+    <dd id="print-hardcopy">
+        <a href="[% this.asset.url %]?mode=print" rel="nofollow external">
+            Create a hardcopy of this page
+        </a>
+    </dd>
+    <dt>
+        Font Size:
+    </dt>
+    <dd>
+        <a id="default" class="decrease-font-size" href="#" title="Default font size" rel="nofollow">
+            Default font size
+        </a>
+    </dd>
+    <dd>
+        <a id="large" class="increase-font-size" href="#" title="Larger font size" rel="nofollow">
+            Larger font size
+        </a>
+    </dd>
+</dl>

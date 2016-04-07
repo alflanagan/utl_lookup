@@ -1,0 +1,932 @@
+[%-
+call cms.component.load('core_base_library');
+metered_paging = core_base_library_getCustomProperty('metered_paging', 'boolean', false);
+
+/* Set URL properties here */
+
+socialShareStyle = core_base_library_getCustomProperty('social_share_style', 'value', 'vertical-sticky-left');
+show_tagline = core_base_library_getCustomProperty('show_tagline', 'boolean', true);
+pagination = core_base_library_getCustomProperty('pagination', 'boolean', false);
+    if sPresentation == 'long_form' then pagination = false;
+paragraphs_per_page = core_base_library_getCustomProperty('paragraphs_per_page', 'value', '8');
+asset_author_display = core_base_library_getCustomProperty('asset_author_display', 'value', 'byline');
+ndn_matching = core_base_library_getCustomProperty('ndn_matching', 'boolean', true);
+
+/* paragraphs before encryption */
+if core_base_editorial_googleSurveyOn;
+    subscription_paragraphs_viewable = -1; /* managed by google surveys */
+else if cms.asset.custom.subscription_paragraphs_viewable;
+    subscription_paragraphs_viewable = cms.asset.custom.subscription_paragraphs_viewable|replace('none',-1);
+elseif pagination;
+    if cms.request.is_anonymous_user && serviceRestricted;
+        subscription_paragraphs_viewable = core_base_library_getCustomProperty('subscription_paragraphs_viewable', 'value', '2');
+    else;
+        subscription_paragraphs_viewable = this.asset.content | length;
+    end;
+else;
+    subscription_paragraphs_viewable = (cms.url('path':'/').custom.subscription_paragraphs_viewable|defaultval(2))|replace('none',-1);
+end;
+
+include 'article.tools-master.inc.utl';
+
+/* SOCIAL SHARE */
+if (socialShareStyle | contains('horizontal'));
+fb_like_location = 'top';
+include '_article/article.social_share_horizontal.inc.utl';
+end;
+
+/* Calling on filterAssetsByType to sort related content */
+assetGroup = this.asset.related_content;
+rContentMain = filterAssetsByType(assetGroup,['highlights','quote','refer','update','correction'],'exclude');
+rContentHighlights = filterAssetsByType(assetGroup,'highlights','include');
+rContentQuote = filterAssetsByType(assetGroup,'quote','include');
+rContentRefer = filterAssetsByType(assetGroup,'refer','include');
+rContentUpdate = filterAssetsByType(assetGroup,'update','include');
+rContentCorrection = filterAssetsByType(assetGroup,'correction','include');
+
+/* Logic for AP registry */
+isApContent = keywords | lowercase | contains('#ap') || this.asset.flags | lowercase | contains('ap') || this.asset.byline | lowercase | contains('associated');
+
+if isApContent;
+    creator = 'AP';
+    license =  this.asset.url+'#license-'+this.asset.uuid;
+else;
+    if this.asset.custom.ap_creator;
+        creator = this.asset.custom.ap_creator;
+    else;
+        creator = cms.site.custom.ap_creator;
+    end;
+    if this.asset.custom.ap_source;
+        source = this.asset.custom.ap_source;
+    end;
+    if cms.site.custom.ap_license;
+        license = cms.site.custom.ap_license;
+    else;
+        license =  '/site/terms/';
+    end;
+end;
+
+if cms.site.custom.ap_mode == 'production';
+    apProd = 'Prod';
+else;
+    apProd = 'Dev';
+end;
+
+/**
+ * @desc Setup logic for related content
+ */
+sAssets = this.asset.items('inline': false);
+pAssets = this.asset.items('relationship': 'parent');
+rTables = this.asset.items('type': 'table', 'inline': false);
+rContent = this.asset.related_content;
+rBusinesses = this.asset.items('relationship': 'parent', 'type': 'business');
+rEvents = this.asset.items('relationship': 'parent', 'type': 'event');
+middleTables = filterAssetsByPosition(rTables, ['showcase', 'bottom'], 'exclude');
+aImages = filterAssetsByPublished(this.asset.items('type':'image','inline':false),'include');
+
+if middleTables | length > 0;
+    hasMiddleTables = true;
+end;
+if sAssets | length > 0; /* || pAssets | length > 0; */ /** pAssets aren't being displayed so this is not needed */
+    hasAssets = true;
+end;
+if filterImagesByPresentation(aImages, ['masthead', 'showcase'], 'exclude') | length > 0;
+    hasImages = true;
+end;
+if rContentMain | length > 0;
+    hasMainContent = true;
+end;
+if rBusinesses | length > 0;
+    hasBusinesses = true;
+end;
+if rEvents | length > 0;
+    hasEvents = true;
+end;
+if rContentQuote | length > 0;
+    hasQuotes = true;
+end;
+rHTML = this.asset.items('type': 'html');
+
+rYouTube = this.asset.items('type': 'youtube');
+unposYouTube = filterAssetByPosition(rYouTube,["showcase","middle","bottom"],'exclude');
+showcaseYouTube = filterAssetByPosition(rYouTube,["showcase"],'include');
+middleYouTube = filterAssetByPosition(rYouTube,["middle"],'include');
+bottomYouTube = filterAssetByPosition(rYouTube,["bottom"],'include');
+
+displayedFirstParagraph = false;
+
+/* does the asset have related media or pagination is on  */
+if hasAssets
+    || hasQuotes
+    || hasMainContent
+    || (this.asset.latitude && this.asset.longitude)
+    || (this.asset.address && this.asset.city)
+    || pagination;
+    hasStoryMediaDiv = true;
+end;
+
+if rBusinesses | length > 0; hasBiz = true; end;
+
+/* Showcase HTML asset */
+if rHTML;
+    foreach rHTML as aHTML;
+        if aHTML.custom.position == 'showcase'; %]
+            <div class="blox-story-html-container-showcase" >
+                [% core_base_library_HtmlAssetDisplay(aHTML) %]
+            </div>
+        [%- end;
+    end;
+end; %]
+
+[% if showcaseYouTube %]
+    <div class="related-container">
+        [%-
+            call cms.component.load('core_external_jquery');
+            call cms.component.load('core_video_player');
+
+            ninja=false;
+            if cms.request.param("ninja") == "on";
+                ninja=true;
+                call cms.component.load("ninja_debug_log");
+            end;
+
+            core_video_player('assets': showcaseYouTube,
+                              'id': 'showcase_relatedVideos',
+                              'style': 'hd',
+                              'player_width': grid_set_blox_med_span_px,
+                              'mode': 'embedded');
+        -%]
+    </div>
+    <div class="clear"></div>
+[% end; %]
+
+[% if ndn_matching && this.asset.external_id && cms.system.venue != 'admin' && this.asset.flags | lowercase | contains('ap') %]
+    <!-- NDN -->
+    <script type="text/javascript"async src="http://launch.newsinc.com/js/embed.js"id="_nw2e-js"></script>
+    <div class="ndn_embed"
+    [% if blox_grid == '300_4-4-4' %]
+    style="width:620px;height:332px;padding-bottom:20px;"
+    [% elseif blox_grid == '300_5-3-4' %]
+    style="width:620px;height:332px;padding-bottom:20px;"
+    [% elseif blox_grid == '300_leftcol_2-3-3-4' %]
+    style="width:460px;height:246px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_3-5-5-3' %]
+    style="width:760px;height:406px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_leftcol_3-5-5-3' %]
+    style="width:580px;height:310px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_leftcol_3-4-6-3' %]
+    style="width:580px;height:310px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_leftcol_3-6-4-3' %]
+    style="width:580px;height:310px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_8-5-3' %]
+    style="width:760px;height:406px;padding-bottom:20px;"
+    [% elseif blox_grid == '160_9-4-3' %]
+    style="width:760px;height:406px;padding-bottom:20px;"
+    [% end %]
+    data-config-widget-id="2"
+    data-config-type="VideoPlayer/Single"
+    data-config-tracking-group="[% if cms.site.custom.ndn_id; cms.site.custom.ndn_id; else; echo '90170'; end; %]"
+    data-config-provider-id="499"
+    data-config-provider-story-id="[% this.asset.external_id | replace('urn:publicid:ap.org:', '') %]"
+    data-config-site-section="ap[% cms.site.brand_url | replace('.','') | replace (' ','_') %]"></div>
+    <!-- end NDN -->
+[% end %]
+
+[% foreach rContentHighlights as highlight %]
+    <dl class="blox-related blox-related-[% highlight.type %] [% highlight.title | lowercase | replace(' ','_') | replace('\'','') %] [% core_base_library_iterPosClasses(highlight) %]">
+        <dt>[% highlight.title | html %]</dt>
+            <dd>
+                [%
+                    foreach highlight.content as content;
+                        echo content | autolink;
+                    end;
+                %]
+            </dd>
+        <div class="clear"></div>
+    </dl>
+[%-
+end;
+
+/* Adding update. */
+foreach rContentUpdate as update %]
+    <dl class="ui-widget ui-state-highlight ui-corner-all blox-related-[% update.type %] [% update.title | lowercase | replace(' ','_') %] [% core_base_library_iterPosClasses(highlight) %]">
+        <dt><span class="ui-icon ui-icon-clock"></span>[% update.title | html %]</dt>
+               <dd>
+        [%-    foreach update.content as content;
+                echo content | autolink;
+            end %]
+            </dd>
+        <div class="clear"></div>
+    </dl>
+[% end;
+
+games = this.asset.items('relationship':'parent','type':'game');
+if games;
+    call cms.component.load('core_base_sportsstats');
+    foreach games as game;
+        core_base_sportsstats_showBoxScore(game, 'relatedPage');
+    end;
+end;
+
+/* ## special presentation image widget ## */
+if filterImagesByPresentation(aImages,["showcase","panorama"]).length > 0 %]
+    <ul id="blox-showcase-images">
+    [% foreach filterImagesByPresentation(aImages,["showcase","panorama"]) as aImage %]
+    <li class="[% aImage.presentation %]">
+        [% if aImage.title %]
+            <a title="[% aImage.title | html %]" href="[% this.asset.url %]?mode=image&amp;photo='[% i %]">
+                <h3>[% aImage.title|html %]</h3>
+            </a>
+        [% end %]
+        [% if aImage.presentation == 'showcase'; %]
+            <img src="[% aImage.resource_url %]" />
+        [% else if aImage.presentation == 'panorama' %]
+            [% cms.page.add_css('components/core_external_jquery_plugins/resources/css/panorama_viewer.css'); %]
+            [% cms.page.add_script('components/core_external_jquery_plugins/resources/scripts/jquery.panorama_viewer.js'); %]
+            <div class="panorama-photo">
+                <img src="[% aImage.view().url %]"/>
+            </div>
+            [%
+                sInline = "$(function() { $('div.panorama-photo').panorama_viewer({ repeat: true }); });";
+
+                cms.page.add_inline_script(sInline, 'header');
+            %]
+            <style>
+            .pv-inner.pv-animating {
+                height: 300px;
+            }
+            #blox-showcase-images li.panorama {
+                background: #333;
+                color: #fff;
+                margin-bottom: 10px;
+                overflow: hidden;
+
+            }
+            </style>
+        [% end %]
+
+        [%     if aImage.description %]
+        <div class="blox-description">
+        [%- if aImage.byline %]
+            <p class="blox-byline">[% aImage.byline | autolink %]</p>
+        [%    end %]
+            [% aImage.description;
+            /* call core_base_library_buy_photo_link from core_base_lib */
+                if !photoPage;
+                    core_base_library_buy_photo_link(aImage);
+                end; %]
+        <div class="clear"></div>
+        </div>
+        [%    end %]
+    </li>
+    [% end %]
+    </ul>
+[%- end;  /* end special presentation image widget */
+
+foreach filterAssetsByPosition(this.asset.items('type':'table'),'showcase','include') as showcaseTable;%]
+<div class="blox-related-table blox-story-related-container">
+    <h3>[% showcaseTable.title %]</h3>
+    <p class="description">[% showcaseTable.content | join | autolink %]</p>
+    [% core_base_library_table_asset(showcaseTable); %]
+</div>
+[%- end %]
+
+[% /** longform media rail */
+   if sPresentation == 'long_form' && hasStoryMediaDiv; %]
+    [% include '_article/article.story.media.inc.utl'; %]
+[% end; %]
+
+<div id="blox-story-frame" class="hnews hentry item [% if sPresentation == 'long_form' && (hasStoryMediaDiv || hasBiz) then ' article-pad-rail'; %]">
+[% /* ## /special presentation image widget ## */
+
+/* SOCIAL SHARE */
+if (socialShareStyle | contains('vertical'));
+    include '_article/article.social_share.inc.utl';
+end;
+
+%]
+
+[% if sPresentation != 'long_form'; %]
+    [% if (hasStoryMediaDiv || hasBiz); -%]
+        [% /** standard media rail */
+           include '_article/article.story.media.inc.utl'; %]
+    [% else if pagination; %]
+        <div id="blox-story-media" class="p402_hide">
+            [%
+                hasInstoryInMediaBox = true;
+                include '_ads/in-media-box.inc.utl';
+            %]
+        </div>
+    [% end; %]
+[% end; %]
+
+[%-
+/* provide the ad div id for media box */
+if hasInstoryInMediaBox;
+    in_story_ad_spot_id = 'in-media-box';
+else;
+    in_story_ad_spot_id = 'in-story';
+end; /* [END] hasStoryMediaDiv check */
+
+/* Instory alternate ad position if not tracker or long form */
+if sPresentation != 'long_form' && !core_base_library_getCustomProperty("use_tracker_service", "boolean", false);
+    core_advertising_positionInStory(
+        'id':in_story_ad_spot_id,
+        'cssClass':in_story_ad_spot_id+'-preview',
+        'placeholder':core_base_library_getCustomProperty('service_ad_show', 'boolean', true));
+end;
+
+    if !performer %]
+    <p class="story-times dtstamp">
+        Posted: <span class="[% if this.asset.lastupdated !=null; echo 'posted'; else; echo 'updated'; end %]" title="[% this.asset.starttime | datetime('c') %]">[% this.asset.starttime('l, F j, Y g:i a') %]</span>
+        [% if cms.system.time('U') - (30*86400) < this.asset.starttime('U') && this.asset.lastupdated != null %] |
+        <em>
+            <span class="updated" title="[% this.asset.lastupdated | datetime('c') %]">
+                Updated: [% this.asset.lastupdated('g:i a, D M j, Y') %].
+            </span>
+        </em>
+        [% end %]
+    </p>
+    <p class="byline">
+
+    <span class="bookmark hide"><a class="url entry-title" href="http://[% cms.site.brand_url %][% this.asset.url %]" rel="bookmark nofollow">[% this.asset.title | trim %]</a></span>
+
+        [%    if this.asset.byline || this.asset.custom.ap_creator || isApContent || source && (asset_author_display == 'byline' || asset_author_display == 'both') %]
+                [% if isApContent %]
+                    <span class="author source-org vcard"><span class="org fn">Associated Press</span></span> |
+                [% else if source || this.asset.custom.ap_creator;
+                    if this.asset.byline;
+                        show_byline = true %]
+                        <span class="author vcard">
+                            <span class="fn">[% echo this.asset.byline | autolink %]</span>
+                        </span>
+                    [% end; %]
+                    <span class="hide source-org vcard">
+                        <span class="org fn">[% if source; echo source; else; echo this.asset.custom.ap_creator; end; %]</span>
+                        </span>
+                [% else;
+                    show_byline = true %]
+                    <span class="author vcard"><span class="fn">[% echo this.asset.byline | autolink %]</span></span>
+                [%    end %]
+                    [% if (!source || !this.asset.custom.ap_creator) && !isApContent %]
+                        <span class="hide source-org vcard"><span class="org fn">[% cms.site.business_name %]</span></span>
+                    [% end %]
+            [% else;
+                show_byline = false;
+            end;
+
+            commenting_on = true;
+            current_section = core_base_library_section;
+
+            foreach cms.site.custom.comments_exclude_sections_list | splittrim(',') as excluded_section;
+                excluded_section = excluded_section | regex('/^\//', '') | regex('/\/$/', '');
+                if excluded_section == current_section;
+                    commenting_on = false;
+                    break;
+                end;
+            end;
+
+            blox_comments = core_base_library_getCustomProperty("blox_comments", "string", "false");
+            if blox_comments == 'blox' && commenting_on;
+                if this.asset.byline && show_byline;
+                    echo ' | '; end; -%]
+                    <a id="comment_[% this.asset.uuid %]" class="blox-comment" href="[% this.asset.url %]#user-comment-area">
+                        [%    comments = this.asset.comments;
+                            echo comments | length %]&nbsp;comment[% if (comments | length) != 1 %]s[% end %]
+                    </a>
+            [%    end %]
+    </p>
+    [%    if asset_author_display == 'author' || asset_author_display == 'authors' ||  asset_author_display == 'both';
+            core_base_library_authorInfo(this.asset,'small','real_name','false');
+        end;
+ end; /* end performer check */
+/* optional article rail */
+if cms.site.custom.article_rail == 'true' %]
+    <span id="article-right" class="service-members grid_[% grid_set_blox_article_rail %] omega">
+    [%- include '_article/rail_top.inc.utl';
+        include '_article/rail_middle.inc.utl';
+        include '_article/rail_bottom.inc.utl' %]
+    </span>
+[% end; /* [END] optional article rail */ %]
+
+<div id="blox-story-text" class="entry-content">
+    <div id="paging_container" class="container">
+        <div class="content">
+            [% if !google_survey_restriction && !(subscription_paragraphs_viewable == -1); %]
+                [% foreach this.asset.content(0,subscription_paragraphs_viewable) as p; %]
+                    [% if p | iterpos == subscription_paragraphs_viewable; -%]
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            <!-- span class="first-paragraph" -->
+                            <span class="paragraph-0">
+                        [% end %]
+                            [% p | autolink; %]
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            </span>
+                            [% displayedFirstParagraph = true; %]
+                        [% end %]
+                        <div class="p402_hide">
+                            [% if !hasImages
+                                    && !hasQuotes
+                                    && mode != 'print'
+                                    && !pagination
+                                    && sPresentation != 'long_form';
+                             %]
+                                <div class="p402_hide no-images no-quotes no-print">
+                                    [% include '_ads/in-story.inc.utl'; %]
+                                </div>
+                            [% end; %]
+
+                            [% include '_article/article.long_form.center.inc.utl'; %]
+
+                            [%-
+                            /* related HTML */
+                            if rHTML;
+                                foreach rHTML as aHTML;
+                                    if aHTML.custom.position == 'middle'; %]
+                                        <div class="blox-story-html-container">[% core_base_library_HtmlAssetDisplay(aHTML) %]</div>
+                                    [% end;
+                                end;
+                            end;
+                            if middleYouTube; %]
+                                <div class="related-container">
+                                    [%
+                                    call cms.component.load('core_external_jquery');
+                                    call cms.component.load('core_video_player');
+                                    ninja = false;
+                                    if cms.request.param("ninja") == "on";
+                                        ninja = true;
+                                        call cms.component.load("ninja_debug_log");
+                                    end;
+
+                                    core_video_player(
+                                        'assets': middleYouTube,
+                                        'id': 'middle_relatedVideos',
+                                        'style': 'hd',
+                                        'player_width': grid_set_blox_med_span_px,
+                                        'mode':'embedded'
+                                    );
+                                    %]
+                                </div>
+                                <div class="clear"></div>
+                            [% end %]
+                        </div>
+                [% else %]
+                    [% if p | iterpos == 1 && pagination %]
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            <span class="first-paragraph">
+                        [% end %]
+                        <span class="paragraph-[% p | iterpos %]">[% p | autolink %]</span>
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            </span>
+                            [% displayedFirstParagraph = true; %]
+                        [% end %]
+                        [% /* <div class="p402_hide no-images no-quotes yes-pagination"></div> */ %]
+                    [% else %]
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            <span class="first-paragraph">
+                        [% end %]
+                        <span class="paragraph-[% p | iterpos %]">[% p | autolink %]</span>
+                        [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                            </span>
+                            [% displayedFirstParagraph = true; %]
+                        [% end %]
+                    [% end %]
+                        [% include '_article/article.long_form.center.inc.utl'; %]
+                [% end;
+            end;
+    end;
+
+    /* ::::::::::::::::::::::::::::::::::::::::: subscription */
+    if serviceRestricted;
+        if !hasImages
+            && !hasQuotes
+            && !pagination
+            && sPresentation != 'long_form'; %]
+            <div class="p402_hide no-images no-quotes no-pagination service-members">
+                [% include '_ads/in-story.inc.utl'; %]
+            </div>
+        [% end;
+
+        /* restricted paragraphs */
+                /* if !pagination; */
+                    if this.asset.content | length > subscription_paragraphs_viewable;
+                        foreach this.asset.content(subscription_paragraphs_viewable+1) as p;
+                            if !(p|contains('inline-child')); %]
+
+                                    [% if !displayedFirstParagraph; %]
+                                        <span class="first-paragraph">
+                                    [% end %]
+                                    [% p | autolink %]
+                                    [% if !displayedFirstParagraph; %]
+                                        </span>
+                                        [% displayedFirstParagraph = true; %]
+                                    [% end %]
+
+                            [% else %]
+                                <div class="inline-asset service-memebers" style="display:none">[% p %]</div>
+                            [% end; %]
+                            [% include '_article/article.long_form.center.inc.utl'; %]
+                     [% end;
+                    end;
+                /* end; */
+
+        /* include ip-decrypt and decrypt */
+               /* if !use_tracker;
+                    if !cms.request.is_anonymous_user && cms.url('path':'/').custom.authentication_3rd_party == 'newzware';
+                        cms.service.decrypt('encrypted-content');
+                        cms.page.add_inline_script('$(function(){$(".inline-asset").show()});');
+                    else;
+                        if cms.request.is_anonymous_user
+                        || (!cms.request.is_anonymous_user && !core_base_library_userServiceInfo.hasService && (!cms.user.is_admin && !cms.user.is_super));
+                            include '_article/ip-decrypt.inc.utl';
+                        else if !cms.request.is_anonymous_user;
+                            cms.service.decrypt('encrypted-content');
+                            cms.page.add_inline_script('$(function(){$(".inline-asset").show()});');
+                        end;
+                    end;
+                end; */
+    else;
+    /* standard display or google survey */
+        if !hasImages
+            && !hasQuotes
+            && !pagination
+            && sPresentation != 'long_form'; %]
+                <div class="p402_hide no-images no-quotes no-pagination view-standard">
+                    [% include '_ads/in-story.inc.utl'; %]
+                </div>
+            [% end;
+        if google_survey_restriction;
+            echo '<!-- google survey -->';
+            echo '<div class="p402_premium premium-container">';
+        end;
+        if !pagination;
+            if this.asset.content | length > subscription_paragraphs_viewable;
+                foreach this.asset.content(subscription_paragraphs_viewable+1) as p; %]
+                    [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                        <span class="first-paragraph">
+                    [% end %]
+                    [% echo p | autolink; %]
+                    [% if !(p|contains('inline-child')) && !displayedFirstParagraph; %]
+                        </span>
+                        [% displayedFirstParagraph = true; %]
+                    [% end %]
+                    [% include '_article/article.long_form.center.inc.utl'; %]
+                [% end;
+            end;
+        end;
+        if google_survey_restriction;
+            echo '</div><!-- end p402_premium -->';
+            /* google survey call show */
+            core_base_editorial_googleSurveyCall;
+        end;
+    end; %]
+
+    </div> <!-- (END) Pagination Content Wrapper -->
+    <div class="page_navigation"></div>
+    <div class="clear"></div>
+    [%
+
+    if use_tracker;
+    call cms.component.load("core_services_manager");
+    core_services_manager_tracker(this.asset);
+    end;
+
+    if this.asset.tagline && show_tagline %]
+     <div class="blox-story-tagline service-members">[% this.asset.tagline %]</div>
+    [% end;
+
+    if creator != null && (this.asset.custom.copyright != 'false' && this.url | contains('online_features') != 'true') %]
+
+        <p><small><a rel="item-license" href="[% license %]" id="license-[% this.asset.uuid %]" style="color: #666; font-size:10px;">&copy; [% cms.system.time('Y'); %] [% if isApContent; echo 'The Associated Press'; else if source; echo source; else if this.asset.custom.ap_creator; echo this.asset.custom.ap_creator; else; cms.site.title; end; %]. All rights reserved. This material may not be published, broadcast, rewritten or redistributed.</a></small></p>
+
+    [%
+    end;
+
+if this.asset.flags == 'contributed' %]
+    [% core_site_contributed_content_abuse_explanation %]
+    <form class="reportAbuseArticle" method="POST" action="[% this.url %]">
+        <input type="hidden" name="action" value="asset:abuse" />
+        <input type="hidden" name="asset_id" value="[% this.asset.uuid %]" />
+        <input class="reportAbuseBtn" type="submit" value="Report as Abuse" />
+    </form>
+
+<script type="text/javascript">
+jQuery(function(){
+    if(sAuthToken==null){
+jQuery("form.reportAbuseArticle").replaceWith("<a href=\"javascript:void(0)\" onClick=\"jQuery('.open-modal-login-panel').trigger('click')\" class=\"login-link\">Log In to report.</a>");
+    }else{
+
+jQuery("form.reportAbuseArticle").bind("submit",function(){
+    e = this;
+    jQuery(this).ajaxSubmit({
+      dataType: 'json',
+        success: function(result,error){
+        if(result.success==true){
+            jQuery(e).replaceWith("<span class=\"articleReported\">You reported this article.</span>");
+        }else{
+            jQuery(e).replaceWith("<span class=\"articleReported\">There was a problem with reporting this article.</span>");
+        }
+    },
+    error: function(result, text, error){ }
+      });
+
+            return false;
+        });
+}
+});
+</script>
+[%-
+end; /* [END] contributed abuse check */ %]
+
+</div> <!-- (END) Pagination Wrapper -->
+
+    [% if pagination %]
+
+        <script type="text/javascript">
+            $(function () {
+                if(jQuery.browser.msie && Number(jQuery.browser.version)<7){
+                    if(typeof(ninjaLog)!="undefined"){ ninjaLog.Update({text:"<span class=\"critical\">MSIE 6.X Detected</span> Disabling Pagination"}); }
+                }
+                else {
+                    //$('.tncms-restricted-notice').appendTo('.page_navigation');
+                    //$('#registration-notice').appendTo('.page_navigation');
+
+                    tncmsCookie = $.cookie('tncms-services');
+                    meteringCount = $('.remaining .number').html();
+                    anonUser = [% cms.request.is_anonymous_user %];
+                    serviceRestricted = false;
+                    useTracker = false;
+
+                    if (
+                        (serviceRestricted && useTracker && !tncmsCookie && meteringCount >= 0) ||
+                        (serviceRestricted && useTracker && tncmsCookie)
+                        )
+                    {
+                        $('.tncms-restricted-notice').remove();
+                        $('#registration-notice').remove();
+                    }
+
+
+                    if (
+                           (!serviceRestricted && useTracker) ||
+                           (!serviceRestricted && !useTracker) ||
+                           (serviceRestricted && !useTracker && !anonUser) ||
+                           (serviceRestricted && useTracker && !tncmsCookie && meteringCount >= 0) ||
+                           (serviceRestricted && useTracker && tncmsCookie)
+                        )
+                    {
+                        var subParagraphsView = [% core_base_library_getCustomProperty('subscription_paragraphs_viewable', 'value', '2') %];
+                        var paragraphsPerPage = [% paragraphs_per_page %];
+
+                        [% if serviceRestricted %]
+                            var userHasService = (function(){
+                                if( tncmsCookie === undefined ){
+                                    return false;
+                                }else{
+                                    var pageServices = [
+                                        [%- foreach core_base_library_subscriptionServices as service -%]
+                                            '[% service.id %]'
+                                            [%- if core_base_library_subscriptionServices | length > 1 && service | iterlast == false -%],[%- end -%]
+                                        [%- end -%]
+                                    ];
+                                    var userServices = tncmsCookie.split(',');
+                                    if(userServices == 0){
+                                        return true;
+                                    }
+                                    var match = false;
+                                    for(var i = 0; i < userServices.length; i++){
+                                        for(var j = 0; j < pageServices.length; j++){
+                                            if(userServices[i] === pageServices[j]){
+                                                match = true;
+                                            }else{
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    if(match === false){
+                                        return false;
+                                    }else if(match === true){
+                                        return true;
+                                    }
+                                }
+                            }());
+                        [% end %]
+
+                        var pajinateParagraphs = paragraphsPerPage;
+
+                        $('#paging_container').pajinate({
+                            num_page_links_to_display : 6,
+                            items_per_page : pajinateParagraphs,
+                            nav_label_first : '&laquo;',
+                            nav_label_prev : '&lsaquo;',
+                            nav_label_next : '&rsaquo;',
+                            nav_label_last : '&raquo;',
+                            abort_on_small_lists: true,
+                            wrap_around: false
+                        });
+
+                        $('.page_navigation a').button().click(function() {
+                            $(this).googlePageviews('[%- this.asset.url('absolute':true) | jsquote -%]');
+
+                            var nav_height = 0;
+                            var nav_count = 1;
+
+                            [% if cms.url('/').custom.navigation_sticky %]
+                                if ($('#main-nav').outerHeight() > 0){
+                                    nav_height = $('#main-nav').outerHeight();
+                                }
+                                if ($('#main-nav-container').hasClass('stuck-nav')){
+                                    nav_count = 1;
+                                }else{
+                                    nav_count = 2;
+                                }
+                            [% end %]
+
+                            window.scrollTo(0,$('#paging_container').offset().top - (nav_height * nav_count) );
+                        });
+                    }
+                    if ($('#in-media-box #tncms-region-ads-in-story').length <= 0) {
+                        $('#blox-story-media').css('margin','0');
+                    }
+
+                }
+
+            });
+        </script>
+    [% end %]
+
+
+</div>[%/* [END] blox-story-text */ %]
+<div class="clear"></div>
+[%
+
+        foreach rContentRefer as refer; -%]
+            <dl class="ui-corner-all blox-related blox-related-[% refer.type %] [% core_base_library_iterPosClasses(refer) %]">
+                <dt>[% refer.title | html %]</dt>
+                 <dd>
+                     [% foreach refer.content as content;
+                         echo content | autolink;
+                     end; %]
+                 </dd>
+                 <div class="clear"></div>
+            </dl>
+        [%- end;
+
+/* Adding correction. */
+foreach rContentCorrection as correct %]
+    <dl class="ui-corner-all blox-related blox-related-[% correct.type %] [% correct.title | lowercase | replace(' ','_') %] [% core_base_library_iterPosClasses(correct) %]">
+        <dt><span class="ui-icon ui-icon-alert"></span>[% correct.title | html %]</dt>
+               <dd>
+                [%
+                    foreach correct.content as content;
+                        echo content | autolink;
+                    end;
+                %]
+            </dd>
+        <div class="clear"></div>
+    </dl>
+[% end %]
+[%-
+
+foreach filterAssetsByPosition(this.asset.items('type':'table'),'bottom','include') as bottomTable; %]
+<div class="blox-story-related-container blox-related-table-bottom">
+    <h3>[% bottomTable.title %]</h3>
+        <p class="description">[% bottomTable.content | join | autolink %]</p>
+    [% core_base_library_table_asset(bottomTable); %]
+</div>
+[% end;
+
+    if rHTML;
+        foreach rHTML as aHTML;
+            if aHTML.custom.position == 'bottom' %]
+                <div class="blox-story-html-container">
+                    [% core_base_library_HtmlAssetDisplay(aHTML) %]
+                </div>
+            [% end;
+        end;
+    end;
+
+    if bottomYouTube%]
+        <div class="related-container">
+            [%-
+                if !cms.component.load('core_external_jquery'); echo '<!--Failed to load core_external_jQuery.-->'; end;
+                if !cms.component.load('core_video_player'); echo '<!--Failed to load core_video_player component.-->'; end;
+
+                ninja=false;
+                if cms.request.param("ninja") == "on";
+                    ninja=true;
+                    if !cms.component.load("ninja_debug_log"); echo "<!-- Your Ninja has been defeated by Pirates. -->";end;
+                end;
+
+                core_video_player('assets':bottomYouTube, 'id':'bottom_relatedVideos', 'style':'hd', 'player_width':grid_set_blox_med_span_px,'mode':'embedded');
+            -%]
+        </div>
+        <div class="clear"></div>
+    [%end;
+
+
+    include 'insert-option-story-bottom.inc.utl';
+    include 'more-coverage.inc.utl';
+    include 'reference-links.inc.utl' %]
+<div class="clear"></div>
+[%
+    /* SOCIAL SHARE */
+    if (socialShareStyle | contains('horizontal'));
+fb_like_location = 'bottom';
+include '_article/article.social_share_horizontal.inc.utl';
+end;
+
+    include 'insert-option-story-bottom-b.inc.utl';
+    include 'insert-option-story-bottom-c.inc.utl';
+    core_base_library_relatedAssets(['ad','coupon','pdfdisplayad','realestate','vehicle']);
+    include 'article.tools-sprite.inc.utl';
+    include 'insert-option-story-bottom-d.inc.utl' %]
+
+<div class="clear"></div>
+
+[% if this.asset.tags('section'); hasTags = true; end;
+   if this.asset.tags('geo'); has_geo = true; end;
+   if this.asset.tags('type':'keyword'); hasKeys = true; end; -%]
+    <p class="story-keywords moz-border">
+        Posted[% if hasTags %] in
+        [% foreach this.asset.tags('section') as path, tag -%]
+            <a href="/[% path %]" rel="tag">[% tag | titlecase | replace('_',' ') %]</a>[% if tag | iterlast; echo ''; else; echo ','; end; %]
+        [% end; end %]
+        on
+        <em>
+            [% this.asset.starttime('l, F j, Y g:i a') %].
+            [% if cms.system.time('U') - (30*86400) < this.asset.starttime('U') && this.asset.lastupdated != null %]
+                <span>Updated: [% this.asset.lastupdated('g:i a') %].</span>
+            [% end %]
+        </em>
+        [% core_base_library_get_keywords; %]
+        [% if has_geo;
+               foreach this.asset.tags('geo') as g_keyword, g_keyword_2;
+                if g_keyword_2 | startswith('#') != 'true';
+                    if g_keyword_2 | iterfirst; %]
+                        | Location Tags:
+                    [% end %]
+                <span class="blox-icon-geo-link-story-container"><span class="ui-icon ui-icon-flag blox-icon-geo-link-story"></span><a class="blox-geo-link-story" rel="tag" href="/topic/?g=[% g_keyword %]&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=desc&amp;s=start_time">[% g_keyword_2 | titlecase | replace ('_',' ') %]</a>[% if g_keyword_2 | iterlast; echo ''; else; echo ','; end; %]</span>
+            [% end; end;
+        end; %]
+    </p>
+[% include 'story-bottom.inc.utl' %]
+[% latest_age = cms.site.custom.latest_age;
+            if latest_age;
+                related_age = latest_age;
+            else;
+                related_age = 336;
+            end; %]
+
+[% if cms.site.custom.outbrain == 'false' %]
+<div id="latest-by-section" class="grid_[% grid_set_blox_med_half_left %] alpha">
+    <div class="related-by-section">
+    [% if core_site_messages.editorial.asset.stats.related.title %]
+        <h3>[% core_site_messages.editorial.asset.stats.related.title %]</h3>
+    [% else %]
+        <h3>Similar Stories</h3>
+    [% end %]
+        [% if this.asset.related_by_tag('tag' : 'section', 'type': 'article', 'sort' : 'startdate', 'results' : 5, 'age' : related_age) | length > 0 %]
+        <ul class="bull-list">
+        [% foreach this.asset.related_by_tag('tag' : 'section', 'type': 'article', 'sort' : 'startdate', 'results' : 5, 'age' : related_age) as story -%]
+            <li><a href="[% story.url %]" title="[% story.title | html %]">[% story.title | strip_tags %]</a></li>
+            [% end %]
+        </ul>
+        [% end %]
+    </div>
+</div>
+<div id="popular-by-section" class="grid_[% grid_set_blox_med_half_right %] omega">
+    <div class="related-by-section">
+        [% pStories = cms.stats.most_viewed('type': 'article', 'maximum': 5) %]
+    [% if core_site_messages.editorial.asset.stats.most_popular.title %]
+        <h3>[% core_site_messages.editorial.asset.stats.most_popular.title %]</h3>
+    [% else %]
+        <h3>Most Read</h3>
+    [% end %]
+        [% if pStories | length > 0 %]
+            <ul class="bull-list">
+                [% foreach pStories as pStory %]
+                    <li><a href="[% pStory.url %]">[% pStory.title %]</a></li>
+                [% end %]
+            </ul>
+        [% end %]
+    </div>
+</div>
+[% else %]
+<div class="OUTBRAIN" data-src="[% this.asset.url('absolute':true) %]" data-widget-id="AR_1" data-ob-template="TownNews" ></div>
+<script type="text/javascript" src="http://widgets.outbrain.com/outbrain.js"></script>
+[% end %]
+<div class="clear"></div>
+
+[% if cms.site.custom.taboola != null %]
+<!-- START TABOOLA -->
+<div id='taboola-div'></div>
+<script type="text/javascript">
+    window._taboola = window._taboola || [];
+    _taboola.push({article:'auto'});
+    _taboola.push({mode:'horizontalx4', container:'taboola-div'});
+</script>
+<script type="text/javascript" src="http://cdn.taboolasyndication.com/libtrc/[% cms.site.custom.taboola %]/loader.js"></script>
+<!-- END TABOOLA -->
+[% end %]
+</div>

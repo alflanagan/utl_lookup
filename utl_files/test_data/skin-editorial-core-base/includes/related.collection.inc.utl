@@ -1,0 +1,75 @@
+<div class="blox-story-related-container">
+    [% foreach this.asset.items('type': 'collection') as aCollection %]
+    	
+        [% if (aCollection | iterpos == 0) %]
+            <h3>
+            [% 
+                cImage = aCollection.items('type':'image') | length;
+                cVideo = aCollection.items('type':'video') | length;
+                cAudio = aCollection.items('type':'audio') | length;
+                cFlash = aCollection.items('type':'flash') | length;
+                cPDF = aCollection.items('type':'pdf') | length;
+                cHTML = aCollection.items('type':'html') | length;
+                cLink = aCollection.items('type':'link') | length;
+
+				cMiscGroup = cLink + cHTML + cPDF + cFlash + cAudio;
+
+				if cMiscGroup == 0 && cVideo == 0 && cImage != 0; 
+					echo 'Related Galleries';
+				else if cMiscGroup == 0 && cImage == 0 && cVideo != 0; 
+					echo 'Related Video Galleries';
+				else; 
+					echo 'Related Collections';
+				end;
+            %]
+            </h3>
+            <div class="related-item">
+                [% preview = aCollection.preview([100]) %]
+                [% if preview %]
+                    <a href="[% aCollection.url %]" class="preview">
+                        <img src="[% preview.url %]" />
+                    </a>
+                [% end %]
+                <p[% if !preview %] style="float: none; width: 100%"[% end %]>
+                    <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-collection.gif" alt="icon-collection" />
+					<a href="[% aCollection.url %]">
+                        <strong>[% aCollection.title %]</strong><br />
+                    </a>
+                    [% if aCollection.byline %]
+                        <i>[% aCollection.byline | titlecase | autolink %]</i><br />
+                    [% end %]
+                    [% aCollection.description  | tidy %]
+                </p>
+                <div class="clear"></div>
+            </div>
+        [% else if aCollection | iterpos == 1 %]
+            <div class="clear"></div>
+            <ul class="tn-story-extra-links">
+				<li>
+					<img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-collection.gif" alt="icon-collection" />
+					<a href="[% aCollection.url %]" title="aCollection.title">
+						[% aCollection.title %]
+					</a>
+				</li>
+			[% /* 	If this is the second and last related collection, end the list	*/
+				if (aCollection | iterlast);
+					echo '</ul>';
+				end;	
+           else if (aCollection | iterlast) && (aCollection | iterpos != 1) %]
+            	<li>
+					<img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-collection.gif" alt="icon-collection" />
+						<a href="[% aCollection.url %]" title="aCollection.title">
+							[% aCollection.title %]
+						</a>
+				</li>
+            </ul>
+        [% else %]
+            	<li>
+					<img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-collection.gif" alt="icon-collection" />
+						<a href="[% aCollection.url %]" title="aCollection.title">
+							[% aCollection.title %]
+						</a>
+				</li>
+        [% end %]
+    [% end %]
+</div>

@@ -1,0 +1,12 @@
+[%-
+/* Use this in the case of Newsys based archives */
+
+aDocIDs = cms.system.page_url | regex('/articles\/(.+\/(.+))\.txt/');
+if aDocIDs;
+    if cms.system.redirect('external_id': aDocIDs[1]);
+        cms.system.redirect('external_id': aDocIDs[1]); exit;
+    else;
+        cms.system.redirect('external_id': aDocIDs[2]); exit;
+    end;
+end;  
+%]

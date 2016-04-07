@@ -1,0 +1,7 @@
+[% 	
+
+if !cms.component.load('core_base_navigation'); echo '<!--Failed to load core_base_navigation component.-->'; end; 
+if core_base_nav_get_view_mode == "editor";
+    core_base_nav_head_tags("main_nav", true);
+end;
+core_base_nav_main_navigation('main_nav', this.nav.tree) %]

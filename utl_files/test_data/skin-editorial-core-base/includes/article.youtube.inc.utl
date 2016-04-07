@@ -1,0 +1,17 @@
+[%- 
+if !cms.component.load("core_video_player");  echo "<!-- core_video_player load failed -->"; end; 
+/* ## set custom width if provided ## */
+	if custom_video_player_width;
+		grid_set_blox_med_span_px = custom_video_player_width;	
+   end %]
+<div class="blox-asset-content">
+[%	core_video_player(
+			'assets':related_youtube,
+			'style':'hd',
+			'player_width':grid_set_blox_med_span_px,
+			'player_height':463,
+			'id':'blox-article-youtube-tab-player',
+			'mode':'editorial',
+			'playlist_columns':3,
+			'playlist_orientation':'horizontal') %]
+</div>

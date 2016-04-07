@@ -9,9 +9,5 @@ utl_lookup/settings.py
 data/
 # softlink to utl_indexer program
 parse_file.py
-# avoid cluttering up repo with files not used for tests
-utl_files/test_data/skin-editorial-core-base/resources/
-utl_files/test_data/skin-editorial-core-base/templates/
-utl_files/test_data/skin-editorial-core-base/includes/
 # static files collection directory
 /static/

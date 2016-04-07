@@ -1,0 +1,66 @@
+<!-- limit it to only presentation mode -->
+[% call cms.component.load('core_timelinejs'); %]
+<!-- BEGIN Timeline Embed -->
+<div id="timeline-embed"></div>
+[%-
+    macro tl_getDate(oAssets = this.asset.items);
+        if oAssets | length > 0;
+            aOutput = [];
+            foreach oAssets as oAsset;
+                aArray = [];
+                aArray['startDate'] = oAsset.starttime('Y,n,j');
+                aArray['endDate'] = oAsset.starttime('Y,n,j');
+                aArray['headline'] = '<a href="'+ oAsset.url('absolute':true) +'">'+ oAsset.title +'</a>';
+                aArray['text'] = core_base_library_leadIn(oAsset) | strip_tags | truncate(300);
+                aArray['text'] += ' <a href="'+ oAsset.url('absolute':true) +'">Read more</a>';
+                
+                oImg = core_base_library_assetThumb('asset':oAsset, 'sizeArray':[300]);
+                oImgThumb = core_base_library_assetThumb('asset':oAsset, 'sizeArray':[24]);
+                if oImg.url;
+                    aArray['asset'] = [];
+                    aArray.asset.media = oImg.url;
+                    aArray.asset.credit = oImg.byline;
+                    aArray.asset.caption = oImg.title;
+                    aArray.asset.thumbnail = oImgThumb.url;
+                end;
+                
+                aOutput[aOutput|length] = aArray;
+            end;
+            return aOutput;
+        end;
+    end;
+    
+    oImg = core_base_library_assetThumb('asset':this.asset, 'sizeArray':[300]);
+    
+    timeline = [
+        'timeline':[
+            'headline': this.asset.title,
+            'text': this.asset.description,
+            'startDate': this.asset.starttime('Y,n,j'),
+            'type': 'default',
+            'asset':[
+                'media': oImg.url,
+                'credit': oImg.byline,
+                'caption': oImg.title
+            ],
+            'date': tl_getDate(this.asset.items)
+        ]
+    ];
+    
+    
+-%]
+<script type="text/javascript">
+timeJSON = [% timeline|json %];
+
+var timeline_config = {
+    width: "100%",
+    height: "600",
+    css: '[% cms.page.cdn('components/core_timelinejs/resources/styles/timeline.css'); %]',
+    js: '[% cms.page.cdn('components/core_timelinejs/resources/scripts/timeline-min.js'); %]',
+    source: timeJSON,
+    hash_bookmark: true
+}
+</script>
+<script type="text/javascript" src="[% cms.page.cdn('components/core_timelinejs/resources/scripts/storyjs-embed.js'); %]"></script>
+<!-- END Timeline Embed-->
+<div class="clear"></div>

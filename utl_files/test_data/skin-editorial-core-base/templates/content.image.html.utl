@@ -1,0 +1,361 @@
+[%-    
+/**
+ * content.image.html.utl
+ * editorial-core-base
+ */
+mode = cms.request.param('mode') | trim;
+
+/* email reach mode */
+if mode == 'em';
+    if !cms.component.load("core_reach"); echo "<!-- core_reach failed to load. -->"; end;
+    displayReachAsset();
+    exit;
+
+/* touch 5 */	
+else if mode == 'jqm' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/content.image.inc.utl';  
+
+/* buy photo mode */
+else if mode =='buyphoto';
+	/* Buy Photo Redirect (currently only pictopia uses this) */
+	if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+	core_base_library_buyPhotoLink(cms.asset);
+	exit;
+	
+/* mobile Image display mode */
+else if mode == 'mobile';
+	call cms.component.load('core_base_mobile');     
+	call cms.component.load('core_base_business'); 
+	cms.page.add_css('components/core_base_mobile/resources/styles/business.css');
+	business = cms.asset.items('relationship':'parent','type':'business')[0];    
+		core_mobile_doctypePlus %]
+		<div id="mobile-business" class="mobile business coupon image[% if cms.system.venue == 'admin'; echo ' preview'; end %]">
+			<div class="notice ui-state-highlight">
+				Show this coupon on your phone at [% business.name %].
+			</div>
+			<div id="offers" class="coupon-display">
+				<img src="[% cms.asset.resource_url %]" alt="[% cms.asset.title | html %]" />
+				<!--<h2>[% business.name %]</h2>
+				<p>[% core_base_business_address(business) %]</p> -->    
+			</div>    
+			[% core_base_business_mobileHeader('business':business,'showLogo':false,'showExtraInfo':false) %]
+			<div class="lower-panel ui-widget-header">
+				<a href="[% business.url %]?mode=mobile" class="jquery-ui-button">back</a>
+			</div>
+		</div>
+		<script type="text/javascript">
+			$(".jquery-ui-button").button();
+		</script>
+[%	core_mobile_footer;
+
+/* coupon print mode */
+else if mode == 'coupon_print' && cms.site.custom.marketplace == 'true';
+    include 'header-spotless.inc.utl' %]
+    <img src="[% cms.asset.resource_url %]" width="[% cms.asset.width %]" height="[% cms.asset.height %]" />
+[% 
+    include 'footer-spotless.inc.utl';
+
+/* Standard display */ 
+else;
+	call cms.component.load('core_base_editorial');
+	call cms.component.load('core_base_library');
+		
+	/* Subscription: Gather subscription/metering/surveys information */
+	aServiceInfo = core_base_library_getServiceInfo; 
+
+    include 'header.inc.utl';
+    if left_col_on == true %]
+    <div id="blox-left-sidebar" class="grid_[% grid_set_blox_left %]">
+        [% include 'sidebar-left.inc.utl' %]
+    </div>
+[%    end; 
+    /* ## target images ## */
+    sImages = cms.asset.items('type': 'image');
+    
+    /* ## get photo num. later passed into selected img array ## */
+    fImage = cms.request.param('photo') | trim;
+    
+    /* ## set default photo num ## */
+    if(fImage <= 1 or fImage==null);
+        fImage = 0;
+        thSelected = 1;
+    
+    /* ## make sure we are selecting correct photo also set selected class  ## */
+    else;
+        fImage = fImage - 1;
+        thSelected = fImage;
+    end;
+    
+    /* ## lets use i as increment for photo array ## */
+    i=0;
+    
+       /* ## get keyword tags ## */
+       aKeywords = cms.asset.tags('keyword');
+
+       /* ## get sections tags ## */
+       aSections = cms.asset.tags('sections');
+-%]
+    <script type="text/javascript">
+    <!--
+    $(function(){
+        var img = new Image();
+        $(img).load(function () {
+       $(this).hide();
+       $('#tn-asset-main').removeClass('tn-loading').append(this);
+       [%   iMax_width = grid_set_blox_med_span_px;
+                if cms.asset.width > iMax_width;
+                  iWidth = cms.asset.width;
+                  iHeight = cms.asset.height;
+                  iRatio = (iHeight / iWidth);
+                  newHeight = (iMax_width * iRatio);
+           %]
+           $(this).width('[% iMax_width %]px').height('[% newHeight %]px');  
+           [% end %]
+       $(this).show();
+[% if cms.asset.custom.photo_link %]
+           $('#tn-asset-main').find('img').wrap('<a href=\"[% cms.asset.custom.photo_link %]\" />');
+[% end %]
+        }).error(function () {
+        }).attr('src', '[% cms.asset.resource_url %]');
+    }); 
+    //-->
+    </script>
+    <div id="blox-left-col" class="grid_[% grid_set_blox_med_span %][% if cms.site.custom.alpha_omega == 'true' %] alpha[% end %]">
+        [% include 'site-option-one-index.inc.utl' %]
+        <div id="blox-story" class="blox-content [% cms.asset.type %]">
+        [%    core_base_library_breadcrumbs;
+            if cms.site.custom.assets_region == 'true'; cms.region('name':'center-one-index-and-assets'); end; %]
+            <[% asset_title_tag %] id="blox-asset-title">
+            [%    if cms.asset.custom.custom_hide_headline == 'true' || cms.asset.custom.hide_headline == 'true';         
+                    continue; 
+                else %]
+                    <span class="blox-headline entry-title">[% cms.asset.title %]</span>
+            [%    end %]
+            </[% asset_title_tag %]>
+            
+            [% include '_collection/collection-links.inc.utl'; %] 
+            
+            
+            [%    if cms.asset.subheadline %]
+                <p class="sub-headline">
+                    [% cms.asset.subheadline %]
+                </p>
+            [%    end;
+                core_base_library_buyPhotoLink('asset':cms.asset);
+                 if cms.asset.byline %]
+                <p class="byline">
+                    [%  echo cms.asset.byline +' | '; end; %] Posted: [% cms.asset.starttime | datetime('l, F j, Y g:i a') %]
+                </p>
+	[%	/* Subscription: service notice */
+		core_base_library_serviceGetNotice; 
+		
+		/* Subscription: premium content */ %]
+		<div class="p402_premium p402_hide [% aServiceInfo['sServiceClass'] %]">		
+       [%	main_div = cms.asset.width; 
+            
+			/* wow... */
+			if main_div <= 450 %]
+            <div id="tn-asset-main" class="tn-loading" style="width: [% main_div %]px; height:[% cms.asset.height %]px;"></div>
+			<div id="tn-asset-side" style="width: [% 590 - main_div %]px">
+                <p>[% cms.asset.description | replace('&amp;#39;', '&#39;') %]</p>
+            </div>
+       
+	    [%	else if main_div <= 620 && main_div > 450 %]
+            <div id="tn-asset-main" class="tn-big tn-loading" style="width: [% main_div %]px;text-align: center; height:[% cms.asset.height %]px;"></div>
+            <div id="tn-asset-side-big" style="width: [% main_div %]px">
+                <p>[% cms.asset.description | replace('&amp;#39;', '&#39;') %]</p>
+                        [% core_base_library_buyPhotoLink('asset':cms.asset) %]
+            </div>
+       
+	    [%	else if main_div > 620;
+            main_div = 620 %]
+            <div id="tn-asset-main" class="tn-big tn-loading" style="width: [% main_div %]px;"></div>
+			<div id="tn-asset-side-big" style="width: [% main_div %]px">
+                <p>[% cms.asset.description | replace('&amp;#39;', '&#39;') %]</p>
+                   [% core_base_library_buyPhotoLink('asset':cms.asset) %]
+            </div>
+        [%	end; /* end wow */ %]
+		</div>
+		
+	[%	/* Subscription: Decrypt and run service member scripts */
+		core_base_library_serviceDecrypt;
+		
+		/* Subscription: Show/hide service memeber content */ 
+		core_base_library_manageServiceContentScript('aUrlServices':aServiceInfo['aServices']);
+	
+		/* Subscription: Google Survey */
+		if aServiceInfo['bGoogleSurvey'] = true;
+			core_base_editorial_googleSurveyAgentFailScript;
+			core_base_editorial_googleSurveyCall;
+		end;
+
+		/* other images */		
+       		if sImages;
+                foreach sImages as sImage;
+                    if sImage.uuid == cms.asset.uuid;
+                            if sImage | iterfirst; %]
+                                <h6 class="tn-more-images">
+                                    [% (sImages | length) - 1 %] MORE RELATED IMAGE[% if ((sImages | length) - 1) > 1 %]S[% end %]
+                                </h6>
+                                <ul id="blox-story-photos-keywords">
+          [%                   end;
+                            if sImage | iterlast %]
+                                </ul>
+                                <div class="clear"></div>
+                        [%    else;
+                                continue;
+                            end;
+                        else;
+                            if sImage | iterfirst; %]
+                                <h6 class="tn-more-images">
+                                    [% (sImages | length) - 1 %] MORE RELATED IMAGE[% if ((sImages | length) - 1) > 1 %]S[% end %]
+                                </h6>
+                                <ul id="blox-story-photos-keywords">
+                        [%    end;
+                            preview = sImage.preview([100]);
+                                if preview.width > preview.height;
+                                    orientation = 'horizontal';
+                                else;
+                                    orientation = 'vertical';
+                                end;
+                                if preview %]
+                                    <li>
+                                    <a href="[% sImage.url %]">
+                                        <img class="[%- orientation -%]" alt="[% sImage.caption | html %]" src="[% preview.url %]" />
+                                    </a>
+                                    </li>
+                            [%    end;
+                                if sImage | iterlast %]
+                                    </ul>
+                                    <div class="clear"></div>
+                            [%    end;
+                        end;
+                   end;
+               end;
+		
+			
+			/* related business */
+			if cms.asset.items('relationship' : 'parent', 'type' : 'business')|length > 0 %][% core_base_library_business_logo(cms.asset,'small'); %][% end %]
+               [%        
+                if aKeywords;
+                    foreach aKeywords as keyword_tag;
+                        if keyword_tag | startswith('#') != 'true';
+                            if keyword_tag | iterpos == 4;
+                                break;
+                               else;
+                                   kPhotos = cms.assets('field.tag_keyword':keyword_tag,'field.type':'image', 'limit': 15,'sort':['start_time':'desc']);
+                                if kPhotos | length > 1;
+                                    foreach kPhotos as kPhoto;
+                                        if kPhoto.uuid == cms.asset.uuid;
+                                               if kPhoto | iterfirst; %]
+                                            <h6 class="tn-more-images">
+                                                [% (kPhotos | length) - 1 %] MORE IMAGE[% if ((kPhotos | length) - 1) > 1 %]S[% end %] TAGGED WITH "[% keyword_tag | uppercase %]"
+                                            </h6>
+                                            <ul id="blox-story-photos-keywords">
+                                [%             end;
+                                            if kPhoto | iterlast %]
+                                            </ul>
+                                            <div class="clear"></div>
+                                [%             else;
+                                                continue;
+                                            end;
+                                        else;
+                                            if kPhoto | iterfirst; %]
+                                               <h6 class="tn-more-images">
+                                                [% (kPhotos | length) - 1 %] MORE IMAGE[% if ((kPhotos | length) - 1) > 1 %]S[% end %] TAGGED WITH "[% keyword_tag | uppercase %]"
+                                            </h6>
+                                            <ul id="blox-story-photos-keywords">
+                                [%            end;
+                                            preview = kPhoto.preview([100]);
+                                            if preview.width > preview.height;
+                                                orientation = 'horizontal';
+                                            else;
+                                                orientation = 'vertical';
+                                            end;
+                                            if preview %]
+                                            <li>
+                                                <a href="[% kPhoto.url %]">
+                                                    <img class="[%- orientation -%]" alt="[% kPhoto.caption | html %]" src="[% preview.url %]" />
+                                                </a>
+                                            </li>
+                                    [%         end;
+                                            if kPhoto | iterlast %]
+                                            </ul>
+                                            <div class="clear"></div>
+                                    [%        end;
+                                        end; /* [END] kPhotos.uuid check */
+                                    end; /* [END] kPhotos foreach */
+                                   end; /* [END] kPhotos | length check */
+                            end; /* [END] keyword_tag iterpos check */
+                        end; /* [END] keyword_tag | startswith check */
+                   end;/* [END] foreach aKeywords */
+                   end; /* [END] if aKeywords */ /* Yeesh */
+                if aSections;
+                    foreach aSections as section_tag;
+                        if section_tag | iterpos == 4;
+                            break;
+                        else;
+                            sPhotos = cms.assets('field.tag_section':section_tag,'field.type':'image', 'limit': 15,'sort':['start_time':'desc']);
+                            if sPhotos | length > 1;
+                                foreach sPhotos as sPhoto;
+                                    if sPhoto.uuid == cms.asset.uuid;
+                                        if sPhoto | iterfirst; %]
+                                        <h6 class="tn-more-images">
+                                            [% (sPhotos | length) - 1 %] MORE IMAGE[% if ((sPhotos | length) - 1) > 1 %]S[% end %] FROM THE "[% section_tag | uppercase %]" SECTION
+                                        </h6>
+                                        <ul id="blox-story-photos-keywords">
+                                    [%    end; /* [END] sPhoto | iterfirst check */
+                                        if sPhoto | iterlast %]
+                                                </ul><div class="clear"></div>
+                                    [%    else;
+                                            continue;
+                                        end; /* [END] sPhoto | iterlast check */
+                                    else;
+                                        if sPhoto | iterfirst; %]
+                                        <h6 class="tn-more-images">
+                                            [% (sPhotos | length) - 1 %] MORE IMAGE[% if ((sPhotos | length) - 1) > 1 %]S[% end %] FROM THE "[% section_tag | uppercase %]" SECTION
+                                        </h6>
+                                        <ul id="blox-story-photos-keywords">
+                                    [%    end; /* [END] sPhoto | iterfirst check part two */
+                                        preview = sPhoto.preview([100]);
+                                        if preview.width > preview.height;
+                                            orientation = 'horizontal';
+                                        else;
+                                            orientation = 'vertical';
+                                        end;
+                                        if preview %]
+                                        <li>
+                                            <a href="[% sPhoto.url %]">
+                                                <img class="[%- orientation -%]" alt="[% sPhoto.caption | html %]" src="[% preview.url %]" />
+                                            </a>
+                                        </li>
+                                    [%    end;
+                                        if sPhoto | iterlast %]
+                                        </ul>
+                                        <div class="clear"></div>
+                                    [%    end;
+                                    end;/* [END] sPhoto.uuid check */
+                                end;/*[END] foreach sPhotos */
+                            end;/* [END] sPhotos | length check */
+                        end;/* [END] section_tag | iterpos check */
+                   end;/* [END] foreach aSections */
+                   end; /* [END] aSections existence check */ /* Yeesh part 2 */ %]
+                <div class="clear"></div>
+            [%  fb_like_location = 'bottom';
+                include '_article/article.social_share_horizontal.inc.utl';
+                if cms.site.custom.social_share_style == 'vertical' && cms.site.custom.facebook_app_id;
+                    core_base_library_assetLike(
+                        'coupleWithFacebook':true,
+                        'ajaxSubmit':true,
+                        'showCount':false,
+                        'id':fb_like_location);
+                end;
+                include 'article.comments.inc.utl' %]
+        </div> [%- /* <-- end --> id="blox-story" class="blox-content" */%]
+    </div> [%- /* <-- end --> id="blox-story" class="blox-content" */%]
+    <div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms.site.custom.alpha_omega == 'true' %] omega[% end %]">
+        [% include 'sidebar.inc.utl' %]
+    </div>
+[%-    
+include 'footer.inc.utl';
+end;

@@ -1,0 +1,30 @@
+call cms.component.load('core_base_mobile');
+call cms.component.load('core_base_business');    
+cms.page.add_css('components/core_base_mobile/resources/styles/business.css');
+business = this_asset.items('relationship':'parent','type':'business')[0];    
+    core_mobile_doctypePlus -%]
+    <div id="mobile-business" class="mobile business coupon text-coupon[% if cms.system.venue == 'admin'; echo ' preview'; end %]">
+        <div class="notice ui-state-highlight">
+            Show this coupon on your <span class="mobile-device">phone</span> at [% business.name %].
+        </div>
+        <div id="offers" class="coupon-display">
+             <div id="text-coupon">
+                <h1>[% this_asset.title %]</h1>
+                <div class="description">
+                [%    foreach this_asset.content as p;
+                        p | autolink;
+                    end %]
+                </div>
+            </div>
+        </div>
+        [% core_base_business_mobileHeader('business':business,'showLogo':false,'showExtraInfo':false) %]
+        <div class="lower-panel ui-widget-header">
+            <a href="[% business.url %]?mode=mobile" class="jquery-ui-button">back</a>
+        </div>    
+    </div>
+    
+    <script type="text/javascript">
+        $(".jquery-ui-button").button();
+    </script>
+[%-
+core_mobile_footer;

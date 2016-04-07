@@ -1,0 +1,8 @@
+[%-
+/**
+ * Image gallery (editorial)
+ */
+call cms.component.load('core_advanced_mobile');
+call cms.component.load('core_base_library');
+call cms.component.load('core_external_jquery');
+core_advanced_mobile_photoGalleryPage;

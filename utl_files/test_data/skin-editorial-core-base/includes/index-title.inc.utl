@@ -1,0 +1,11 @@
+[%	rss_path = this_url.path | regex('/^\//', '') | regex('/\/$/', '');
+	section_modified = ',' + rss_path + ','; 		
+ 	rss_section_links = ',' + cms.site.custom.rss_section_links + ',';
+
+	if rss_section_links | contains(section_modified) %]
+	<span id="section-rss-link">
+		<a class="rss-link" href="/search/?q=&amp;t=article&amp;l=10&amp;d=&amp;d1=&amp;d2=&amp;s=start_time&amp;sd=desc&amp;c[]=[% rss_path %],[% rss_path %]/*&amp;f=rss" rel="nofollow external">
+			<img src="global/resources/images/rss-icon.gif" class="index-title-icon" alt="rss feed" />
+		</a>
+	</span>	
+[% 	end %]

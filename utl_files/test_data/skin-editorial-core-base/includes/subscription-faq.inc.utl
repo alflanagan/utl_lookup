@@ -1,0 +1,21 @@
+<div class="on-the-spot-faq">
+	<h3>Frequently Asked Questions</h3>
+	<dl>
+		<dt>
+			<strong>How do I get my Member ID/password if I am a print subscriber?</strong>
+		</dt>
+			<dd>[DESCRIPTION]</dd>
+		<dt>
+			<strong>How do I get my Member ID/password if I am an online-only subscriber?</strong>
+		</dt>
+			<dd>
+				Once you have registered and subscribed, your registered Screen Name and Password will grant you access to all of the content your subscription package includes. <a href="[%- cms.url('app': 'user').path | html -%]/forgot/">Forgot your password?</a> 
+			</dd>
+		<dt>
+			<strong>I'm logged in. Why am I unable to view the content on this page?</strong>
+		</dt>
+			<dd>
+				You have likely registered an account (allowing you to log in), but not signed up for a service package.<br /> Select a package from the <a href="[%- this.url | html -%]#services-area">service list</a> above to gain access.<br />
+			</dd>
+	</dl>		
+</div>

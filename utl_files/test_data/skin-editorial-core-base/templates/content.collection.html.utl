@@ -1,0 +1,712 @@
+[%
+/**
+ * content.collection.html from editorial-core-base
+ * @updated 3.24.11 cricketts rewored html asset display.
+ */
+mode = cms.request.param('mode');
+sPresentation = this.asset.presentation;
+
+/* touch 5 */
+if mode == 'jqm' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/content.collection.inc.utl';
+
+/* standard display */
+else;
+call cms.component.load('core_base_editorial');
+call cms.component.load('core_base_library');
+
+/* Subscription: Gather subscription/metering/surveys information */
+aServiceInfo = core_base_library_getServiceInfo;
+
+include 'header.inc.utl';
+
+cms.page.add_skin_script('flowplayer-3.1.0.min.js');
+cms.page.add_skin_script('flashembed-1.0.2.min.js');
+
+    if blox_grid | startswith('300');
+        if grid_set_blox_med_half_right == 3;
+            small_vid_width = 220;
+        else if grid_set_blox_med_half_right == 5;
+            small_vid_width = 380;
+        else;
+            small_vid_width = 300;
+        end;
+    else;
+        if grid_set_blox_med_half_right == 3;
+            small_vid_width = 160;
+        else;
+            small_vid_width = 280;
+        end;
+    end;
+    asset = this.asset;
+    assetGroup = asset.items;
+    articleGroup = filterAssetsByType(assetGroup,'article','include');
+    audioGroup = filterAssetsByType(assetGroup,'audio','include');
+    htmlGroup = filterAssetsByType(assetGroup,'html','include');
+    pdfGroup = filterAssetsByType(assetGroup,'pdf','include');
+    zipGroup = filterAssetsByType(assetGroup,'zip','include');
+    imageGroup = filterAssetsByType(assetGroup,'image','include');
+    linkGroup = filterAssetsByType(assetGroup,'link','include');
+    collectionGroup = filterAssetsByType(assetGroup,'collection','include');
+    pollGroup = filterAssetsByType(assetGroup,'poll','include');
+
+    videoGroup = filterAssetsByType(assetGroup,'video','include');
+    youtubeGroup = filterAssetsByType(assetGroup,'youtube','include');
+    vmixGroup = filterAssetsByType(assetGroup,'vmix','include');
+
+    flashGroup = filterAssetsByType(assetGroup,'flash','include');
+    pollGroup = filterAssetsByType(assetGroup,'poll','include');
+
+    allVideoGroup = youtubeGroup+videoGroup+vmixGroup;
+
+    /* start dividing images into usable groups */
+    imageGroup = asset.items('type':'image');
+    noPresentationImageGroup = filterImagesByPresentation(imageGroup,["infographic","masthead"],"exclude");
+
+    showcaseGroup = filterImagesByPresentation(imageGroup, ["showcase"]);
+    panoramaGroup = filterImagesByPresentation(imageGroup, ["panorama"]);
+    infographicGroup = filterImagesByPresentation(imageGroup, ["infographic"]);
+    mastheadGroup = filterImagesByPresentation(imageGroup, ["masthead"]);
+
+    /* exclusive groups */
+    if articleGroup != null && allVideoGroup == null && audioGroup == null && htmlGroup == null && pdfGroup == null && zipGroup == null && imageGroup == null;
+        exclusiveGroup = 'article';
+    elseif articleGroup == null && allVideoGroup != null && audioGroup == null && htmlGroup == null && pdfGroup == null && zipGroup == null && imageGroup == null;
+        exclusiveGroup = 'video';
+    elseif articleGroup == null && allVideoGroup == null && audioGroup == null && htmlGroup == null && pdfGroup != null && zipGroup == null && imageGroup == null;
+        exclusiveGroup = 'pdf';
+    elseif articleGroup == null && allVideoGroup == null && audioGroup == null && htmlGroup == null && pdfGroup == null && zipGroup == null && imageGroup != null;
+        exclusiveGroup = 'image';
+    end;
+
+%]
+    [%    if left_col_on == true %]
+    <div id="blox-super-left" class="grid_[% grid_set_blox_left %]">
+        [% include 'sidebar-left.inc.utl' %]
+    </div>
+    [% end %]
+    <div id="blox-left-col" class="grid_[% grid_set_blox_med_span %][% if cms.site.custom.alpha_omega == 'true' %] alpha[% end %]">
+
+
+
+
+    [% include 'site-option-one-index.inc.utl' %]
+        <div id="blox-story" class="blox-content hnews hentry item">
+        [% core_base_library_breadcrumbs %]
+        [% if cms.site.custom.assets_region == 'true'; cms.region('name':'center-one-index-and-assets'); end; %]
+            <div id="blox-collection">
+
+                [% foreach mastheadGroup as masthead; -%]
+                    <div class="masthead">
+                        <img src="[% masthead.resource_url %]" alt="[% masthead.description %]" />
+                    </div>
+                [% end %]
+
+
+            [% if asset.presentation != 'timeline' %]
+                <[% asset_title_tag %] id="blox-asset-title">
+                    [% if asset.custom.custom_hide_headline == 'true' || asset.custom.hide_headline == 'true'; continue; else %]
+                        <span class="blox-headline entry-title">[% asset.title %]</span>
+                    [% end %]
+                </[% asset_title_tag %]>
+
+                [% if asset.content %]
+                    <div class="description">[% asset.content %]</div>
+                [% end %]
+
+            [% end %]
+			[%/* parent asset link */
+			core_base_library_assetParentLink('aAsset':cms.asset);
+
+			/* Subscription: service notice */
+			core_base_library_serviceGetNotice;
+
+			/* Subscription: premium content */ %]
+            [% if asset.presentation == 'timeline' %]
+                [% /* dies terribly inside the 402 */ %]
+                [% include '_collection/collection.timeline.inc.utl' %]
+            [% end %]
+
+            [% if asset.presentation != 'timeline' %]
+                <div class="p402_premium p402_hide [% aServiceInfo['sServiceClass'] %]">
+                    [% if sPresentation == 'paging_gallery'; %]
+                        [% include '_collection/paging.gallery.inc.utl'; %]
+                    [% else if sPresentation == 'series';%]
+                    	[% include '_collection/series.inc.utl'; %]
+                    [% else; %]
+                        [% /** standard collection display */ %]
+                        [% if asset.presentation == 'mapped' %]
+                            [% include '_collection/collection.map.inc.utl' %]
+                        [% end %]
+                        [% /* Video assets  */
+                        playerWidth = grid_set_blox_med_span_px;
+                        if allVideoGroup != null;
+                        if !cms.component.load('core_video_player'); echo '<!--Failed to load core_video_player component.-->'; end; %]
+                                    <div id="collection-video-group">
+                                        <div class="blox-title"><h3>Videos</h3></div>
+                                    [%-    core_video_player(
+                                            'assets':allVideoGroup,
+                                            'id':'collectionVideos',
+                                            'style':'hd',
+                                            'player_width':playerWidth
+                                            ) %]
+                                    </div>
+                                [%-    end; %]
+
+
+                            [%- /* changed to use grid variable */ -%]
+                            <div id="collection-left" class="grid_[% grid_set_blox_med_half_left %] alpha[% if exclusivegroup == 'article'; echo ' full'; end -%]">
+                                [% /* ----- Article assets ----- */ %]
+                                [% if mode != 'gallery' && articleGroup != null %]
+                                    <div id="collection-article-group">
+                                        [%     foreach articleGroup as articleItem; %]
+
+                                            [%    photo = articleItem.items('type':'image')[0].preview([300]);
+
+                                                truncate_length = 1000;
+                                                if(articleItem.prologue);
+                                                    leadP = articleItem.prologue;
+                                                else;
+                                                    leadP = articleItem.paragraphs[0];
+                                                end;
+                                                if(leadP | length) > truncate_length;
+                                                    leadP = '<p>' + (leadP | strip_tags | truncate(truncate_length,'&hellip;') + '</p>');
+                                                end;
+                                            %]
+                                            [% if articleItem | iterfirst %]
+                                        <a name="articles"></a>
+                                        <div class="blox-title"><h3>articles</h3></div>
+                                            <div class="blox-top-story">
+                                                <div class="blox-top-story-holder">
+                                                    [% if photo -%]
+                                                    <a href="[% articleItem.url %]" title="[% articleItem.title | html %]">
+                                                        <img alt="[% photo.caption | html %]" src="[% photo.url %]" class="story-image">
+                                                    </a>
+                                                    [% end -%]
+                                                    <div class="blox-asset-content blox-asset-content-extension" [% if !photo %]style="width:auto%;"[% end %]>
+                                                        <h3 class="blox-headline">
+                                                            <a href="[% articleItem.url %]" title="[% articleItem.title | html %]">
+                                                                [% articleItem.title | strip_tags %]
+                                                            </a>
+                                                        </h3>
+                                                        [% leadP %]
+                                                        <ul class="blox-comments tags">
+                                                        <li>
+                                                            <img src="global/resources/images/icon-03.gif" alt="icon" />
+                                                            <span class="blox-updated">
+                                                                Posted: [% articleItem.starttime('F d') %]
+                                                            </span>
+                                                        </li>
+                                                        <li>
+                                                            <img src="global/resources/images/icon-04.gif" alt="icon" />
+                                                            <a href="[% articleItem.url %]#user-comment-area">Comments <em>([% comments = articleItem.comments; echo comments | length %])</em></a>
+                                                        </li>
+                                                        <li>
+                                                            [% foreach articleItem.tags('keyword') as keyword;
+                                                                if keyword | startswith('#') != 'true'; %]
+                                                                    [% if icon_in_place != 'true';
+                                                                        icon_in_place = 'true'; %]
+                                                                        <img src="global/resources/images/icon-05.gif" alt="icon" />
+                                                                    [% end %]
+                                                                    <a class="tn-tag-link" href="/topic/?q=[% keyword %]&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=asc">[% keyword | titlecase | trim %]</a>[% if keyword | iterpos == 2 || keyword | iterlast; echo ''; else; echo ','; end; %]
+                                                                [% end;
+                                                                if keyword | iterpos == 2; break; end;
+                                                                end; %]
+                                                        </li>
+                                                    </ul><!-- end blox-comments -->
+                                                    </div>
+                                                </div><!-- end blox-top-story-holder -->
+                                            </div><!-- end blox-top-story -->
+                                            [% else %]
+                                                [% if articleItem | iterpos == 1 %]
+                                                <div class="clear"></div>
+                                                <div id="blox-collection-articles">
+                                                <ul class="blox-recent-list">
+                                                [% end %]
+                                                <li>
+                                                [% if photo %]
+                                                <a href="[% articleItem.url %]" title="[% articleItem.title | html %]">
+                                                    <img alt="[% photo.caption | html %]" src="[% photo.url %]" class="avatar" />
+                                                </a>
+                                                [% end %]
+                                                <div class="blox-recent-block">
+                                                    <h4 class="blox-headline">
+                                                        <a href="[% articleItem.url %]" title="[% articleItem.title | html %]">
+                                                            [% articleItem.title | strip_tags %]
+                                                        </a>
+                                                    </h4>
+                                                    [% leadP; %]
+                                                    <ul class="blox-comments">
+                                                    <li>
+                                                        <img src="global/resources/images/icon-03.gif" alt="icon" />
+                                                        <span class="blox-updated">
+                                                            Posted: [% articleItem.starttime('F d') %]
+
+                                                        </span>
+                                                    </li><!-- end posted -->
+                                                    <li>
+                                                        <img src="global/resources/images/icon-04.gif" alt="icon" />
+                                                        <a href="[% articleItem.url %]#user-comment-area">Comments <em>([% comments = articleItem.comments; echo comments | length%])</em></a>
+                                                    </li><!-- end comments -->
+                                                    <li>
+                                                        [% foreach articleItem.tags('keyword') as keyword;
+                                                            if keyword | startswith('#') != 'true'; %]
+                                                                [% if icon_in_place != 'true';
+                                                                    icon_in_place = 'true'; %]
+                                                                    <img src="global/resources/images/icon-05.gif" alt="icon" />
+                                                                [% end %]
+                                                                <a class="tn-tag-link" href="/topic/?q=[% keyword %]&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=asc">[% keyword | titlecase | trim %]</a>[% if keyword | iterpos == 2 || keyword | iterlast; echo ''; else; echo ','; end; %]
+                                                            [% end;
+                                                            if keyword | iterpos == 2; break; end;
+                                                        end; %]
+                                                    </li><!-- end keywords -->
+                                                    </ul><!-- end blox-comments -->
+                                                </div>
+                                                </li>
+                                                [% if articleItem | iterlast %]
+                                                </ul>
+                                                </div><!-- end blox-collection-articles {hidden} -->
+                                                [% end %]
+                                            [% end /* first articleItem */ %]
+                                        [% end %]
+                                    </div>
+                                [% end %]
+
+                            </div>
+                            <div id="collection-right" class="grid_[% grid_set_blox_med_half_right %] omega[% if articleGroup | length == 0 %] full[% end %]">
+                                [% /* ----- Image assets ----- */ %]
+                                [% if noPresentationImageGroup != null %]
+                                    <div id="collection-image-group">
+                                    <div class="blox-title">
+                                        <h3>Images</h3>
+                                    </div>
+                                        [%
+                                            /* get grid unit being used */
+                                            if grid_set_blox_grid_system_max == 12;
+                                                gridUnit = 75;
+                                            elseif grid_set_blox_grid_system_max == 16;
+                                                gridUnit = 55;
+                                            end;
+
+                                            /* load base component */
+                                            if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+                                            if articleGroup == null && allVideoGroup == null && audioGroup == null && htmlGroup == null && pdfGroup == null && zipGroup == null;
+                                                core_base_library_gallery(noPresentationImageGroup, grid_set_blox_med_span*gridUnit);
+                                            else;
+                                                core_base_library_gallery(noPresentationImageGroup, grid_set_blox_med_half_right*gridUnit);
+
+                                            end;
+                                        %]
+                                    </div>
+                                [% end %]
+
+                                [% /* ----- Poll Assets ----- */ %]
+                                [% if pollGroup | length;
+                                    if !cms.component.load('core_asset_poll'); echo '<!--core_asset_poll-->'; end;
+                                %]
+                                <div id="collection-poll-group">
+                                    <div class="blox-title">
+                                        <h3>Polls</h3>
+                                    </div>
+
+                                    <div class="blox-poll">
+                                    [% foreach pollGroup as pollAsset;
+                                       core_asset_poll("pollAsset":pollAsset);
+                                    end; -%]
+                                    </div>
+                                </div>
+                                [% end %]
+
+                               [%
+                                /* ----- Audio assets ----- */
+                                    if audioGroup != null %]
+                                    <div id="collection-audio-group">
+                                        [% rAudios(audioGroup,"blox-story-related-container"); %]
+                                    </div>
+                                [% end;
+                                /* ----- HTML assets ----- */
+                                if htmlGroup != null %]
+                                   <!-- <div id="collection-html-group"> -->
+                                    <div class="blox-story-related-container">
+                                        <h3>Extras</h3>
+                                        <div class="related-item">
+                                [%-    foreach htmlGroup as htmlItem;
+                                        if htmlItem.html | contains('</iframe>');
+                                            htmlPopup=false;
+                                        else;
+                                            htmlPopup=true;
+                                        end;     %]
+                                        <a id="[% htmlItem.uuid %]Open" class="jquery-ui-button html-collection-tile"[% if htmlpopup %] href="javascript:void(0)"[% else %] href="[% echo htmlItem.url %]" rel="external"[% end %]>
+                                        [%-    if !htmlPopup %]
+                                            <span class="ui-icon ui-icon-newwin float-right"></span>
+                                        [%-    end;
+                                            if htmlItem.preview %]
+                                            <img src="[% htmlItem.preview.url | html %]" />
+                                        [%-    end;
+                                            echo htmlItem.title+'<br /><em>'+(htmlItem.description | truncate(75, '&hellip;'))+'</em>' %]
+                                        <span class="clear"></span>
+                                        </a>
+                                [%        if htmlPopup %]
+                                        <a id="[%- htmlItem.uuid %]NewWin" href="[% echo htmlItem.url %]" rel="external" style="display:none">
+                                            [% htmlItem.title  %]
+                                        </a>
+                                        <div id="[%- htmlItem.uuid -%]" class="blox-story-html-container" style="display:none; text-align:center" title="[% htmlItem.title %]">
+                                             [% core_base_library_HtmlAssetDisplay(htmlItem) %]
+                                        </div>
+                                        <script type="text/javascript">
+                                        /* <![CDATA[ */
+                                        $(document).ready(function() {
+                                        // Tell jQuery that our div is to be a dialog
+                                            $("#[%- htmlItem.uuid -%]").dialog({
+                                                autoOpen: false,
+                                            [%     if asset.width -%]
+                                                width: [% asset.width + 20 -%],
+                                            [%    else %]
+                                                width: 800,
+                                            [%    end -%]
+                                                modal: true,
+                                                buttons: {
+                                                    Close: function(){
+                                                        $(this).dialog('close');
+                                                    },
+                                                    'Open in new window': function(){
+                                                    // click the ad link when this button is used
+                                                        $("#[%- htmlItem.uuid -%]NewWin").click();
+                                                    }
+                                                }
+                                            });
+                                            $("#[% htmlItem.uuid %]Open").click(function() {
+                                                $("#[%- htmlItem.uuid -%]").dialog("open");
+                                            });
+                                        });
+                                        /* ]]> */
+                                        </script>
+                            [%-            end;
+                                    end %]
+                                    <span class="clear"></span>
+                                    </div>
+                                    </div>
+                            [%    end;
+                                /* ----- Flash assets ----- */
+                                    if flashGroup != null %]
+                                    <div id="collection-flash-group">
+                                        <div class="blox-story-related-container">
+                                        <h3>Related Interactive</h3>
+                                        [% foreach flashGroup as flashItem %]
+                                            [% if (flashItem | iterpos == 0) %]
+                                                <div class="related-item">
+                                                    [% preview = flashItem.preview %]
+                                                    [% if preview %]
+                                                        <a href="[% flashItem.url %]" border="0" class="preview">
+                                                            <img src="[% preview.url %]" width="100px" />
+                                                        </a>
+                                                    [% end %]
+                                                    <p>
+                                                        <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% pdfItem.url %]" border="0">
+                                                        <a href="[% flashItem.url %]">
+                                                            <strong>[% flashItem.title %]</strong><br />
+                                                        </a>
+                                                        [% if flashItem.byline %]
+                                                            <i>[% flashItem.byline | titlecase | autolink %]</i><br />
+                                                        [% end %]
+                                                        [% flashItem.description  | tidy %]
+                                                    </p>
+                                                    <div class="clear"></div>
+                                                </div>
+                                            [% else if (flashItem | iterpos == 1) %]
+                                                <div class="clear"></div>
+                                                <ul class="tn-story-extra-links">
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashItem.url %]" title="flashItem.title" border="0">[% flashItem.title %]</a></li>
+                                            [% else if (flashItem | iterlast) && (flashItem | iterpos != 1) %]
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashItem.url %]" title="flashItem.title" border="0">[% flashItem.title %]</a></li>
+                                                </ul>
+                                            [% else %]
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashItem.url %]" title="flashItem.title" border="0">[% flashItem.title %]</a></li>
+                                            [% end %]
+                                        [% end %]
+                                        </div>
+                                    </div>
+                                [% end %]
+
+                                [% /* ----- PDF assets ----- */ %]
+                                [% if pdfGroup != null -%]
+                                    [% if exclusiveGroup == 'pdf' %]
+                                        <div id="collection-pdf-group" class="exclusive">
+                                            <div class="blox-story-related-container">
+                                                <ul id="pdf-gallery">
+                                                [% foreach pdfGroup as pdfItem %]
+                                                <li>
+                                                    [% preview = pdfItem.preview([100]) %]
+                                                    [% if preview %]
+                                                        <a href="[% pdfItem.url %]" class="preview">
+                                                            <img src="[% preview.url %]" />
+                                                        </a>
+                                                    [% end %]
+                                                    <p>[% pdfItem.title %]</p>
+                                                </li>
+                                                [% end %]
+                                                </ul>
+                                            </div>
+                                        </div>
+
+
+                                    [%  else %]
+                                        <div id="collection-pdf-group">
+                                            <div class="blox-story-related-container">
+                                                <h3>Related Documents</h3>
+                                                [% foreach pdfGroup as pdfItem %]
+                                                    [% if (pdfItem | iterpos == 0) %]
+                                                        <div class="related-item">
+                                                            [% if exclusiveGroup == 'pdf' %]
+                                                                [% preview = pdfItem.preview([300]) %]
+                                                            [% else -%]
+                                                                [% preview = pdfItem.preview([100]) %]
+                                                            [% end -%]
+
+                                                            [% if preview %]
+                                                                <a href="[% pdfItem.url %]" class="preview">
+                                                                    <img src="[% preview.url %]" />
+                                                                </a>
+                                                            [% end %]
+                                                            <p>
+                                                                <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% pdfItem.url %]" border="0">
+                                                                <a href="[% pdfItem.url %]">
+                                                                    <strong>[% pdfItem.title %]</strong><br />
+                                                                </a>
+                                                                [% if pdfItem.byline %]
+                                                                    <i>[% pdfItem.byline | titlecase | autolink %]</i><br />
+                                                                [% end %]
+                                                                [% pdfItem.description  | tidy %]
+                                                            </p>
+                                                            <div class="clear"></div>
+                                                        </div>
+                                                    [% else if (pdfItem | iterpos == 1) %]
+                                                        <div class="clear"></div>
+                                                        <ul class="tn-story-extra-links">
+                                                        <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% pdfItem.url %]" title="pdfItem.title" border="0">[% pdfItem.title %]</a></li>
+                                                    [% else if (pdfItem | iterlast) && (pdfItem | iterpos != 1) %]
+                                                        <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% pdfItem.url %]" title="pdfItem.title" border="0">[% pdfItem.title %]</a></li>
+                                                        </ul>
+                                                    [% else %]
+                                                        <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% pdfItem.url %]" title="pdfItem.title" border="0">[% pdfItem.title %]</a></li>
+                                                    [% end %]
+                                                [% end %]
+                                            </div>
+                                        </div>
+                                    [% end %]
+                                [% end %]
+
+                                [% /* ----- Zip assets ----- */ %]
+                                [% if zipGroup != null %]
+                                    <div id="collection-zip-group">
+                                        <div class="blox-story-related-container">
+                                            <h3>Related Downloads</h3>
+                                            [% foreach zipGroup as zipItem %]
+                                                [% if (zipItem | iterpos == 0) %]
+                                                    <div class="related-item">
+                                                        [% preview = zipItem.preview([100]) %]
+                                                        [% if preview %]
+                                                            <a href="[% zipItem.url %]" class="preview">
+                                                                <img src="[% preview.url %]" />
+                                                            </a>
+                                                        [% else %]
+                                                            <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% zipItem.url %]" border="0">
+                                                                <strong>[% zipItem.title %]</strong><br />
+                                                            </a>
+                                                        [% end %]
+                                                        <p style="float:left;">
+                                                            [% if zipItem.byline %]
+                                                                <i>[% zipItem.byline | titlecase | autolink %]</i><br />
+                                                            [% end %]
+                                                            [% zipItem.description  | tidy %]
+                                                        </p>
+                                                        <div class="clear"></div>
+                                                    </div>
+                                                [% else if (zipItem | iterpos == 1) %]
+                                                    <ul class="tn-story-extra-links">
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% zipItem.url %]" title="zipItem.title" border="0">[% zipItem.title %]</a></li>
+                                                [% else if (zipItem | iterlast) && (zipItem | iterpos != 1) %]
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% zipItem.url %]" title="zipItem.title" border="0">[% zipItem.title %]</a></li>
+                                                    </ul>
+                                                [% else %]
+                                                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% zipItem.url %]" title="zipItem.title" border="0">[% zipItem.title %]</a></li>
+                                                [% end %]
+                                            [% end %]
+                                        </div>
+                                    </div>
+                                [% end %]
+
+                                [% /* ----- Link assets ----- */ %]
+                                [% if linkGroup != null -%]
+                                    <div id="collection-link-group">
+                                        <div class="blox-story-related-container">
+                                            <h3>Related Links</h3>
+                                            <div class="related-item">
+                                            <ul class="blox-related-items">
+                                                [% foreach linkGroup as linkItem -%]
+                                                    <li><a href="[% linkItem.url %]" title="[% linkItem.title | html %]" class="child-icon [% child.type %]"><span class="child-type">Related:</span> [% linkItem.title | html %]</a></li>
+                                                [% end %]
+                                            </ul>
+                                            </div>
+                                            <div class="clear"></div>
+                                        </div>
+                                    </div>
+                                [% end %]
+
+                                [% /* ----- Collection assets ----- */ %]
+                                [% if collectionGroup != null -%]
+                                    <div id="collection-collection-group">
+                                        <div class="blox-story-related-container">
+                                            <h3>Related Collections</h3>
+                                            <div class="related-item">
+            									<ul class="blox-related-items">
+            										[% foreach collectionGroup as collectionItem -%]
+            											[% if collectionItem.preview %]
+            												<li class="preview"><a href="[% collectionItem.url %]" title="[% collectionItem.title | html %]"[% if !collectionitem.preview %] class="child-icon [% child.type %]"[% end %]><div class="clip"><img src="[% collectionItem.preview.url %]" alt="collectionItem.title" /></div> [% collectionItem.title | html %]</a></li>
+            											[% end %]
+            										[% end %]
+
+            										[% foreach collectionGroup as collectionItem -%]
+            											[% if !collectionItem.preview %]
+            												<li><a href="[% collectionItem.url %]" title="[% collectionItem.title | html %]" class="child-icon [% child.type %]"> [% collectionItem.title | html %]</a></li>
+            											[% end %]
+            										[% end %]
+            									</ul>
+                                            </div>
+                                            <div class="clear"></div>
+                                        </div>
+                                    </div>
+                                [% end %]
+                            </div><!-- end collection-right -->
+                    [% end; %]
+                </div> <!-- end 402 -->
+            [% end %]
+		[%	/* Subscription: Decrypt and run service member scripts */
+			core_base_library_serviceDecrypt;
+
+			/* Subscription: Show/hide service memeber content */
+			core_base_library_manageServiceContentScript('aUrlServices':aServiceInfo['aServices']);
+
+			/* Subscription: Google Survey */
+			if aServiceInfo['bGoogleSurvey'] = true;
+				core_base_editorial_googleSurveyAgentFailScript;
+				core_base_editorial_googleSurveyCall;
+			end %]
+				<div class="clear"></div>
+            </div><!-- end blox-collection -->
+            <div class="clear"></div>
+        </div><!-- end blox-story -->
+        <script type="text/javascript">
+        <!--//--><![CDATA[//><!--
+        var newwindow;
+        function popBlox(url)
+        {
+            newwindow=window.open(url,'name','height=530,width=640');
+            if (window.focus) {newwindow.focus()}
+        }
+        //-->!]]>
+        </script>
+        <script type="text/javascript">
+        <!--//--><![CDATA[//><!--
+        $('#post-comment').submit = function() {
+          $('#post-comment>input[type=submit]').attr('disabled', 'true');
+          return false;
+        }
+
+//        $('#post-comment').ajaxForm({
+//            dataType: 'json',
+//            success: function(oData) {
+//                //oData == "success"
+//                if (oData.error) {
+//                    $('#post-comment').prepend("<p><label>An error occurred:" + oData.error + "</label></p>");
+//                } else {
+//                    $('#post-comment p').hide('slow');
+//                    $('#post-comment').prepend('<p><label>[% if cms.comments.auto_approve; echo 'Your comment has been submitted and will post momentarily.'; else; echo 'Your comment has been submitted for approval.'; end; %]</label></p>');
+//                }
+//            }
+//        });
+        //-->!]]>
+        </script>
+        <!--
+        <script type="text/javascript">
+            // Initially set opacity on thumbs and add
+            // additional styling for hover effect on thumbs
+            var onMouseOutOpacity = 0.67;
+            $('#thumbs-adv ul.thumbs li').css('opacity', onMouseOutOpacity)
+                .hover(
+                    function () {
+                        $(this).not('.selected').fadeTo('fast', 1.0);
+                    },
+                    function () {
+                        $(this).not('.selected').fadeTo('fast', onMouseOutOpacity);
+
+                    }
+                );
+
+            $(document).ready(function() {
+                // Initialize Advanced Galleriffic Gallery
+                var galleryAdv = $('#gallery-adv').galleriffic('#thumbs-adv', {
+                    delay:                  1000,
+                    numThumbs:              5,
+                    preloadAhead:           10, // Set to -1 to preload all images
+                    enableTopPager:         true,
+                    enableBottomPager:      true,
+                    imageContainerSel:      '#slideshow-adv',
+                    controlsContainerSel:   '#controls-adv',
+                    captionContainerSel:    '#caption-adv',
+                    loadingContainerSel:    '#loading-adv',
+                    renderSSControls:       false,
+                    renderNavControls:      true,
+                    playLinkText:           'Play Slideshow',
+                    pauseLinkText:          'Pause Slideshow',
+                    prevLinkText:           '&lsaquo; Prev',
+                    nextLinkText:           'Next &rsaquo;',
+                    nextPageLinkText:       'Next &rsaquo;',
+                    prevPageLinkText:       '&lsaquo; Prev',
+                    enableHistory:          true,
+                    autoStart:              false,
+                    onChange:               function(prevIndex, nextIndex) {
+                        $('#thumbs-adv ul.thumbs').children()
+                            .eq(prevIndex).fadeTo('fast', onMouseOutOpacity).end()
+                            .eq(nextIndex).fadeTo('fast', 1.0);
+                    },
+                    onTransitionOut:        function(callback) {
+                        $('#slideshow-adv, #caption-adv').fadeOut('fast', callback);
+                    },
+                    onTransitionIn:         function() {
+                        $('#slideshow-adv, #caption-adv').fadeIn('fast');
+                    },
+                    onPageTransitionOut:    function(callback) {
+                        $('#thumbs-adv ul.thumbs').fadeOut('fast', callback);
+                    },
+                    onPageTransitionIn:     function() {
+                        $('#thumbs-adv ul.thumbs').fadeIn('fast');
+                    }
+                });
+            });
+        </script>
+        -->
+        <div class="clear"></div>
+        [% if cms.asset.items('relationship' : 'parent', 'type' : 'business')|length > 0 %] [% core_base_library_business_logo(this.asset,'small'); %] [% end %]
+
+        [% fb_like_location = 'bottom';
+        include '_article/article.social_share_horizontal.inc.utl';
+        if cms.site.custom.social_share_style == 'vertical' && cms.site.custom.facebook_app_id;
+            core_base_library_assetLike(
+                'coupleWithFacebook':true,
+                'ajaxSubmit':true,
+                'showCount':false,
+                'id':fb_like_location);
+            end; %]
+        [% include 'article.comments.inc.utl' %]
+        <div class="clear"></div>
+
+        </div><!-- end left col -->
+
+    <div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms.site.custom.alpha_omega == 'true' %] omega[% end %]">
+        [% include 'sidebar.inc.utl' %]
+    </div>
+
+[%-
+include 'footer.inc.utl';
+end;

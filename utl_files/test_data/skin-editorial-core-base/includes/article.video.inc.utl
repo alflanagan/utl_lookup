@@ -1,0 +1,69 @@
+[% cms.page.add_skin_script('flowplayer-3.1.0.min.js') %]
+[% cms.page.add_skin_script('flashembed-1.0.2.min.js') %]
+[% mode = cms.request.param('mode') | trim %]
+[%  
+	/* ## display video gallery if video tab ## */
+	if mode == 'video';
+		videoPage = true;
+	end;
+	
+	/* ## target images ## */
+	sVideos = this.asset.items('type': 'video');
+	
+	/* ## get video num. later passed into selected video array ## */
+	fVideo = cms.request.param('vid') | trim;
+	
+	/* ## set default video num ## */
+	if(fVideo <= 1 or fVideo==null);
+		fVideo = 0;
+		thSelected = 1;
+	
+	/* ## make sure we are selecting correct video also set selected class  ## */
+	else;
+		fVideo = fVideo - 1;
+		thSelected = fVideo;
+	end;
+	
+	/* ## lets use i as increment for video array ## */
+	i=0;
+	
+	/* ## set custom width if provided ## */
+	if custom_video_player_width;
+		grid_set_blox_med_span_px = custom_video_player_width;	
+   end;
+-%]
+
+[% if not videoPage %]
+[% if sVideos != null -%]
+	<div id="blox-story-related">
+		<h3>Related Video[% if sVideos | length > 0 -%]s[% end %]</h3>
+		<ul class="blox-related-items">
+			[% foreach sVideos as vChild -%]
+				<li><a href="[% vChild.url %]" title="[% vChild.title | html %]" class="child-icon [% child.type %]"><span class="child-type">Related:</span> [% vChild.title | html %]</a></li>
+			[% end %]
+		</ul>
+	</div>
+[% end %]
+[% else %]
+
+[% if sVideos | length > 0 -%]
+	<div id="blox-large-video-page">
+[% 
+if !cms.component.load('core_external_jquery'); echo '<!--Failed to load core_external_jQuery.-->'; end;
+if !cms.component.load("core_video_player"); echo "<!-- error loading Video Player Component -->"; end;
+
+core_video_player('assets':sVideos,'id':"blox-large-video-player-page",'style':'hd','mode':'embedded','player_width': grid_set_blox_med_span_px);
+-%]
+      </div>
+		
+	
+	<div class="clear"></div>
+		
+	[% 
+		/* ## if the we are not in video gal and there are more videos than limit add more link ## */
+		if !videoPage && sVideos | length > 1;
+	-%]
+		<p><a class="more moz-border" href="[% this.asset.url %]?mode=video">([% sVideos | length - 1 %]) More Videos</a></p>
+	[% end %]
+[% end %]
+[% end %]

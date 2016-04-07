@@ -1,0 +1,538 @@
+[% /* load base component */
+call cms.component.load('core_base_library');
+call cms.component.load('core_base_calendar');
+call cms.component.load('core_external_flowplayer');
+call cms.component.load('core_video_player');
+
+assetGroup = this_asset.items('inline':false);
+
+    rPdfs = filterAssetsByType(assetGroup,'pdf','include');
+    rZips = filterAssetsByType(assetGroup,'zip','include');
+    auAssets = filterAssetsByType(assetGroup,'audio','include');
+    rArticles = filterAssetsByType(assetGroup,'article','include');
+    lAssets = filterAssetsByType(assetGroup,'link','include');
+    flashAssets = filterAssetsByType(assetGroup,'flash','include');
+    rCollections = filterAssetsByType(assetGroup,'collection','include');
+    pollAssets = filterAssetsByType(assetGroup,'poll','include');
+
+    rVideo = filterAssetsByType(assetGroup,'video','include');
+    rYouTube = filterAssetsByType(assetGroup,'youtube','include');
+    rVMIX = filterAssetsByType(assetGroup,'vmix','include');
+    rSyndicaster = filterAssetsByType(assetGroup,'syndicaster','include');
+
+    teams = this.asset.items('relationship': 'parent', 'type': 'team');
+    if teams;
+        call cms.component.load('core_base_sportsstats');
+        foreach teams as team;
+            core_base_sportsstats_showTeamSummary(team, 'relatedPage');
+        end;
+    end;
+    
+    players = this.asset.items('relationship': 'parent', 'type': 'player');
+    if players;
+        call cms.component.load('core_base_sportsstats');
+        foreach players as player;
+            core_base_sportsstas_showPlayerSummary(player, 'relatedPage');
+        end;
+    end;
+
+    /* related businesses */
+    aBusinesses = [];
+    foreach this.asset.items('relationship':'parent','type':'business') as business;
+        aBusinesses[aBusinesses|length] = business; 
+    end;
+    foreach this.asset.items('relationship':'sibling','type':'business') as business;
+        aBusinesses[aBusinesses|length] = business; 
+    end;
+    foreach this.asset.items('relationship':'child','type':'business') as business;
+        aBusinesses[aBusinesses|length] = business; 
+    end;
+    
+    /* Related Events */
+    /* because the asset.items won't provide parents or siblimgs by requesting type event we create a new array... */
+    aEvents = [];
+    foreach this.asset.items('relationship':'parent','type':'event') as event;
+        aEvents[aEvents|length] = event;    
+    end;
+    foreach this.asset.items('relationship':'sibling','type':'event') as event;
+        aEvents[aEvents|length] = event;    
+    end;
+    foreach this.asset.items('relationship':'child','type':'event') as event;
+        aEvents[aEvents|length] = event;    
+    end;
+    aEvents = filterAssetsByPublished(aEvents,'include');
+
+   
+    rContent = this_asset.related_content;
+    otherTables = filterAssetsByPosition(rTables,['showcase','top','middle','bottom'],'exclude');
+    unposHTML = filterAssetBySubtype(this_asset.items('type': 'html','inline':false),["youtube"],'exclude'); /* remove youtube */
+    unposHTML = filterAssetByPosition(unposHTML,["showcase","middle","bottom"],'exclude'); /* remove positioned html */
+    
+    
+    if aEvents %]
+    <div id="related-events" class="blox-story-related-container">
+    <h3>Related Events[% if performer %] featuring [% this_asset.title; end; %]</h3>
+        <ul class="event-list">
+     [% foreach aEvents as event; 
+            eventThumb = core_base_library_assetThumb('asset':event) %]
+            <li class="detail [% core_base_library_iterPosClasses('asset':event)%]">
+            [%  if eventThumb.url %]
+                <div class="event-thumb">
+                    <img src="[% eventThumb.url %]" width="100" />
+                </div>
+            [%  end %]
+                <div class="event-content">
+                    <h4><a href="[% event.url %]">[% echo event.title; %]</a></h4> 
+                    <span class="event-date">
+                        [%
+                            alldaycheck=false;
+                            starttime = event.eventstarttime| datetime('H:i:s');
+                            endtime = event.eventstoptime| datetime('H:i:s');
+                            if (starttime=='00:00:00' && endtime=='23:59:59');
+                                alldaycheck=true;
+                            end;
+                        
+                            if !alldaycheck%]
+                                <span class="ui-icon ui-icon-calendar float-left"></span>
+                            [%end%]
+                        
+                        [%- aDates = event.dates;
+                            dated_occur = 'Occurs ';
+                            if aDates;
+                                if !alldaycheck;
+                                    echo aDates[0] | datetime('D, M j, Y  g:i a T');
+                                end;
+                            else;
+                                if event.eventstarttime | datetime('U') < ('now' | datetime('U'));
+                                    echo 'This is a past event.';
+                                    dated_occur = 'Occurred ';
+                                else;
+                                    echo event.eventstarttime| datetime('D, M j, Y  g:i a T');
+                                end;
+                            end %]
+                            
+                [%          
+                            
+                            echo '<ul class="event-recurence">';
+                            aScheduleStrings = event.schedulesToString;
+                            foreach aScheduleStrings as kSchedule;
+                                echo '<li class="schedule">';
+                                    /* occurence string */
+                                    if (kSchedule['recurs']);
+                                        echo kSchedule['description'];
+                                    else;
+                                        echo dated_occur+(kSchedule['starttime'] | datetime('D, M jS'));
+                                    end;    
+                                    /* time window */
+                                    if dated_occur|lowercase != 'occurred';
+                                        if (kSchedule['allday']);
+                                            echo ' running all day';
+                                        else;
+                                            echo ' ' + (kSchedule['starttime'] | datetime('g:i a'));
+                                            
+                                            if (kSchedule['stoptime']);
+                                                echo ' to ' + (kSchedule['stoptime'] | datetime('g:i a'));
+                                            end;
+                                        end;
+                                    end;    
+                                    echo '</li>';
+                            end;
+                        echo '</ul>'; 
+                        
+                        %]
+                            
+                            
+                            
+                    </span>
+                [%- if event.venue_name || event.venue.name -%]
+                        <span class="event-venue">
+                        <span class="ui-icon ui-icon-flag float-left"></span>
+                     [% if marketplace == 'true' && event.venue.uuid %]
+                        <a href="[% event.venue.url %]">
+                     [% end;
+                        if event.venue_name; 
+                            event.venue_name; 
+                        else; 
+                            event.venue.name; 
+                        end;
+                        if marketplace == 'true' && event.venue.uuid %]
+                        </a>
+                     [% end %]    
+                        </span>    
+                [%- end %]   
+                </div><!-- end event content -->     
+            </li>    
+[%      end %]
+        </ul>
+        <div class="clear"></div>
+        <span class="button submit performer">
+            <a href="[%- cms.url('app':'calendar').path | html -%]/search">More events &raquo;</a>
+        </span>
+        <div class="clear"></div>
+    </div>
+[%    end; /* end rEvents check */ 
+        
+        
+        
+    /* Adding main related content. */
+    foreach rContentMain as item %]
+    <dl class="blox-related blox-related-[% item.type %] [% item.title | lowercase | replace(' ','_') %] [% core_base_library_iterPosClasses(item) %][% if hasAssets && item | iterfirst; echo ' blox-related-padding'; end; -%]">
+        <dt>[% item.title | html %]</dt>
+        <dd>
+        [%  foreach item.content as content;
+                echo content | autolink;
+            end %]
+        </dd>
+        <div class="clear"></div>
+    </dl>
+[% end;
+   
+   /* Related Businesses
+    * this is actually full business info... not just a logo as the macro implies 
+    */
+    if cms.site.custom.marketplace == 'true' && !performer && aBusinesses;
+        core_base_library_business_logo(
+            'asset':this.asset,
+            'businessGroup':aBusinesses,
+            'size':'big',
+            'showMultiple':true);
+    end;
+    if this.asset.items && ((this.asset.items('type':'image') | length) != (this.asset.items | length)) -%]
+    <div id="blox-story-related">
+ [% foreach filterAssetsByPosition(this.asset.items('type':'table'),'top','include') as topTable;%]
+        <div class="blox-story-related-container blox-related-table">
+            <h3>[% topTable.title %]</h3>
+            <p class="description">[% topTable.content | join | autolink %]</p>
+            [% core_base_library_table_asset(topTable); %]
+        </div>
+ [% end;
+    if rVideo %]
+        <div class="blox-story-related-container">
+            <h3>Related Videos</h3>
+            [% foreach rVideo as aVideo %]
+                [% if (aVideo | iterpos == 0) %]
+                    <div class="related-item">
+
+                        [% /* VIDEO PLAYER COMPONENT */ 
+
+                        core_video_player(
+                            'assets':aVideo,
+                            'id':'related_player_video',
+                            'style':'embedded',
+                            'player_width':'300',
+                            'player_height':'240'
+                        );
+
+                        -%]
+                        <div class="clear"></div>
+                    </div>
+[% else %]
+                    
+                [% if (aVideo | iterpos == 1) %]
+                    <div class="clear"></div>
+                    <ul class="tn-story-extra-links">
+[% end %]
+
+
+                    <li><a href="[% aVideo.url %]" title="aVideo.title">[% aVideo.title %]</a></li>
+
+                [% if (aVideo | iterlast) && (aVideo | iterpos != 1) %]
+
+                    </ul><div class="clear"></div>
+
+                [% end %]
+                [% end %]
+            [% end %]
+        </div>
+    [% end;
+    
+    if rVMIX %]
+        <div class="blox-story-related-container">
+            <h3>Related Video[% if rVMIX > 1 %]s[% end %]</h3>
+            [% foreach rVMIX as aVMIX %]
+                [% if (aVMIX | iterpos == 0) %]
+                    <div class="related-item">
+                        <embed id="player_swf" height="240" align="middle" width="280" pluginspage="http://www.adobe.com/go/getflashplayer" flashvars="player_id=ea412fd024b6ccf18e3eee9b3cf0b069&token=[% aVMIX.vmix_token_id %]" type="application/x-shockwave-flash" wmode="transparent" allowfullscreen="true" allowscriptaccess="always" quality="high" loop="false" play="false" name="UnifiedVideoPlayer" src="http://media.vmixcore.com/core-flash/UnifiedVideoPlayer/UnifiedVideoPlayer.swf" />
+                        <div class="clear"></div>
+                    </div>
+                [% else if (aVMIX | iterpos == 1) %]
+                    <div class="clear"></div>
+                    <ul class="tn-story-extra-links">
+                    <li><a href="[% aVMIX.url %]" title="aVMIX.title">[% aVMIX.title %]</a></li>
+                [% else if (aVMIX | iterlast) && (aVMIX | iterpos != 1) %]
+                    <li><a href="[% aVMIX.url %]" title="aVMIX.title">[% aVMIX.title %]</a></li>
+                    </ul><div class="clear"></div>
+                [% else %]
+                    <li><a href="[% aVMIX.url %]" title="aVMIX.title">[% aVMIX.title %]</a></li>
+                [% end %]
+                
+            [% end %]
+        </div>
+    [% end %]
+
+    [% if rYouTube %]
+        <div class="blox-story-related-container">
+            <h3>Related YouTube Video[% if ryouTube > 1 %]s[% end %]</h3>
+            [% foreach ryouTube as ayouTube %]
+                [% if (ayouTube | iterpos == 0) %]
+                    <div class="related-item">
+[%                    
+                    /* VIDEO PLAYER COMPONENT */ 
+
+                        core_video_player(
+                            'assets':ayouTube,
+                            'id':'related_player_youtube',
+                            'style':'embedded',
+                            'player_width':'300',
+                            'player_height':'240'
+                        );
+/*                    
+<!-- setup container for the player --> 
+  <object width="280" height="240px">
+    <param name="movie" value=" ayouTube.embed_url "></param>
+    <param name="allowFullScreen" value="true"></param>
+    <param name="allowscriptaccess" value="always"></param>
+    <embed src=" ayouTube.embed_url " type="application/x-shockwave-flash"
+        allowscriptaccess="always" allowfullscreen="true" width="280" height="240px">
+    </embed>
+  </object>
+
+<!-- END --> */
+-%]
+                        <div class="clear"></div>
+                    </div>
+                [% else if (ayouTube | iterpos == 1) %]
+                    <div class="clear"></div>
+                    <ul class="tn-story-extra-links">
+                    <li><a href="[% ayouTube.url %]" title="ayouTube.title">[% ayouTube.title %]</a></li>
+                [% else if (ayouTube | iterlast) && (ayouTube | iterpos != 1) %]
+                    <li><a href="[% ayouTube.url %]" title="ayouTube.title">[% ayouTube.title %]</a></li>
+                    </ul><div class="clear"></div>
+                [% else %]
+                    <li><a href="[% ayouTube.url %]" title="ayouTube.title">[% ayouTube.title %]</a></li>
+                [% end %]
+                
+            [% end %]
+        </div>
+        <div class="clear"></div>
+    [% end;
+    
+    if rSyndicaster; -%]
+<div class="blox-story-related-container">
+            <h3>Related Syndicaster Videos</h3>
+            [% foreach rSyndicaster as aSyndicaster %]
+                [% if (aSyndicaster | iterpos == 0) %]
+                    <div class="related-item">
+
+                        [% /* VIDEO PLAYER COMPONENT */ 
+
+                        core_video_player(
+                            'assets':aSyndicaster,
+                            'id':'related_player_syndicaster',
+                            'style':'embedded',
+                            'player_width':'300',
+                            'player_height':'240'
+                        );
+
+                        -%]
+                        <div class="clear"></div>
+                    </div>
+[% else %]
+                    
+                [% if (aSyndicaster | iterpos == 1) %]
+                    <div class="clear"></div>
+                    <ul class="tn-story-extra-links">
+[% end %]
+
+
+                    <li><a href="[% aSyndicaster.url %]" title="aVideo.title">[% aSyndicaster.title %]</a></li>
+
+                [% if (aSyndicaster | iterlast) && (aSyndicaster | iterpos != 1) %]
+
+                    </ul><div class="clear"></div>
+
+                [% end -%]
+                [% end -%]
+            [% end -%]
+        </div>
+    [%- end;
+    
+    if otherTables; -%]
+    <div class="blox-story-related-container">
+        <h3>Related Data</h3>
+        <ul class="blox-related-items">
+            [% foreach otherTables as otherTable -%]
+                <li><a href="[% otherTable.url %]" title="[% otherTable.title | html %]" class="child-icon"><span class="child-type">Related:</span></a>&nbsp;<a href="[% otherTable.url %]">[% otherTable.title | html %]</a>
+                [% if otherTable.content %]<p class="description">[% otherTable.content | join | autolink %]</p>[% end %]</li>
+            [% end %]
+        </ul><div class="clear"></div>
+    </div>
+    [% end;
+      
+    if rArticles != null -%]
+    <div class="blox-story-related-container">
+        <h3>Related Stories</h3>
+        <ul class="blox-related-items">
+            [% foreach rArticles as child -%]
+                <li><a href="[% child.url %]" title="[% child.title | html %]" class="child-icon"><span class="child-type">Related:</span> [% child.title | html %]</a></li>
+            [% end %]
+        </ul><div class="clear"></div>
+    </div>
+    [% end %]
+
+    [% if pollAssets != null -%]
+        [% include 'related.poll.inc.utl' %]
+    [% end %]
+    [% if rCollections != null -%]
+        [% include 'related.collection.inc.utl' %]
+    [% end %]
+
+    [% if auAssets != null;
+        rAudios(auAssets,"blox-story-related-container");
+    end; -%]
+
+    [% if flashAssets %]
+        <div class="blox-story-related-container">
+        <h3>Related Interactive</h3>
+        [% foreach flashAssets as flashAsset %]
+            [% if (flashAsset | iterpos == 0) %]
+                <div class="related-item">
+                    [% preview = flashAsset.preview %]
+                    [% if preview %]
+                        <a href="[% flashAsset.url %]" class="preview">
+                            <img src="[% preview.url %]" width="100px" />
+                        </a>
+                    [% end %]
+                    <p[% if !preview %] style="float: none; width: 100%"[% end %]>
+                        <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashAsset.url %]">
+                        <a href="[% flashAsset.url %]">
+                            <strong>[% flashAsset.title %]</strong>
+                        </a><br />
+                        [% if flashAsset.byline %]
+                            <em>[% flashAsset.byline | titlecase | autolink %]</em><br />
+                        [% end %]
+                        [% flashAsset.description  | tidy %]
+                    </p>
+                    <div class="clear"></div>
+                </div>
+            [% else if (flashAsset | iterpos == 1) %]
+                <div class="clear"></div>
+                <ul class="tn-story-extra-links">
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashAsset.url %]" title="flashAsset.title">[% flashAsset.title %]</a></li>
+            [% else if (flashAsset | iterlast) && (flashAsset | iterpos != 1) %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashAsset.url %]" title="flashAsset.title">[% flashAsset.title %]</a></li>
+                </ul><div class="clear"></div>
+            [% else %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-flash.gif" align="left" /><a href="[% flashAsset.url %]" title="flashAsset.title">[% flashAsset.title %]</a></li>
+            [% end %]
+        [% end %]
+        </div>
+    [% end %]
+    
+    [% if rPdfs %]
+        <div class="blox-story-related-container">
+            <h3>Related Documents</h3>
+            [% foreach rPdfs as aPdf %]
+                [% if (aPdf | iterpos == 0) %]
+                    <div class="related-item">
+                        [% preview = aPdf.preview([100]) %]
+                        [% if preview %]
+                            <a href="[% aPdf.url %]" class="preview">
+                                <img src="[% preview.url %]" />
+                            </a>
+                        [% end %]
+                        <p[% if !preview %] style="float: none; width: 100%"[% end %]>
+                            <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% aPdf.url %]">
+                            <a href="[% aPdf.url %]">
+                                <strong>[% aPdf.title %]</strong>
+                            </a><br />
+                            [% if aPdf.byline %]
+                                <em>[% aPdf.byline | titlecase | autolink %]</em><br />
+                            [% end %]
+                            [% aPdf.description  | tidy %]
+                        </p>
+                        <div class="clear"></div>
+                    </div>
+                [% else if (aPdf | iterpos == 1) %]
+                    <div class="clear"></div>
+                    <ul class="tn-story-extra-links">
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% aPdf.url %]" title="aPdf.title">[% aPdf.title %]</a></li>
+                [% else if (aPdf | iterlast) && (aPdf | iterpos != 1) %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% aPdf.url %]" title="aPdf.title">[% aPdf.title %]</a></li>
+                    </ul><div class="clear"></div>
+                [% else %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-pdf.gif" align="left" /><a href="[% aPdf.url %]" title="aPdf.title">[% aPdf.title %]</a></li>
+                [% end %]
+            [% end %]
+        </div>
+    [% end %]
+    
+    [% if rZips %]
+        <div class="blox-story-related-container">
+            <h3>Related Downloads</h3>
+            [% foreach rZips as aZip %]
+                [% if (aZip | iterpos == 0) %]
+                    <div class="related-item">
+                        [% preview = aZip.preview([100]) %]
+                        [% if preview %]
+                            <a href="[% aZip.url %]" class="preview">
+                                <img src="[% preview.url %]" />
+                            </a>
+                        [% else %]
+                            <img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% aZip.url %]">
+                                <strong>[% aZip.title %]</strong>
+                            </a><br />
+                        [% end %]
+                        <p style="float:left;">
+                            [% if aZip.byline %]
+                                <em>[% aZip.byline | titlecase | autolink %]</em><br />
+                            [% end %]
+                            [% aZip.description  | tidy %]
+                        </p>
+                        <div class="clear"></div>
+                    </div>
+                [% else if (aZip | iterpos == 1) %]
+                    <ul class="tn-story-extra-links">
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% aZip.url %]" title="aZip.title">[% aZip.title %]</a></li>
+                [% else if (aZip | iterlast) && (aZip | iterpos != 1) %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% aZip.url %]" title="aZip.title">[% aZip.title %]</a></li>
+                    </ul><div class="clear"></div>
+                [% else %]
+                    <li><img src="[% cms.page.app %]/[% cms.page.skin%]/resources/images/icon-zip.gif" align="left" /><a href="[% aZip.url %]" title="aZip.title">[% aZip.title %]</a></li>
+                [% end %]
+            [% end %]
+        </div>
+    [% end;
+    
+    foreach filterAssetsByPosition(this.asset.items('type':'table'),'middle','include') as middleTable; %]
+       <div class="blox-story-related-container blox-related-table">
+           <h3>[% middleTable.title %]</h3>
+           <p class="description">[% middleTable.content | join | autolink %]</p>
+           [% core_base_library_table_asset(middleTable); %]
+       </div>
+    [% end;
+
+    if lAssets != null -%]
+    <div class="blox-story-related-container">
+        <h3>Related Links</h3>
+        <div class="related-item">
+        <ul class="blox-related-items">
+            [% foreach lAssets as lChild -%]
+                <li><a href="[% lChild.url %]" title="[% lChild.title | html %]" class="child-icon [% child.type %]"><span class="child-type">Related:</span> [% lChild.title | html %]</a></li>
+            [% end %]
+        </ul>
+        </div>
+        <div class="clear"></div>
+    </div>    
+    [% end %]
+    [%    
+        if unposHTML;
+            foreach unposHTML as aHTML %]
+                <div class="blox-story-html-container">
+                    [% core_base_library_HtmlAssetDisplay(aHTML,height:'175px') %]
+                </div>
+        [%    end;
+        end %]
+
+    </div>
+[% end %]

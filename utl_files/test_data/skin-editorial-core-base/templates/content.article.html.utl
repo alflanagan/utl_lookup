@@ -1,0 +1,281 @@
+[%-
+call cms.component.load('core_base_library');
+sPresentation = this.asset.presentation;
+iContentMiddle = ((this.asset.content| length) / 2)|rounddown;
+iCurrentParagraph = 0;
+
+/**
+ * content.article.html.utl
+ */
+mode = cms.request.param('mode') | trim;
+if mode == 'em';
+    call cms.component.load("core_reach");
+    displayReachAsset();
+    exit;
+else;
+
+/* look to asset custom property for redirect */
+core_base_library_assetRedirect;
+
+
+/* touch5 article display */
+if mode == 'jqm' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/content.article.inc.utl';
+/* touch5 commenting */
+else if mode == 'jqm_com' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/asset.comments.inc.utl';
+/* touch5 gallery */
+else if mode == 'jqm_gal' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/asset.gallery.inc.utl';
+/* touch5 related content */
+else if mode == 'jqm_rel' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/content.collection.inc.utl';
+/* touch5 services (may not be a page anymore. Investigate) */
+else if mode == 'jqm_sub' && cms.url('/').custom.advanced_mobile|strbool;
+    include '_mobile/asset.services.inc.utl';
+/* end touch5 */
+
+else;
+/* standard article page */
+call cms.component.load('core_external_jquery');
+call cms.component.load('core_external_jqueryui');
+
+include 'macros.inc.utl';
+include 'site-macros.inc.utl';
+call cms.component.load('core_base_editorial');
+
+url_path = this.url.path;
+
+/* Subscription: Gather subscription/metering/surveys information */
+aServiceInfo = core_base_library_getServiceInfo;
+
+/* asset services */
+url_services = aServiceInfo['aServices'];
+
+ninja = false;
+if cms.request.param("ninja") == "on";
+    ninja=true;
+    call cms.component.load("ninja_debug_log");
+end;
+
+use_tracker = false;
+if core_base_editorial_googleSurveyOn;
+	google_survey_restriction = true;
+else;
+	if core_base_library_getCustomProperty("use_tracker_service", "boolean", false) && url_services;
+		use_tracker = true;
+	end;
+	serviceRestrictedMessage = "Services are not restricted.";
+	if (url_services | length != 0) && (free_archive_period == 'false' || archived_asset == 'true' || use_tracker);
+		serviceRestricted = true;
+		serviceRestrictedMessage = "Services Are Restricted.";
+	end;
+end;
+
+/**
+ * print mode
+ */
+if mode == 'print';
+include '_article/article.print.inc.utl';
+
+elseif mode == 'print-comments';
+
+call cms.component.load('core_commenting');
+core_commenting_print(this.asset);
+
+else;
+/**
+ * standard display
+ */
+this_asset = this.asset;
+
+if mode == 'mobile' && this.url.path | endswith('/coupon');
+/* Mobile Coupon(text) Display (I don't think we use this anymore) */
+	include '_article/article.coupon.inc.utl';
+else;
+/**
+ * Standard Display
+ */
+include 'header.inc.utl';
+
+/*if google_survey_restriction;
+	core_base_editorial_googleSurveyAgentFailScript;
+end;*/
+
+marketplace = cms.site.custom.marketplace;
+    if url_path == cms.url('app': 'calendar').path + '/performer';
+        performer = true;
+        if !cms.component.load('core_base_calendar'); echo '<!--Failed to load core_base_calendar component.-->'; end;
+    end;
+/* get related youtube and filter those set to show in the rail */
+related_youtube = filterAssetByPosition(this_asset.items('type': 'youtube','inline':false),["showcase","middle","bottom"],'exclude');
+
+ /* left column */
+	if left_col_on == true %]
+    <div id="blox-super-left" class="grid_[% grid_set_blox_left %]">
+        [% include 'sidebar-left.inc.utl' %]
+    </div>
+    [% end %]
+
+[% if mode != 'print' %]
+<script type="text/javascript">
+    <!--
+    jQuery(function() {
+    // Increase Font Size
+    jQuery('.increase-font-size').click(function(){
+        var currentFontSize = jQuery('#blox-story-text').find("p").css('font-size');
+        var currentFontSizeNum = parseFloat(currentFontSize, 10);
+        var newFontSize = currentFontSizeNum*1.2;
+        $('#blox-story-text').find("p").css('font-size', newFontSize);
+        return false;
+    });
+    // Decrease Font Size
+    jQuery('.decrease-font-size').click(function(){
+        var currentFontSize = $('#blox-story-text').find("p").css('font-size');
+        var currentFontSizeNum = parseFloat(currentFontSize, 10);
+        var newFontSize = currentFontSizeNum*0.8;
+        jQuery('#blox-story-text').find("p").css('font-size', newFontSize);
+        return false;
+    });
+
+    // end doc ready
+    });
+    //-->
+</script>
+[% end %]
+
+    <div id="blox-left-col" class="grid_[%- if sPresentation == 'long_form'; -%][%- core_base_library_gridSet.no_right_alt %] presentation-long-form [%- else; -%][%- grid_set_blox_med_span; -%][%- end; %] [% if cms.site.custom.alpha_omega == 'true' %] alpha[% end %]">
+    [% include 'site-option-one-index.inc.utl' %]
+        <div id="blox-story" class="blox-content hnews hentry item [% if sPresentation then ' presentation-'+(sPresentation| replace('_', '-')); %]">
+    [%-    core_base_library_breadcrumbs;
+
+        if cms.site.custom.assets_region == 'true';
+            cms.region('name':'center-one-index-and-assets');
+        end;
+
+         if performer %]
+            <span class="button submit performer"><a href="[%- cms.url('app': 'user').path | html -%]/admin/contribute/article/?section=performer" rel="nofollow">+ Add a performer</a></span>
+   [%    end; %]
+		 [% /* masthead image */
+		 foreach filterImagesByPresentation(this_asset.items('type': 'image','inline':false),["masthead"]) as masthead;
+                if (masthead | iterfirst) %]
+                	<div id="blox-masthead-image" class="p402_hide [% if serviceRestricted && !use_tracker; echo ' service-members'; else if use_tracker; echo ' managed-service'; end %]"[% if servicerestricted && !use_tracker; echo ' style="display:none"'; end %]>
+   [%           end; %]
+                	<img src="[% masthead.view('type':'image', 'width': 940).url; %]" alt="[% masthead.title; %]" style="width:100%" />
+                [% if (masthead | iterlast); %]
+                    </div>
+                [% end; %]
+         [% end; %]
+        [% if sPresentation == 'personality'; %]
+            [% core_base_library_personality(this.asset); %]
+        [% end; %]
+
+		 [% /* asset title */ -%]
+            <[% asset_title_tag %] id="blox-asset-title">
+                [% if this_asset.kicker %]<span class="blox-kicker">[% this_asset.kicker %]</span>[% end %]
+                [% if this_asset.hammer %]<span class="blox-header">[% this_asset.hammer | uppercase %]</span>[%end%]
+                [% if !this_asset.custom.custom_hide_headline %]
+                    <span class="blox-headline entry-title">[% this_asset.title %]</span>
+                [% end %]
+
+            </[% asset_title_tag %]>
+                [%- include 'custom-insert-above-subtitle.inc.utl' -%]
+
+                [% include '_collection/collection-links.inc.utl'; %]
+
+            [%	if this_asset.subheadline %]
+                <p class="sub-headline">[% this_asset.subheadline | strip_tags('preserve':'<span> <em> <strong>') %]</p>
+            [%	end;
+
+				/* performer asset links */
+                if performer && this_asset.links;
+                	echo '<a href="'+(cms.asset.links[0].url)+'">Visit Website</a>';
+            	end;
+
+            	/* registration (Legacy pre subscription software) */
+                if (
+                         registration_required
+                         && cms.request.is_anonymous_user
+                         && (
+                                 (
+                                     registration_omit == false
+                                     && registration_include | contains(cms.url.path)
+                                 ) || (
+                                     registration_include == false
+                                     && registration_omit | contains(cms.url.path) == false
+                                 )
+                         )
+                    ) && !core_base_library_getCustomProperty("use_tracker_service", "boolean", false);
+
+                    include 'registration-notice.inc.utl' %]
+                    <script type="text/javascript">
+                        jQuery("#registration-notice").show();
+                    </script>
+            [%
+				else;
+					/* article tabs */
+                    include 'article.navigation.inc.utl';
+
+					/* comments tab */
+					if mode=='comments' && (this_asset.no_comments==null || this_asset.no_comments==true);
+                        include 'article.comments.inc.utl';
+
+					/* image tab */
+					else if mode == 'image';
+                        photoPage = true;
+                        include 'article.photos.inc.utl';
+
+					/* video tab */
+					else if mode == 'video';
+                        include 'article.video.inc.utl';
+
+					/* youtube tab */
+					else if mode == 'youtube';
+                        include 'article.youtube.inc.utl';
+
+					/* article tab */
+					else;
+                        include 'article.story.inc.utl';
+                    end;
+
+					/*	commenting area */
+                    blox_comments = core_base_library_getCustomProperty("blox_comments", "string", "false");
+                    if blox_comments != 'false'
+						&& blox_comments != 'other'
+                                                && mode != 'comments'
+						&& mode != 'print';
+
+                        /* Get comments_subscription_required property */
+						sSubReq = core_base_library_getCustomProperty('varName':'comments_subscription_required') %]
+						<div class="p402_hide [% if serviceRestricted && !use_tracker && sSubReq != 'false'; echo ' service-members'; else if use_tracker; echo ' managed-service'; end %]">
+										[% include 'article.comments.inc.utl';
+						echo '</div>';
+
+                    end;
+                end;
+
+        if use_tracker;
+            call cms.component.load('core_services_manager');
+            /* output service manager messages */
+            core_services_manager_messages;
+        end; -%]
+        </div> <!-- end blox-story -->
+    </div><!-- end blox-left-col -->
+
+    [% if !(sPresentation == 'long_form'); %]
+        <div id="blox-right-col" class="grid_[% grid_set_blox_right %][% if cms.site.custom.alpha_omega == 'true' %] omega[% end %]">
+            [% if mode != 'print'; include 'sidebar.inc.utl'; end; %]
+        </div>
+    [% end; %]
+[%-
+core_base_library_lazyLoadExecute;
+core_base_library_expandInlineImgScript;
+/* service-members show/remove */
+core_base_library_manageServiceContentScript('aUrlServices':url_services);
+include 'footer.inc.utl';
+end;
+end;
+end; /* end print mode check */
+
+end;
+call cms.component.load('core_base_library');

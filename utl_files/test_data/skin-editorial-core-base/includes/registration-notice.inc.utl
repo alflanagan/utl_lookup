@@ -1,0 +1,4 @@
+<div id="registration-notice" class="metered ui-widget-content ui-corner-all hide">
+	<h3 id="notice-header" class="ui-widget-header ui-corner-all notice-header">You must login to view the full content on this page.</h3>
+	[% core_base_library_loginBox('boxId':'page','showRegisterLink':true) %]
+</div>

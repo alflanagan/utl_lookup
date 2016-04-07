@@ -1,0 +1,67 @@
+[%-
+    asset = this.asset;
+    mode = cms.request.param('mode') | trim;
+    mode = mode | lowercase;
+    modeSelected = 'class="selected" ';
+    storyViews = ['image', 'audio', 'video', 'map', 'extras', 'zip', 'pdf', 'html'];
+
+    tab_name = cms.site.custom.custom_tab_name;
+    if cms.url.custom.comments_custom_tab_name; tab_name = cms.url.custom.comments_custom_tab_name; end;
+    if cms.url('path':'/').custom.comments_custom_tab_name; tab_name = cms.url('path':'/').custom.comments_custom_tab_name; end;
+
+    if cms.site.custom.youtube_tab_name;
+        youtube_tab_name = cms.site.custom.youtube_tab_name;
+    else;
+         youtube_tab_name = 'YouTube';
+    end;
+    use_tracker = core_base_library_getCustomProperty("use_tracker_service", "boolean", false);
+
+    blox_comments = core_base_library_getCustomProperty("blox_comments", "string", "false");
+-%]
+
+<ul id="blox-body-nav" class="[% if !use_tracker %]service-members [% end; if cms.site.custom.social_share_style == 'horizontal' %]blox-social-nav-horizontal[% end %]" [% if servicerestricted && !use_tracker; echo ' style="display:none;"'; end; %]>
+    <li><a [% if mode=='story' || mode==null; modeSelected; end %]href="[% asset.url %]?mode=story" rel="nofollow"><span>[% if performer; echo 'Profile'; else; echo 'Story'; end; %]</span></a></li>
+    [%- if cms.site.custom.comments_exclude_sections_list | contains(cms.url.path) == false && (this.asset.no_comments == false || blox_comments == 'facebook');
+        if blox_comments == 'other'; -%]
+            <li><a [% if mode=='comments'; modeselected; end %]href="[% asset.url %]?mode=comments" rel="nofollow"><span>[% if tab_name; echo tab_name; else; echo 'Comments'; end; %][% comments = asset.comments; if comments | length != 0 %] ([% echo comments | length %])[% end %]</span></a></li>
+        [%- else if blox_comments == 'false'; continue;
+            else if blox_comments == 'blox'; -%]
+                <li><a href="[% asset.url %]#user-comment-area" rel="nofollow"><span>[% if tab_name; echo tab_name; else; echo 'Comments'; end; comments = asset.comments; if comments | length != 0 %] ([% echo comments | length %])[% end %]</span></a></li>
+        [%- else if blox_comments == 'facebook' -%]
+                <li><a href="[% asset.url %]#facebook-comments" rel="nofollow"><span>[% if tab_name; echo tab_name; else; echo 'Comments'; end %] </span></a></li>
+        [% else; %]
+                <li><a href="[% asset.url %]#user-comment-area" rel="nofollow"><span>[% if tab_name; echo tab_name; else; echo 'Comments'; end; %]</span></a></li>
+        [%- end;
+        end;
+
+    foreach storyViews as view;
+
+        totalAssets = filterAssetsByPublished(asset.items('type':view)) | length;
+        if view == 'image';
+            totalAssets = filterAssetsByPublished(filterImagesByPresentation(asset.items('type':'image','inline':false),["masthead"],"exclude")) | length;
+        end;
+
+        if cms.system.venue == "admin";
+            totalAssets = asset.items('type':view) | length;
+            if view == 'image';
+                totalAssets = filterImagesByPresentation(asset.items('type': 'image'),["masthead"],"exclude") | length;
+            end;
+        end;
+
+        if totalAssets !=0;
+            if view == 'image' and totalAssets==1; continue; end;
+                           if view == 'pdf' or view == 'audio' or view == 'map' or view == 'html' or view == 'flash' or view == 'zip'; continue; else; -%]
+            <li[% hideList %] class="[% echo 'tab-'+view %]"><a [% if mode==view; modeselected; end %]href="[% asset.url %]?mode=[% view %]" rel="nofollow"><span>[% view | titlecase %][% if totalAssets >= 1 %] <em>([% totalAssets; -%])</em>[% end %]</span></a></li>
+            [% end %]
+        [% end %]
+    [% end %]
+    [% /* HTML assets subtybe == youtube */ %]
+    [% if related_youtube.length %]
+    <li>
+        <a [% if mode=='youtube'; modeselected; end %]href="[% asset.url %]?mode=youtube" rel="nofollow">
+            <span>[% youtube_tab_name %] <em>([% related_youtube.length %])</em></span>
+        </a>
+    </li>
+    [% end %]
+    [% /* end youtube */ %]
+</ul>

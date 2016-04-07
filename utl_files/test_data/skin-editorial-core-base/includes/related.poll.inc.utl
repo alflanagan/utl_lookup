@@ -1,0 +1,24 @@
+<div class="blox-story-related-container">
+[% if !cms.component.load("core_asset_poll"); echo "<!-- error loading core_asset_poll component -->"; end; %]
+
+<div id="blox-poll">
+[% foreach pollAssets as pollAsset;
+
+	if pollAsset.answers | length > 2;
+		answers = (pollAsset.answers | length) - 2;
+	else; answers = 0; end;
+	type = pollAsset.chart_style;
+
+	height = this.block.custom.height;
+	if !height;
+		if type = "pie";
+			height = 250;
+		else; height = '300'; end;
+	end;
+-%]
+
+[% core_asset_poll(pollAsset); %]
+
+[% end; %]
+</div>
+</div>

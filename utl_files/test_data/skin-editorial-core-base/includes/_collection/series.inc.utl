@@ -1,0 +1,72 @@
+<style>
+ul.somethingweird li {
+    clear: both;
+    float: left;
+    margin-bottom: 5px;
+}
+
+ul.somethingweird li span {
+    background: none repeat scroll 0 0 #222222;
+    border-radius: 50%;
+    clear: right;
+    color: #FFFFFF;
+    float: left;
+    font-size: 14px;
+    height: 23px;
+    margin-right: 5px;
+    padding-top: 5px;
+    text-align: center;
+    width: 30px;
+}
+
+ul.somethingweird li a{ color: #222222;}
+
+ul.somethingweird li p {
+    font-size: 12px;
+    font-weight: normal;
+    padding-left: 35px;
+}
+
+ul.somethingweird h4 {
+    color: #222222;
+    font-family: Tahoma,Arial,sans-serif;
+    font-size: 1.4em;
+    font-weight: 700;
+    margin: 0 0 11px;
+}
+
+ul.somethingweird li div.blox-recent-block img.avatar{margin-left:35px;}
+
+</style>
+
+<ul class="blox-recent-list somethingweird" style="margin-bottom:10px !important;width:95%;">
+  [% foreach assetGroup as lChild; %] [% photo = lChild.items('type':'image')[0].preview([100]); %]
+  <li>
+    <div class="blox-recent-block has-photo">
+      <h4 class="blox-headline">
+         <a href="[% lChild.url %]" title="[% lChild.title | html %]" class=" [% child.type %]"> [% lChild.title | html %]</a>
+      </h4>
+      [% if lChild.preview && !lChild.items -%]
+      <a href="[% lChild.url %]">
+        <img src="[% lChild.preview.url %]" class="avatar">
+      </a>
+      [% end %] [% if lChild.items -%]
+      <a href="[% lChild.url %]">
+        <img alt="[% photo.caption | html %]" src="[% photo.url %]" class="avatar">
+      </a>
+      [% end %] [% if lChild.content -%]
+      <p>[% lChild.content | truncate(150,'&hellip;') | strip_tags %]</p>
+      [% end %]
+    </div>
+  </li>
+  [% end %]
+  <script>
+    $("ul.somethingweird").each(function() {
+      $("li", this).prepend(function(i) {
+        return $("<span />", {
+          text: i + 1
+        });
+      });
+    });
+  </script>
+</ul>

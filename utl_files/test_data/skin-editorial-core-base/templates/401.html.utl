@@ -1,0 +1,7 @@
+[%- 
+if !cms.component.load('core_external_jquery'); echo '<!-- core_external_jquery load failed-->'; end;
+if !cms.component.load('core_external_jquery_plugins'); echo '<!-- core_external_jquery_plugins load failed-->'; end;
+if !cms.component.load('core_base_library'); echo '<!-- core_base_library load failed-->'; end;
+cms.page.add_script('components/core_base_library/resources/scripts/user.js');
+core_external_jquery_plugins_cookie;
+core_base_library_errorPage401();

@@ -1,0 +1,3 @@
+[%- 
+call cms.component.load('core_advanced_mobile'); 
+core_advanced_mobile_assetAudio();

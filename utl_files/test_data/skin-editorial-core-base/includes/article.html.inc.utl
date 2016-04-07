@@ -1,0 +1,130 @@
+<div class="blox-asset-content">
+[% if mode == 'youtube';
+		youtubePage = true;
+		cms.page.add_script(cms.page.app + '/' + cms.page.skin + '/resources/scripts/jquery_plugins/jquery.easing.1.3.js');
+	end;
+
+/* HTML subtype -> youtube */
+if youtubePage;
+if youtube_assets.length > 1; %]
+
+<script type="text/javascript">
+<!-- <![CDATA[
+$(document).ready(function() {
+	var controls = '.slide-navigator';
+	
+	$('.slideshow').cycle({ 
+		fx:      'fade', 
+		//easing:  'jswing',
+		speed:	  1,
+		timeout:  0,
+		before:	onBefore,
+		after:	onAfter,
+		pager:	controls,
+
+		pagerAnchorBuilder: function(idx, slide) {
+			var slideImage = $(slide).children("img").attr('src');
+			var slideText = $(slide).children("p").html();
+			return '<li><a href="#"><img src="' + slideImage + '" align="left" /></a><p>' + slideText + '</p></li>'; // markup for thumb previews
+		}
+	});
+
+	// stuff to do before the slide transition
+	function onBefore(curr, next, opts) {
+
+		// grab current slide object and do stuff to the title
+		var currentSlide = $('.slide').eq(opts.currSlide).children('p');
+		currentSlide.animate({ 
+				bottom: "-65px"
+			}, 250 );
+	}
+
+	// stuff to do after the slide transition
+	function onAfter(curr, next, opts) {
+	
+		// shows and hides previous and next buttons appropriately
+		var index = opts.currSlide;
+		//$('.prev')[index == 0 ? 'hide' : 'show']();
+		//$('.next')[index == opts.slideCount - 1 ? 'hide' : 'show']();
+
+		// grab current slide object and do stuff to the title
+		var currentSlide = $('.slide').eq(opts.currSlide).children('p');
+		currentSlide.animate({ 
+				bottom: "10px"
+			}, 400 );
+	}
+
+	playResumeBtn = $('.play,.pause'); //group play/resume buttons together
+	
+	$('.play').click(function(){
+		$('.slideshow').cycle('resume');
+		playResumeBtn.toggle();
+		return false;
+	});
+
+	$('.pause').click(function(){
+		$('.slideshow').cycle('pause');
+		playResumeBtn.toggle();
+		return false;
+	});
+	$('.next').click(function(){
+		$('.slideshow').cycle('next');
+		return false;
+	});
+	$('.prev').click(function(){
+		$('.slideshow').cycle('prev');
+		return false;
+	});
+});
+// ]]> -->
+</script>
+
+<div class="slideshow-app">
+    <div class="slideshow">
+	[%	foreach youtube_assets as ytAsset %]
+		<div class="slide">
+			<p style="display:none;">[% ytAsset.title | strip_tags %]</p>
+			[% ytAsset.html %]
+			<img src="[% ytAsset.preview.url %]" style="display:none;" alt="[% ytAsset.description | html %]" />
+		</div>
+	[%	end; %]
+    </div>
+    <div class="slide-navigator"></div>
+    <div class="play-controls">
+        <a class="prev transparency" href="javascript:void(0);"></a>
+        <a class="pause transparency" href="javascript:void(0);"></a>
+        <a class="play transparency" href="javascript:void(0);" style="display:none;"></a>
+        <a class="next transparency" href="javascript:void(0);"></a>
+    </div>
+    <div class="clear"></div>
+</div>    
+
+
+[%	else %]
+	<div class="youtube-embed-holder">
+	[%	foreach youtube_assets as ytAsset %]
+			<h3 class="blox-headline">[% ytAsset.title %]</h3>
+				[% if ytAsset.subheadline %]
+					<p class="sub-headline">
+						[% ytAsset.subheadline | tidy %]
+					</p>
+				[% end %]
+				
+				<div class="youtube-embed-html">
+					[% ytAsset.html %]
+				</div>
+				<p class="byline">
+					[% if ytAsset.byline; ytAsset.byline +' | '; end; %] 
+					Posted: [% ytAsset.starttime('l, F j, Y - g:i a') %]
+				</p>
+				<p id="blox-asset-description">
+					[% ytAsset.description %]
+				</p>
+		[% /* potentially include keywords, related, submit links, etc... */ -%]
+	[%	end %]
+	</div>		
+[%	end;
+end;
+/* end youtube */
+%]	
+</div>

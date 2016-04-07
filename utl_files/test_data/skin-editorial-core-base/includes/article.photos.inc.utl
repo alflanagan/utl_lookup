@@ -1,0 +1,125 @@
+[% if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+
+photoGroup = this.asset.items('type':'image','inline':false,'app':'editorial');
+
+/* this filter is also run on the article.story page. should be corrected to only go once if possible */
+pImages = filterAssetsByPublished(photoGroup,'include');
+sImages = filterImagesByPresentation(pImages,['masthead'],'exclude');
+nImages = filterImagesByPresentation(sImages,['showcase','infographic','panorama','masthead','mugshot'],'exclude',10);
+
+if sImages | length > 0 -%]
+	<div id="blox-story-photo-container[% if photoPage; echo '-page'; end; -%]" class="managed-service">
+
+[% if !photoPage;
+	i=0;
+	foreach sImages as aImage;		
+
+		if aImage.presentation == "mugshot";
+			if mugshotCounter == null;mugshotCounter=[i];
+			else;
+				mugshotPosition=1;
+				if mugshotCounter.length>1;mugshotPosition=mugshotCounter.length;end;
+				mugshotCounter[mugshotPosition]=i;
+			end;
+		else if aImage.presentation == "infographic";
+			if infographicCounter == null;infographicCounter=[i];
+			else;
+				infographicPosition=1;
+				if infographicCounter.length>1;infographicPosition=infographicCounter.length;end;
+				infographicCounter[infographicPosition]=i;
+			end;
+		else;
+			if normal_counter == null;normal_counter=[i];
+			else;
+				normalPosition=1;
+				if normalCounter.length>1;normalPosition=normal_counter.length;end;
+				normal_counter[normalPosition]=i;
+			end;
+		end;
+		i = i + 1;
+	end;
+end;
+
+if nImages | length > 0 || (sImages | length > 0 && photoPage);
+	
+	/* get grid unit being used */
+	if grid_set_blox_grid_system_max == 12;
+		gridUnit = 75;
+	elseif grid_set_blox_grid_system_max == 16;
+		gridUnit = 55;
+	end;
+
+	if sImages | length > 0 && photoPage;
+		gallerySize = grid_set_blox_med_span*gridUnit;
+		/* photo page display of all images */
+		core_base_library_gallery('target':sImages,'size':gallerySize);
+	else if nImages | length > 0;
+		gallerySize = 300;
+		/* story media box display of non-presentation images */
+		core_base_library_gallery('target':nImages,'size':gallerySize,'article_mode':true,'image_counter':normal_counter);
+	end;
+end;
+
+if !photoPage && (sImages|length > nImages|length) && nImages|length > 0; %]
+<div class="instant-gallery more photos ui-button ui-widget ui-state-highlight ui-button-text-only ui-corner-all">
+	<a href="[% asset.url %]?mode=image">View [% if sImages|length > 1 %]all[% end %] [% sImages|length %] image[% if sImages|length > 1 %]s[% end %] in gallery.</a>
+</div><div class="clear"></div>
+[% end;
+
+if !photoPage;
+filteredImagesMugshots = filterImagesByPresentation(sImages,["mugshot"]);
+if filteredImagesMugshots.length > 0 -%]
+        <div id="blox-story-mugshot-container">
+        <div class="clear"></div>
+            [% foreach filteredImagesMugshots as mugshot; -%]
+                <div class="mugshot">
+[% if this.asset.custom.photo_link != "none" %]
+                <a 
+			title="[% mugshot.title | html %]" 
+			href="[% 
+if this.asset.custom.photo_link; 
+			if this.asset.custom.photo_link | startswith("http://");echo this.asset.custom.photo_link; 
+			else; echo "http://" + this.asset.custom.photo_link; end;
+else;
+this.asset.url %]?mode=image[% if !photoPage; echo '&amp;photo='; else; echo '#'; end; %][% mugshotCounter[mugshot|iterpos]; end;%]"
+[% if this.asset.custom.photo_link; %]rel="external"[%end%]>[% end %]
+                    <img src="[%mugshot.resource_url%]" alt="[%mugshot.caption | html%]" />
+                [% if this.asset.custom.photo_link != "none" %]</a>[% end %]
+                <p>[% mugshot.description | tidy %]</p>
+                <div class="clear"></div>
+               </div>
+            [% end -%]
+        </div>
+    [% end %]
+
+
+[% filteredImagesInfographics = filterImagesByPresentation(sImages,["infographic"]);
+if filteredImagesInfographics.length > 0 %]
+	<div id="blox-story-infographic-container">
+	<div class="clear"></div>
+		[% if this.asset.custom.infographic_title | strbool;
+            if this.asset.custom.infographic_title != ""; echo "<h3>"+this.asset.custom.infographic_title+"</h3>";
+            else; echo "<h3>Infographic</h3";
+            end;
+           end;
+		foreach filteredImagesInfographics as infographic;
+if this.asset.custom.photo_link != "none" -%]
+            <a 
+		title="[% infographic.title | html %]" 
+		href="[% 
+if this.asset.custom.photo_link; 
+			if this.asset.custom.photo_link | startswith("http://");echo this.asset.custom.photo_link; 
+			else; echo "http://" + this.asset.custom.photo_link; end;
+else;
+this.asset.url %]?mode=image[% if !photoPage; echo '&amp;photo='; else; echo '#'; end; %][% infographicCounter[infographic|iterpos]; end; -%]"
+[% if this.asset.custom.photo_link; %]rel="external"[%end%]>
+[% end; %]		
+            <img src="[%infographic.resource_url%]" alt="[%infographic.caption | html%]" />
+[% if this.asset.custom.photo_link != "none" %]</a>[% end %]
+		[% end -%]
+	</div>
+[% end %]
+[% end %]
+
+</div>
+[% end %]

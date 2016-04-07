@@ -1,0 +1,11 @@
+[% if this.asset.links %]
+	<h3 class="more-keywords">Reference Links</h3>
+	[% rlinks = this.asset.links %]
+	[% if rlinks | length > 0 %]
+	  <ul class="bull-list">
+	  [% foreach rlinks as rlink %]
+		 <li><a rel="external" href="[% rlink.url | tidy %]">[% rlink.name | html | strip_tags %]</a></li>
+	  [% end %]
+	  </ul>
+	[% end %]
+[% end %]

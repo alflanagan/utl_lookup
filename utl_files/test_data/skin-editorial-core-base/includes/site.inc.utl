@@ -1,0 +1,3 @@
+[%- if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+if !cms.component.load('core_base_navigation'); echo '<!--Failed to load core_base_navigation component.-->'; end;
+core_base_library_site -%]

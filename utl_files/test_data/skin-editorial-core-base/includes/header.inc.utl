@@ -1,0 +1,73 @@
+[%-
+
+/* Hard code the secureserver variable if you're on a staging site. */
+/* secureserver = 'https://zen-dot-bloxcms-dot-com.bloxcms.com' */
+/* Otherwise use this: */
+
+secureserver = cms.site.secure_url;
+
+call cms.component.load('core_base_library');
+call cms.component.load('core_base_navigation');
+call cms.component.load(cms.site.custom.site_component);
+
+include 'macros.inc.utl';
+include 'site-macros.inc.utl';
+include 'grid-set.inc.utl';
+
+core_base_library_mobileRedirect;
+core_base_library_doctype;
+
+-%]
+
+<head>
+[%-
+
+include 'head.inc.utl';
+include 'site-head.inc.utl';
+
+-%]
+</head>
+[%-
+
+core_base_library_body_tag;
+core_base_library_html_container;
+
+if cms.request.param('palette');
+    call cms.component.load('core_theme_palette');
+    core_theme_palette_switcher;
+end;
+
+-%]
+<div id="blox-wrapper" class="blox-transparency container_[% grid_set_blox_grid_system_max %]">
+    [%- /* header start--> */ %]
+    [% core_base_library_show_header_top("outside_header") %]
+    <div id="blox-header[% if cms_site_custom_navigation == 'vertical' %]-vertical-nav[% end %]" class="blox-transparency">
+        [% core_base_library_show_header_top("inside_header") %]
+        [% include '_ads/leaderboard-tile-top.inc.utl' %]
+        <[% header_logo_tag %] class="vcard blox-transparency"><a href="/" class="fn url org blox-transparency" rel="index">[% core_base_library_site_title('asset':this.asset,'thisUrl':this.url) %]</a></[% header_logo_tag %]>
+        <div class="top-right-two">
+            [% cms.region('name':'top-right-two'); -%]
+        </div>
+        [% include '_ads/weather-sponsor.inc.utl' %]
+        <div class="top-right-one">
+            [% cms.region('name':'top-right-one'); -%]
+        </div>
+    </div>[% /* end blox-header */
+    /* navigation start */
+    core_base_nav_show_main_navigation;
+    /* container start */ %]
+        <div id="blox-container" class="container_[% grid_set_blox_grid_system_max %]">
+    [%    include '_ads/leaderboard-tile-middle.inc.utl' %]
+        <div class="clear"></div>
+    [%    include '_ads/pencil.inc.utl';
+        if thisSectionPath == 'front' && !this.asset;
+            if cms_system_app == 'editorial';
+                cms.region('name':'top-two-front');
+            end;
+        end;
+        if thisSectionPath != 'front';
+            if cms_system_app == 'editorial';
+                cms.region('name':'top-two-index');
+            end;
+        end -%]
+        <div class="clear"></div>

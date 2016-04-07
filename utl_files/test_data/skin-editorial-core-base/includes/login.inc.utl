@@ -1,0 +1,81 @@
+[% if cms.site.custom.user_dashboard; dashboard = cms.site.custom.user_dashboard; else; dashboard = 'admin'; end; %]
+<div id="blox-user-panel" class="blox-loading">
+	<dl style="display:none;">
+		[% if !commenting_minimal %]
+		<dt id="uIcon">
+			<img id="defaultAvatar" alt="default avatar" 
+			src="[% cms.page.app; %]/[% cms.page.skin %]/resources/images/user_70.png" />
+		</dt>
+		[% end %]
+		<dd id="uUser">
+			Welcome to the site! Register or log in below.
+		</dd>
+		<dd id="uNav">
+			<a class="login-link" href="[%- cms.url('app': 'user') | html -%]login/?referer_url=[%- cms.url | html -%]">
+				Login
+			</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+			<a class="signup-link" href="[%- cms.url('app': 'user') | html -%]signup/?referer_url=[%- cms.url | html -%]">
+				Register
+			</a>
+		</dd>
+		<dd id="uNavReauth">
+			<form id="tncms-logout-form" method="post" action="[%- cms.url('app': 'user', 'secure': true) | html -%]logout/" >
+		[%	sUrl = cms.url; 
+			if (sUrl | contains('/users/' + dashboard + '/')) != 'true'; %]
+				<fieldset style="display: none">
+					<input type="hidden" name="referer_url" value="[%- cms.url | html -%]" />
+				</fieldset>
+		[% 	end %]
+				<fieldset>
+					<a class="logout-link" href="javascript:tncms_logout();">
+						Not you?
+					</a>&nbsp;|&nbsp;
+					<a class="login-link" href="[%- cms.url('app': 'user') | html -%]login/?referer_url=/users/[% dashboard %]/">
+						My Dashboard
+					</a>&nbsp;|&nbsp;
+					<a class="signup-link" href="[%- cms.url('app': 'user') | html -%]signup/?referer_url=[%- cms.url -%]">
+						Register
+					</a>
+				</fieldset>
+			</form>
+			<script type="text/javascript">
+				function tncms_logout() {
+					oForm = document.getElementById('tncms-logout-form');
+					oForm.submit();
+					return false;		
+					}
+			</script>
+		</dd>
+		<dd id="uNavOut" >
+			<form id="tncms-logout-form2" method="post" action="[%- cms.url('app': 'user', 'secure': true) | html -%]logout/" >
+			[%	sUrl = cms.url; 
+				if (sUrl | contains('/users/' + dashboard + '/')) != 'true'; %]
+        		<fieldset style="display: none">
+            		<input type="hidden" name="referer_url" value="[%- cms.url | html -%]" />
+				</fieldset>
+			[%	end %]
+            	<fieldset>
+					<a class="logout-link" href="javascript:tncms_logout();">
+						Logout
+					</a>&nbsp;|&nbsp;
+					<a href="[%- cms.url('app': 'user') | html; echo dashboard; -%]/">
+						My Dashboard
+					</a>
+				</fieldset>
+			</form>
+
+            <script type="text/javascript">
+				function tncms_logout() {
+					oForm = document.getElementById('tncms-logout-form2');
+					oForm.submit();
+					return false;		
+				}
+				
+			</script>
+			
+			[% if !cms.component.load(cms.site.custom.site_component);echo "<!-- error loading Site Component -->";end; -%]
+ 			[% core_site_user_log_in_state_messages(); -%]
+
+		</dd>
+	</dl>
+</div>

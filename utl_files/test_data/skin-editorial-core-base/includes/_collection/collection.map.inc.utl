@@ -1,0 +1,29 @@
+<!-- limit it to only presentation mode -->
+[% if !cms.component.load("core_external_map"); echo "<!-- Map Component Failed -->"; end;
+map_pins = [];
+foreach this.asset.items as item;
+    if item.address && item.city && item.state && item.zip_code || item.latitude && item.longitude;
+        map_pins[map_pins.length+1] = [ item.latitude, item.longitude, item.address, item.city, item.state, item.zip_code, 'title':item.title ];
+    end;
+end;
+if map_pins|length; %]
+    [% core_external_map_get_map(map_pins, 'id':this.asset.uuid); %]
+    <ul id="map-locations">
+        [% pinIndex = 0 %]
+        [% foreach this.asset.items as item %]
+            [% if item.address && item.city && item.state && item.zip_code || item.latitude && item.longitude %]
+                <li>
+                    <strong>[% pinIndex+1 %].</strong> <a href="[%item.url%]">[%item.title|jsquote%]</a>
+                    <div id="mapMarkerDetails[% pinIndex %]" style="display:none;">
+                        <div class="map-detail-overlay" style="width:180px;height:20px;">
+                            <a href="[%item.url%]">[%item.title|jsquote|truncate(30,'...')%]</a>
+                        </div>
+                    </div>
+                </li>
+                [% pinIndex=pinIndex+1 %]
+            [% end%]
+        [% end %]
+    </ul>
+    <div class="clear"></div>
+    <p>&nbsp;</p>
+[% end %]

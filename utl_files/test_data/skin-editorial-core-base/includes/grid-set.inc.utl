@@ -1,0 +1,46 @@
+[%-
+if !cms.component.load('core_base_library'); echo '<!--core_base_library fail-->'; end;
+
+/**
+ * These assignments are to support legacy style grid_set usage
+ * Any new addtions should be called directly on the template instead of being assigned.
+ * New templates should also use direct calls such calls as core_base_library_gridSet.max
+ */
+blox_grid = core_base_library_gridSet.grid_name;
+
+pixel_sub_grid_on = core_base_library_gridSet.pixel_sub_grid_on;
+    grid_set_blox_left_pixels = core_base_library_gridSet.left_pixels;
+    grid_set_blox_inner_left_pixels = core_base_library_gridSet.inner_left_pixels;
+    grid_set_blox_inner_right_pixels = core_base_library_gridSet.inner_right_pixels;
+    grid_set_blox_small_span_pixels = core_base_library_gridSet.small_span_pixels;
+
+three_group_set_on = core_base_library_gridSet.three_group_set_on;
+left_col_on = core_base_library_gridSet.left_col_on;
+right_col_on = core_base_library_gridSet.right_col_on; right_col = right_col_on;
+
+grid_set_blox_grid_system_max = core_base_library_gridSet.max;
+grid_set_blox_grid_system_half = core_base_library_gridSet.half;
+grid_set_blox_med_span = core_base_library_gridSet.med_span;
+grid_set_blox_med_span_px = core_base_library_gridSet.med_span_px;
+grid_set_blox_left = core_base_library_gridSet.left;
+    grid_set_blox_inner_left = core_base_library_gridSet.inner_left;
+    grid_set_blox_left_major = core_base_library_gridSet.left_major;
+    grid_set_blox_left_sub = core_base_library_gridSet.left_sub;
+
+grid_set_blox_right = core_base_library_gridSet.right;
+    grid_set_blox_inner_right = core_base_library_gridSet.inner_right;
+    grid_set_blox_inner_right_two = core_base_library_gridSet.inner_right_two;
+    grid_set_blox_inner_right_sub = core_base_library_gridSet.inner_right_sub;
+    grid_set_blox_right_sub = core_base_library_gridSet.right_sub;
+    grid_set_blox_right_two = core_base_library_gridSet.right_two;
+    grid_set_blox_right_minor = core_base_library_gridSet.right_minor;
+
+grid_set_blox_article_rail = core_base_library_gridSet.article_rail;
+grid_set_blox_med_half_left = core_base_library_gridSet.med_half_left;
+grid_set_blox_med_half_right = core_base_library_gridSet.med_half_right;
+grid_set_blox_special_full_left = core_base_library_gridSet.special_full_left;
+grid_set_blox_special_right = core_base_library_gridSet.special_right;
+    grid_set_blox_3_col_special_left = core_base_library_gridSet.three_col_special_left;
+    grid_set_blox_3_col_special_inner_left = core_base_library_gridSet.three_col_special_inner_left;
+    grid_set_blox_3_col_special_inner_right = core_base_library_gridSet.three_col_special_inner_right;
+    grid_set_blox_3_col_special_right = core_base_library_gridSet.three_col_special_right;

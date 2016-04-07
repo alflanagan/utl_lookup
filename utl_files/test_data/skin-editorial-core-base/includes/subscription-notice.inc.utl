@@ -1,0 +1,61 @@
+[%    if cms.page.venue == 'admin';
+        user_url = cms.url('app': 'user');
+    else;    
+        user_url = cms.url('app': 'user', 'secure': true);
+    end;
+
+    services = core_base_library_subscriptionServices;
+    
+    referer_url = this.url | jsquote; %]
+
+<div id="subscription-notice" class="subscription-notice-include ui-dialog ui-widget ui-widget-content ui-corner-all blox-alert hide">
+    [% include 'subscription-text.inc.utl' %]
+    <ul class="online-package-options service-options">
+    [% if services | length <= 1 %]
+        [%-/*<li><span class="ui-icon ui-icon-document float-left"></span>
+            <a href="javascript:void(0)" onclick="window.open('[ secure_domain ]/site/forms/?mode=subscribe','popform','width=600,height=600,scrollbars=1,toolbar=1');">Become a Print Subscriber</a>
+        </li>
+        */ -%]
+        <li><span class="ui-icon ui-icon-key float-left"></span>
+            <a class="login-link authorized-user" style="display:none;" href="[% user_url %]/admin/service/purchase/?service_id=[% services.0.id %]&referer_url=[% referer_url %]&driver=[% services.0.driver %]">
+                [% services.0.name %]
+            </a>
+            <a class="login-link unauthorized-user" style="display:none;" href="[%- cms.url('app': 'user', 'secure': true) | html -%]login/?service_id=[% services.0.id %]&referer_url=[%- referer_url | html -%]&driver=[% services.0.driver %]">
+                [% services.0.name %]
+            </a><span class="ui-icon ui-icon-help float-right subscribe-help" title="Help - Service packages grant online access. Select the service that best suits your needs and get started now!"></span>
+            [% if services.0.description %]
+            <span class="service-description">[% services.0.description %]</span>
+            [% end %]
+            [% core_base_library_serviceRates(services.0.id); %]
+            <div class="clear"></div>
+        </li>
+    [% else %] 
+        [%-/*    <li><span class="ui-icon ui-icon-document float-left"></span>
+                <a href="javascript:void(0)" onclick="window.open('[ secure_domain  ]/site/forms/?mode=subscribe','popform','width=600,height=600,scrollbars=1,toolbar=1');">Print</a>    
+            <span class="ui-icon ui-icon-help float-right subscribe-help" title="Help - Service packages grant varying levels of site access, depending on the features of the package you choose. Select the service that best suits your needs and get started now."></span>
+            <span class="service-description">Along with your Print Subscription you will be provided instructions detailing how to gain access to Online Subscriber content.</span>    
+            </li>
+        */ -%]    
+        [%    foreach services as service;
+                if !service.disabled && !service.deleted; %]
+                <li>
+                <span class="ui-icon ui-icon-key float-left"></span>    
+                <a class="login-link authorized-user" style="display:none;" href="[% user_url %]/admin/service/purchase/?service_id=[% service.id %]&referer_url=[% referer_url %]&driver=[% service.driver %]">
+                    [% service.name %]
+                </a>
+                <a class="login-link unauthorized-user" style="display:none;" href="[%- cms.url('app': 'user', 'secure': true) | html -%]login/?service_id=[% service.id %]&referer_url=[%- referer_url | html -%]&driver=[% service.driver %]">
+                    [% service.name %]
+                </a>
+                [% if service | iterfirst %]
+                <span class="ui-icon ui-icon-help float-right subscribe-help" title="Help - Service packages grant online access. Select the service that best suits your needs and get started now!"></span>
+                [% end %]
+                <span class="service-description">[% service.description %]</span>
+                [% core_base_library_serviceRates(service.id) %]
+                <div class="clear"></div>
+                </li>
+            [%     end;
+            end %] 
+    [%    end %]
+    </ul>
+    [% include 'subscription-faq.inc.utl' %]
+</div>

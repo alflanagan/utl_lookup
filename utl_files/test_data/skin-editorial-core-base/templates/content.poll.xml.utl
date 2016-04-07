@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<chart>
+ <chart_data>
+  <row>
+   <null/>
+   [% foreach this.asset.answers as index, answer -%]
+   <string>&#160;</string>
+   [% end %]
+  </row>
+  <row>
+   <string></string>
+   [% foreach this.asset.answers as index,answer -%]
+      <number>[% answer.votes %]</number>
+   [% end %]
+  </row>
+ </chart_data>
+ <chart_type>[% this.asset.charttype %]</chart_type>
+ <series_color>
+  [% foreach this.asset.answers as index,answer -%]
+    <color>[% answer.color | replace('#', '') %]</color>
+  [% end %]
+ </series_color>
+ <series_switch>1</series_switch>
+ <legend_rect x='-1000' y='-1000' width='0' height='0' margin='0' />
+ <chart_rect x='10' y='10' />
+ [% if poll.charttype == 'pie' %]
+ <chart_border top_thickness='0' bottom_thickness='0' left_thickness='0' right_thickness='0' color='999999' />
+ <chart_transition type='spin' delay='0' duration='1' order='series' />
+ [% end %]
+ [% if poll.charttype == 'bar' %]
+ <chart_transition type='slide_left' delay='0' duration='1' order='series' />
+ <chart_border top_thickness='1' bottom_thickness='2' left_thickness='2' right_thickness='1' color='999999' />
+ [% end %]
+ <axis_category font='arial' bold='true' size='12' />
+ <axis_value font='arial' bold='true' size='12' />
+ <chart_value_text>
+  <row>
+   <null/>
+   [% foreach this.asset.answers as index,answer -%]
+      <null/>
+   [% end %]
+  </row>
+  <row>
+   <null/>
+   [% foreach this.asset.answers as index,answer -%]
+      <string>[% if answer.answer | length > 20 %][% answer.answer | truncate(20,'...')%][% end %]</string>
+   [% end %]
+  </row>
+ </chart_value_text>
+</chart>

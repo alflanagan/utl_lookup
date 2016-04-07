@@ -1,0 +1,12 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+  <title>[% this.uri.title | html %] - [% cms.site.title | html %]</title>
+  [% include 'meta.inc.utl' %]
+ </head>
+ <body>
+  [% include 'header.inc.utl' %]
+  <h1>[% 'Like logged successfullly' | html %]</h1>
+  [% include 'footer.inc.utl' %]
+ </body>
+</html>

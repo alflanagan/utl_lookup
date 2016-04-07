@@ -1,0 +1,8 @@
+[%-
+/**
+ * Asset Comments
+ */
+call cms.component.load('core_advanced_mobile'); 
+call cms.component.load('core_external_jquery'); 
+call cms.component.load('core_base_library'); 
+core_advanced_mobile_assetCommentsPage;

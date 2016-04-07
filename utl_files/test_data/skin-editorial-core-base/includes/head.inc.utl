@@ -1,0 +1,15 @@
+[%-	if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+		core_base_library_notes;
+		core_base_library_meta;
+		core_base_library_scripts;
+	if !cms.component.load('core_external_jquery_plugins'); echo '<!--Failed to load core_external_jquery_plugins component.-->'; end;
+	
+	/* <!-- Add main macros file for skin. Includes variable to add macros file for current skin. --> */
+	appMacros = cms.page.app + '.macros.inc.utl';
+	if cms.page.app != 'editorial';
+		include appMacros; 
+	end;
+	
+	include 'site.inc.utl' -%]
+
+<link rel="search" type="application/opensearchdescription+xml" title="[% cms.site.title %] Search" href="http://[% cms.system.domain %]/search/opensearch/generic.xml" />

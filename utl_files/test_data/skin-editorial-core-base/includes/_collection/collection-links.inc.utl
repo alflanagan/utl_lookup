@@ -1,0 +1,89 @@
+[%-  if this.asset.items('relationship':'parent','type':'collection'); %] 
+[% foreach this.asset.items('relationship':'parent') as aCollection; %]
+
+[% if aCollection.presentation == 'series'; %]
+<style>
+    div.the-series{
+    background-color: #EDEDED;
+    border: 1px solid #DDDDDD;
+    border-radius: 10px;
+    margin: 20px 0 30px;
+    padding: 30px;
+    padding-bottom:60px;
+}  
+
+.the-series ul.somethingweird.in-articlezzz li {
+    clear: none;
+    float: left;
+    margin-bottom: 5px;
+    width: 50%;
+    border-top: none;
+    padding: 4px 0;
+}
+
+.the-series ul.somethingweird.in-articlezzz li span {
+    background: none repeat scroll 0 0 #222222;
+    border-radius: 50%;
+    clear: right;
+    color: #FFFFFF;
+    float: left;
+    font-size: 10px;
+    height: 17px;
+    margin-right: 5px;
+    padding-top: 0;
+    text-align: center;
+    width: 18px;
+}
+
+.the-series ul.somethingweird.in-articlezzz li a {
+    color: #222222;
+}
+
+.the-series .left li {
+    width: 100% !important;
+}
+
+.the-series .right li {
+    width: 100% !important;
+}
+
+.the-series div.left ul.blox-recent-list {
+    width: 49%;
+    float: left;
+}
+.the-series div.right ul.blox-recent-list {
+    width: 49%;
+}
+</style>
+
+
+<div class="the-series">
+   <h3 style="padding-bottom:10px;">From the series "<a href="[% aCollection.url %]">[% aCollection.title %]</a>"</h3>
+   <div class="left">
+      <ul class="blox-recent-list somethingweird in-articlezzz">
+         [% foreach aCollection.items as lChild;
+         if lChild | iterpos + 1 <= aCollection.items | length / 2 | roundup
+         %]
+         <li>
+            <span>[% lChild | iterpos + 1 %]</span>
+            <a href="[% lChild.url %]" title="[% lChild.title | html %]" class=" [% lChild.type %]"> [% lChild.title | truncate(40,'&hellip;')  %]</a>
+         </li>
+         [% end; end; %]
+      </ul>
+   </div>
+   <div class="right">
+      <ul class="blox-recent-list somethingweird in-articlezzz">
+         [% foreach aCollection.items as lChild;
+         if lChild | iterpos + 1 > aCollection.items | length / 2 | roundup
+         %]
+         <li>
+            <span>[% lChild | iterpos + 1 %]</span>
+            <a href="[% lChild.url %]" title="[% lChild.title | html %]" class=" [% lChild.type %]"> [% lChild.title | truncate(40,'&hellip;')  %]</a>
+         </li>
+         [% end; end; %]
+      </ul>
+   </div>
+   </div>
+ [% end %] 
+[% end -%]
+[% end %]

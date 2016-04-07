@@ -1,0 +1,7 @@
+[% if cms.site.custom.article_rail == 'true' && cms.system.venue == 'admin' %]
+<br />
+<h3 class="ui-widget-header ui-helper-clearfix ui-corner-all">The 3 regions below show up in the article right column</h3>
+[% cms.region('name':'article-right-top') %]
+[% cms.region('name':'article-right-middle') %]
+[% cms.region('name':'article-right-bottom') %]
+[% end %]

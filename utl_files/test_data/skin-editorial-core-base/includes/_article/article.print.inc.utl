@@ -1,0 +1,104 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+[%-
+core_base_library_site;
+
+include 'macros.inc.utl';
+include 'site-macros.inc.utl';
+
+include 'head.inc.utl';
+include 'site-head.inc.utl' %]
+</head>
+<body>
+    <div id="blox-header">
+        <h2 class="vcard blox-transparency">
+            <a href="/" class="fn url org blox-transparency" rel="index">
+                [% core_base_library_site_title('asset':this.asset,'thisUrl':this.url) %]
+            </a>
+        </h2>
+    </div>
+    <h1 style="font-size:24px;">[% this.asset.title %]</h1>
+    <p>
+        <strong>
+    [%    if this.asset.byline;
+            echo this.asset.byline+' | ';
+        end;
+        echo 'Posted: ';
+        echo this.asset.starttime | datetime('l, F j, Y g:i a') %]
+        </strong>
+    </p>
+    [%
+        aMediaBoxImages = cms.asset.items('type': 'image', 'inline':false);
+        if aMediaBoxImages | length; -%]
+        <div class="print-media-box">
+            [%  image = aMediaBoxImages[0];
+                sCaptionContent = '';
+                if image.resource_url != ''; %]
+                    <img title="[% image.title %]" alt="[% image.caption | html %]" src="[% image.resource_url %]" [% if image_focus; echo 'style="width:100%;"'; end %]/>
+                    [% if image.caption != '';
+                        sCaptionContent = image.caption | strip_tags | html;
+                    else if image.description != '';
+                        sCaptionContent = image.description | strip_tags | html;
+                    end -%]
+                    <div class="clear"></div>
+                    <h4>[% image.title %]</h4>
+                    [% if sCaptionContent != ''; %]<p class="summary [% sCaptionType %]">[% sCaptionContent %]</p>[% end -%]
+                    <div class="clear"></div>
+                [% end; %]
+        </div>
+    [% end; -%]
+    [%-    foreach this.asset.content(0,2) as p;
+        echo p;
+    end;
+
+    /* ::::::::::::::::::::::::::::::::::::::::: subscription */
+    if serviceRestricted;
+        if !use_tracker -%]
+        <div class="tncms-restricted-notice">
+            <div class="temp-loader blox-loading" style="width:100%; height:100px;"></div>
+            <div class="restricted-text ui-widget ui-widget-header ui-state-error" style="display:none">
+            You must be logged in with the proper services to print this article.
+            </div>
+        </div>
+    [%    end;
+        if this.asset.content | length > 2;
+            foreach this.asset.content(3) as p %]
+            <div class="encrypted-content" style="display: none">
+                [% p | autolink | scramble | html %]
+            </div>
+        [%  end;
+        end;
+
+        if !use_tracker;
+        include '_article/ip-decrypt.inc.utl';
+            if !cms.request.is_anonymous_user;
+                cms.service.decrypt('encrypted-content');
+            end;
+        end;
+    else;
+        if this.asset.content | length > 2;
+            foreach this.asset.content(3) as p;
+                echo p | autolink;
+            end;
+        end;
+    end;
+
+    if use_tracker;
+        if !cms.component.load("core_services_manager"); echo "<!-- error loading Services Component -->"; end;
+
+        core_services_manager_messages;
+
+        core_services_manager_tracker(this.asset);
+    end;
+    %]
+    <script type="text/javascript">
+    /* <![CDATA[ */
+    $(document).ready(function() {
+        $(".temp-loader").remove();
+        $(".restricted-text").show();
+    });
+    /* ]]> */
+    </script>
+</body>
+</html>

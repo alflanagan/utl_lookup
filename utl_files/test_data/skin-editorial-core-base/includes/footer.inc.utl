@@ -1,0 +1,69 @@
+[% footer_blueprint = core_base_library_getCustomProperty("design_footer_blueprint", "value", ""); %]
+
+<div class="clear"></div>
+		[%	
+		if thisSectionPath == 'front' && !this.asset && cms_system_app == 'editorial';
+			cms.region('name':'bottom-one-front');
+		end;
+		if thisSectionPath != 'front' && cms_system_app == 'editorial';
+				cms.region('name':'bottom-one-index'); 
+		end;
+		/* solution for Newsys IE base href issues */ 
+		if cms.page.skin | contains ('editorial-core-wrapper');
+			 	include 'newsys-base-href-jquery.inc.utl';
+		end -%]
+		<!-- end blox-container -->
+		</div>
+		<div class="clear"></div>
+			[% include '_ads/leaderboard-tile-bottom.inc.utl' %]
+		<div class="clear"></div>
+	<!-- end wrapper -->	
+	</div>
+	
+[% include '_ads/video-embedded.inc.utl';
+%]
+
+<div id="blox-footer">
+	<!--bottom-block-holder start-->
+	<div class="blox-bottom-block-holder">
+		[% if footer_blueprint == "menu_board"; core_base_nav_startFooterMenuBoard; end -%]
+		<div class="clear"></div>
+		[% core_base_nav_start_footer_menu("footer_upper", "false") %]
+		<div class="clear"></div>
+		[% if footer_blueprint != "menu_board" %]
+			<div class="footer-section-block start">
+				[% core_base_nav_start_footer_menu("footer_main_1", "Sections", "vertical"); -%]
+			</div>
+			<div class="footer-section-block">
+				[% core_base_nav_start_footer_menu("footer_main_2", "Services", "vertical"); -%]
+			</div>       
+			<div class="footer-section-block contact">
+			<h4>Contact us</h4>
+				[% if site_brand_url %]<p class="footer-logo"><a href="http://[% cms.system.domain %]">[% site_brand_url | html %]</a></p>[% end %]
+				<p>[% if site_business_name %][% site_business_name | html %]<br />[% end %]
+				[% if site_phone %]<strong>Phone number:</strong> [% site_phone | html %]<br />[% end %]
+				[% if site_email %]<strong>E-mail:</strong> <a href="mailto:[% site_email %]">[% site_email | html %]</a><br />[% end %]
+				[% if site_address %]<strong>Address:</strong> [% site_address | html %]<br />
+				[% if site_city; site_city; end %][% if site_state %], [% site_state %][% end %] [% if site_postal_code; site_postal_code; end %][% end %]</p>
+			</div>
+
+			[% if !cms.component.load('core_external_jquery'); echo '<!--Failed to load core_external_jquery component.-->'; end;
+			core_base_library_footer_search; %]
+		[% end -%]
+		<div class="clear"></div>
+		[% core_base_nav_start_footer_menu("footer_lower") %]
+		<div class="clear"></div>
+	</div>
+</div>
+
+<p class="copyright">
+<strong>[% copyright %]</strong>. Powered by <a href="http://bloxcms.com" title="BLOX Content Management System" rel="external">BLOX Content Management System</a> from <a href="http://townnews.com" title="TownNews.com BLOX Newspaper Content Management" rel="external">TownNews.com</a>. [<a href="/site/terms.html">Terms of Use</a> | <a href="/site/privacy.html">Privacy Policy</a>]
+</p>
+
+</div>[% /* [END] footer */
+core_base_library_footer_scripts;
+if mode != 'print';
+	include '_ads/page-curl.inc.utl';
+end; -%]
+</body>
+</html>

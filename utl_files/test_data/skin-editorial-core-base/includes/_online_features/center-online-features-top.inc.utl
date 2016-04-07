@@ -1,0 +1,24 @@
+[% if cms.url.path == '/online_features';
+if !cms.component.load('core_base_library'); echo '<!--Failed to load core_base_library component.-->'; end;
+	core_base_library_load_online_features; %]
+	<div id="center-online-features-a" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-a-index') %]
+        </div>
+	<div id="center-online-features-b" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-b-index') %]
+        </div>
+	<div id="center-online-features-c" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-c-index') %]
+        </div>
+	<div class="clear"></div>
+	<div id="center-online-features-d" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-d-index') %]
+        </div>
+	<div id="center-online-features-e" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-e-index') %]
+        </div>
+	<div id="center-online-features-f" class="online-features-promo-block">
+        	[% cms.region('name':'center-online-features-f-index') %]
+        </div>
+	<div class="clear"></div>
+[% end %]

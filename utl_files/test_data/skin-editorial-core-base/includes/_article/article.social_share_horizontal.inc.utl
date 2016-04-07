@@ -1,0 +1,40 @@
+[%
+call cms.component.load('core_base_library');
+call cms.component.load('core_social_share');
+   
+core_social_share_css;
+
+/* SET VARIABLES */
+serviceTracker = core_base_library_getCustomProperty('use_tracker_service', 'boolean', false);
+trackerClass = core_base_library_getTrackerClass(serviceRestricted, serviceTracker);
+socialShareStyle = core_base_library_getCustomProperty('social_share_style', 'value', 'vertical-sticky-left');
+social3rdParty = core_base_library_getCustomProperty('social_share_3rd_party', 'value', 'addthis');
+
+addThisClasses = [
+    'addthis_toolbox',
+    'addthis_default_style',
+    'blox-social-share-horizontal',
+    'fb_like_location_' + fb_like_location,
+    trackerClass
+];
+
+%]
+<div class="[% core_base_library_addClasses(addThisClasses) %]">
+    [%
+    if (cms.site.custom.twitter_count_exclude ||
+        cms.site.custom.facebook_count_exclude ||
+        cms.site.custom.google_plus_one_count_exclude ||
+        cms.site.custom.addthis_count_exclude);
+            core_social_share_addthis_legacy(
+               'target': this_asset,
+               'twitter_count_style': 'horizontal',
+               'facebook_count_style': 'button_count',
+               'google_plus_one_count_style': 'medium',
+               'addthis_count_style': 'horizontal');
+        elseif social3rdParty == 'addthis';
+            core_social_share_addthis;
+        elseif social3rdParty == 'none';
+            core_social_share_none;
+        end;
+    %]
+</div>
