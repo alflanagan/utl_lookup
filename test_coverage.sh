@@ -1,4 +1,5 @@
 #!/usr/bin/env dash
+cd /mnt/extra/Devel/utl_lookup
 # coverage will find papers/managment/commands with --source=papers unless
 # there's an --omit param, in which case you have specify it separately
 coverage run --source=papers,papers/management/commands --omit='papers/migrations/*','*/test_*','*/__init__.py','*/urls.py' --branch manage.py test papers
