@@ -238,11 +238,13 @@ class PackageTestCase(TransactionTestCase):
         editorial.full_clean()
         editorial.save()
         # TODO: capture warning message and verify
-        # simplefilter('ignore')
+        simplefilter('ignore')
+        try:
+            full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
 
-        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
-
-        the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
+            the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
+        finally:
+            simplefilter('error')
         self.assertEqual(the_pkg.name, self.TEST_PKG)
         self.assertRaises(ValueError, Package.load_from, full_load_path, self.test_site,
                           'NoSuchType')
