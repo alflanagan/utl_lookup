@@ -1,4 +1,15 @@
-# -*- coding:utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Command to import a set of package files into the database.
+
+| © 2015-2016 BH Media Group, Inc.
+| BH Media Group Digital Development
+
+.. codeauthor:: A. Lloyd Flanagan <aflanagan@bhmginc.com>
+
+
+"""
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from utl_files.models import Package, PackageError, TownnewsSite
@@ -8,37 +19,38 @@ from utl_lib.tn_package import TNPackage
 
 
 class Command(BaseCommand):
+    """Command to import a package from the filesystem."""
     help = 'Imports the given directory as a Townnews package.'
 
     def add_arguments(self, parser):
         parser.add_argument('directory', help='parent directory of the Townnews package')
 
     def handle(self, *args, **options):
-        path = Path(options['directory'])
-        if not path.is_dir():
-            raise CommandError("Not a directory: {}".format(path))
+        pkg_path = Path(options['directory'])
+        if not pkg_path.is_dir():
+            raise CommandError("Not a directory: {}".format(pkg_path))
         try:
-            path = path.resolve()
+            pkg_path = pkg_path.resolve()  # pylint:disable=R0204
             pkg_type = None
             # get site, dir from path
             for key in TNPackage.PKG_DIRS:
-                if TNPackage.PKG_DIRS[key] in [path.parent.name, path.parent.parent.name]:
+                if TNPackage.PKG_DIRS[key] in [pkg_path.parent.name, pkg_path.parent.parent.name]:
                     pkg_type = key
             if pkg_type is None:
-                raise CommandError("Can't get package type from {}.".format(path))
+                raise CommandError("Can't get package type from {}.".format(pkg_path))
             # print("pkg_type is " + pkg_type)
 
             # all this fiddly logic should probably go in its own class
-            site_name = path.parent.parent.name
+            site_name = pkg_path.parent.parent.name
             if site_name == 'skins':
-                site_name = path.parent.parent.parent.name
+                site_name = pkg_path.parent.parent.parent.name
             if site_name == "certified":
                 site = None
             else:
                 site = TownnewsSite.objects.get(URL="http://{}".format(site_name))
 
             # print("site is " + site_name)
-            Package.load_from(path, site, pkg_type)
+            Package.load_from(pkg_path, site, pkg_type)
         except PackageError as perr:
             raise CommandError(str(perr))
-        self.stdout.write("Load from {} complete.".format(path))
+        self.stdout.write("Load from {} complete.".format(pkg_path))

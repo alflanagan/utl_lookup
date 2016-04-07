@@ -1,16 +1,36 @@
-# -*- coding:utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Command to list macros which are defined in more than one UTL file.
+
+| © 2015-2016 BH Media Group, Inc.
+| BH Media Group Digital Development
+
+.. codeauthor:: A. Lloyd Flanagan <aflanagan@bhmginc.com>
+
+
+"""
 from collections import defaultdict
-from django.core.management.base import BaseCommand, CommandError
+
+from django.core.management.base import BaseCommand
+
 from utl_files.models import UTLFile, MacroDefinition
 
 
 def create_defdict(some_type):
-    """A function allowing us to create a defaultdict whose type is defaultdict(int)"""
+    """Return a function which constructs a :py:class:`collections.defaultdict` whose default is
+    `some_type`. Can be used to create a `defaultdict` whose values are `defaultdict`s.
+
+    """
     return lambda: defaultdict(some_type)
 
 
 # pylint:disable=no-member
 def print_dup_macro_defns():
+    """Prints a report of macro names which are defined more than once in the UTL files in the
+    database.
+
+    """
     definitions = defaultdict(create_defdict(int))
 
     for utl_file in UTLFile.objects.all():
@@ -28,6 +48,7 @@ def print_dup_macro_defns():
 
 
 class Command(BaseCommand):
+    """Print duplicate macro definition report."""
     help = 'Searches for UTL files that define a macro of the same name more than once.'
 
     def handle(self, *args, **options):

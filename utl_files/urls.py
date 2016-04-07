@@ -14,7 +14,7 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf.urls import include, url
+from django.conf.urls import url
 from utl_files import views
 
 urlpatterns = [
@@ -26,8 +26,10 @@ urlpatterns = [
 
     url(r'api/macro_refs/(.+)/', views.api_macro_refs, name="api_macro_refs"),
 
-    url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/(.+)/', views.api_macro_defs, name="api_macro_defs_file"),
-    url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/', views.api_macro_defs, name="api_macro_defs_ver"),
+    url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/(.+)/', views.api_macro_defs,
+        name="api_macro_defs_file"),
+    url(r'api/macro_defs/([^/]+)/([^/]+)/([^/]+)/', views.api_macro_defs,
+        name="api_macro_defs_ver"),
     url(r'api/macro_defs/([^/]+)/([^/]+)/', views.api_macro_defs, name="api_macro_defs_pkg"),
     url(r'api/macro_defs/([^/]+)/', views.api_macro_defs, name="api_macro_defs"),
 

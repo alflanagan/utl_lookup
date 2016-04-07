@@ -6,8 +6,6 @@ import time
 from pathlib import Path
 from warnings import warn
 
-import pytz
-
 from django.db import models
 from django.utils.log import logging
 from django.conf import settings

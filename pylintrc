@@ -59,7 +59,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=W1636,W0704,W1613,W1640,E1604,W1604,W1615,W1620,W1608,W1610,W1607,W1611,E1606,W1639,I0021,W1612,W1605,E1602,W1602,W1630,W1623,W1617,W1634,W1635,W1606,W1622,W1637,W1618,E1603,W1609,W1601,W1626,E1608,E1605,W1625,W1638,I0020,W1616,W1628,E1607,W1621,W1629,W1614,E1601,W1619,W1624,W1633,W1627,W1603,W1632
+disable=W1636,W0704,W1613,W1640,E1604,W1604,W1615,W1620,W1608,W1610,W1607,W1611,E1606,W1639,I0021,W1612,W1605,E1602,W1602,W1630,W1623,W1617,W1634,W1635,W1606,W1622,W1637,W1618,E1603,W1609,W1601,W1626,E1608,E1605,W1625,W1638,I0020,W1616,W1628,E1607,W1621,W1629,W1614,E1601,W1619,W1624,W1633,W1627,W1603,W1632,locally-disabled,similarities
 
 
 [REPORTS]
@@ -162,10 +162,10 @@ inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 inlinevar-name-hint=[A-Za-z_][A-Za-z0-9_]*$
 
 # Regular expression matching correct constant names
-const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
+const-rgx=(([A-Za-z_][A-Za-z0-9_]*)|(__.*__))$
 
 # Naming hint for constant names
-const-name-hint=(([A-Z_][A-Z0-9_]*)|(__.*__))$
+const-name-hint=(([A-Za-z_][A-Za-z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
@@ -263,7 +263,7 @@ ignored-modules=
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=SQLObject
+ignored-classes=SQLObject,Package,NewsPaper
 
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E0201 when accessed. Python regular

@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
-
+"""Managment command to manually add a web site."""
 import sys
-from pathlib import Path
-
-from django.core.management.base import BaseCommand, CommandError
-from papers.models import TownnewsSite, NewsPaper
 from argparse import ArgumentParser
+
+from django.core.management.base import BaseCommand
+from papers.models import TownnewsSite, NewsPaper
 
 
 class Command(BaseCommand):
+    """A command that adds a new site."""
     help = 'Adds a new site to the TownnewsSite table.'
 
     def add_arguments(self, parser):
@@ -17,6 +17,7 @@ class Command(BaseCommand):
         parser.add_argument('name', help='The common name of the site (may be same as domain)')
         parser.add_argument('paper', help='The name of the newspaper that owns the site.')
 
+    # pylint: disable=redefined-variable-type
     def handle(self, *args, **options):
         the_paper = 'Error!'
         try:

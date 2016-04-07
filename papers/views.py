@@ -1,6 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+View functions for :py:mod:`papers`.
+
+| © 2015-2016 BH Media Group, Inc.
+| BH Media Group Digital Development
+
+.. codeauthor:: A. Lloyd Flanagan <aflanagan@bhmginc.com>
+
+
+"""
 from django.shortcuts import render
 
-from .models import NewsPaper, TownnewsSite
+from .models import NewsPaper
 
 
 def index(request):
