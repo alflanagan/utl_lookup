@@ -2,7 +2,6 @@
 # -*- coding:utf-8 -*-
 """Module of tests for :py:mod:`utl_files.models`."""
 
-import os
 import sys
 from pathlib import Path
 from warnings import simplefilter
@@ -76,7 +75,7 @@ class PackageTestCase(TransactionTestCase):
     TEST_VERSION = "1.10.0.3"
 
     TEST_PKG = "editorial-core-base"
-    PKG_DIRECTORY = "skin-editorial-core-base"
+    PKG_DIRECTORY = "certified/skins/skin-editorial-core-base"
 
     UNCERT_PKG = "custom-newsletter-antwort-columns"
     UNCERT_SITE = "omaha.com"
@@ -259,16 +258,18 @@ class UTLFileTestCase(TestCase):
     TEST_APP = "editorial"
     TEST_PKG = "skin-editorial-core-base"
     TEST_VERSION = "1.45.1.0"
-    PKG_DIRECTORY = "utl_files/test_data/skin-editorial-core-base"
+    PKG_DIRECTORY = "certified/skins/skin-editorial-core-base"
     SIMPLE_UTL_FILE = "includes/footer-spotless.inc.utl"
     MACROS_FILE = "includes/macros.inc.utl"
     macro_file_text = ""
 
     @classmethod
     def setUpTestData(cls):
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
+
         # if I make PKG_DIRECTORY absolute, it won't work on other systems. But, if it's
         # relative, it won't work if we're in the wrong directory. So, as a non-solution:
-        if not os.path.isdir(cls.PKG_DIRECTORY):
+        if not (Path('utl_files/test_data') / cls.PKG_DIRECTORY).is_dir():
             raise Exception("Test data not found. UTLFileTestCase must be run from project root"
                             " directory (location of manage.py).")
 
@@ -296,13 +297,12 @@ class UTLFileTestCase(TestCase):
         """Unit test for :py:meth:`~utl_files.models.UTLFile.base_filename`."""
         self.assertEqual(UTLFile.objects.count(), 2)
         thefile = UTLFile.objects.get(file_path=self.SIMPLE_UTL_FILE)
-        self.assertEqual(thefile.base_filename, os.path.basename(self.SIMPLE_UTL_FILE))
+        self.assertEqual(thefile.base_filename, Path(self.SIMPLE_UTL_FILE).name)
 
     def test_full_file_path(self):
         """:py:meth:`utl_file.models.UTLFile instance has attribute `full_file_path`."""
-        self.assertEqual(
-            str(self.simple_utl.full_file_path),
-            os.path.join(self.PKG_DIRECTORY, self.SIMPLE_UTL_FILE))
+        self.assertEqual(self.simple_utl.full_file_path, Path(settings.TNPACKAGE_FILES_ROOT) /
+                         Path(self.PKG_DIRECTORY) / Path(self.SIMPLE_UTL_FILE))
 
     def test_to_dict(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`dict`."""
@@ -334,7 +334,8 @@ class UTLFileTestCase(TestCase):
         self.assertEqual(macro_rcd.start, start)
         self.assertEqual(macro_rcd.end, end)
         if not self.macro_file_text:
-            with open(os.path.join(self.PKG_DIRECTORY, self.MACROS_FILE), 'r') as macin:
+            with (Path(settings.TNPACKAGE_FILES_ROOT) / self.PKG_DIRECTORY /
+                  self.MACROS_FILE).open('r') as macin:
                 self.macro_file_text = macin.read()
         self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
 

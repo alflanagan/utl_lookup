@@ -354,7 +354,7 @@ class UTLFile(models.Model):
     @property
     def full_file_path(self):
         """The full path of the file, including the package directory."""
-        return Path(self.pkg.disk_directory).joinpath(self.file_path)
+        return Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.pkg.disk_directory) / self.file_path
 
     # TODO: move this to a custom manager
     @classmethod
@@ -484,18 +484,3 @@ class MacroRef(models.Model):
                 "line": self.line,
                 "text": self.text,
                 "name": self.macro_name}
-
-
-class UTLFilesJsonEncoder(json.JSONEncoder):
-    """Provide ability to encode to JSON for each model class.
-
-    (Actually will work for any object that implements to_dict() method returning a JSON-dumpable
-    dictionary.)
-
-    """
-
-    def default(self, o):  # pylint: disable=E0202
-        try:
-            return o.to_dict()
-        except AttributeError:
-            return json.JSONEncoder.default(self, o)
