@@ -31,10 +31,8 @@ class ApplicationTestCase(TestCase):
         """Create a simple Application record for testing."""
         if sys.version_info.major < 3 or (sys.version_info.major == 3 and
                                           sys.version_info.minor < 5):
-            sys.stderr.write(
-                "This code requires python with a minimum version of 3.5.\n")
-            sys.stderr.write(
-                "(Did you try running it with the 'python3' command?)\n")
+            sys.stderr.write("This code requires python with a minimum version of 3.5.\n")
+            sys.stderr.write("(Did you try running it with the 'python3' command?)\n")
             sys.exit(2)
         app = Application(name="testing")
         app.save()
@@ -53,9 +51,7 @@ class ApplicationTestCase(TestCase):
         the_app = Application.objects.get(name="testing")
         the_app.delete()
         self.assertEqual(Application.objects.count(), count_before - 1)
-        self.assertRaises(Application.DoesNotExist,
-                          Application.objects.get,
-                          name="testing")
+        self.assertRaises(Application.DoesNotExist, Application.objects.get, name="testing")
 
     def test_bad(self):
         """Test that we get expected errors when name is too long."""
@@ -108,10 +104,8 @@ class PackageTestCase(TransactionTestCase):
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.save()
 
-        self.paper = self._find_or_create(NewsPaper,
-                                          name='Richmond Times-Dispatch')
-        self.paper2 = self._find_or_create(NewsPaper,
-                                           name='Omaha World-Herald')
+        self.paper = self._find_or_create(NewsPaper, name='Richmond Times-Dispatch')
+        self.paper2 = self._find_or_create(NewsPaper, name='Omaha World-Herald')
         self.test_site = self._find_or_create(TownnewsSite,
                                               URL='http://richmond.com',
                                               name='RTD',
@@ -120,16 +114,15 @@ class PackageTestCase(TransactionTestCase):
                                                URL='http://omaha.com',
                                                name='omaha.com',
                                                paper=self.paper2)
-        pkg = Package(
-            name=self.TEST_NAME,
-            version=self.TEST_VERSION,
-            is_certified=True,
-            app=self.test_app,
-            last_download="2015-05-01 13:00:00Z",
-            disk_directory=("/data/exported/richmond.com/skins/testing/"
-                            "some_totally_bogus_package"),
-            site=self.test_site,
-            pkg_type=Package.SKIN)
+        pkg = Package(name=self.TEST_NAME,
+                      version=self.TEST_VERSION,
+                      is_certified=True,
+                      app=self.test_app,
+                      last_download="2015-05-01 13:00:00Z",
+                      disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                      "some_totally_bogus_package"),
+                      site=self.test_site,
+                      pkg_type=Package.SKIN)
         pkg.full_clean()
         pkg.save()
 
@@ -138,8 +131,7 @@ class PackageTestCase(TransactionTestCase):
 
     def test_insert(self):
         """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
-        pkg = Package.objects.get(name=self.TEST_NAME,
-                                  version=self.TEST_VERSION)
+        pkg = Package.objects.get(name=self.TEST_NAME, version=self.TEST_VERSION)
         self.assertEqual(pkg.name, self.TEST_NAME)
         self.assertEqual(pkg.version, self.TEST_VERSION)
         self.assertEqual(pkg.app.name, self.TEST_APP)
@@ -157,8 +149,7 @@ class PackageTestCase(TransactionTestCase):
                       pkg_type=Package.COMPONENT)
         pkg.full_clean()
         pkg.save()
-        pkg = Package.objects.get(name='short-lived-pkg',
-                                  version=self.TEST_VERSION)
+        pkg = Package.objects.get(name='short-lived-pkg', version=self.TEST_VERSION)
         pkg.delete()
         self.assertEqual(Package.objects.count(), original_count)
         self.assertRaises(Package.DoesNotExist,
@@ -185,31 +176,29 @@ class PackageTestCase(TransactionTestCase):
 
     def test_errors(self):
         """Unit tests for :py:class:`utl_files.models.Package` error cases."""
-        dup_certified_pkg = Package(
-            name=self.TEST_NAME,
-            version=self.TEST_VERSION,
-            is_certified=True,
-            app=self.test_app,
-            last_download="2015-05-01 13:00:00Z",
-            disk_directory=("/data/exported/richmond.com/skins/testing/"
-                            "some_totally_bogus_package"),
-            site=self.test_site,
-            pkg_type=Package.SKIN)
+        dup_certified_pkg = Package(name=self.TEST_NAME,
+                                    version=self.TEST_VERSION,
+                                    is_certified=True,
+                                    app=self.test_app,
+                                    last_download="2015-05-01 13:00:00Z",
+                                    disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                                    "some_totally_bogus_package"),
+                                    site=self.test_site,
+                                    pkg_type=Package.SKIN)
         self.assertRaises(ValidationError, dup_certified_pkg.full_clean)
         # create package which duplicates existing record only in fields that are part of PK
         new_app = Application(name='error-test')
         new_app.full_clean()
         new_app.save()
         try:
-            non_cert_pkg = Package(
-                name=self.TEST_NAME,
-                version='1.3',
-                is_certified=False,
-                app=new_app,
-                last_download="2015-05-01 13:00:00Z",
-                disk_directory=("/should/be/different/for/test"),
-                site=self.test_site,
-                pkg_type=Package.COMPONENT)
+            non_cert_pkg = Package(name=self.TEST_NAME,
+                                   version='1.3',
+                                   is_certified=False,
+                                   app=new_app,
+                                   last_download="2015-05-01 13:00:00Z",
+                                   disk_directory=("/should/be/different/for/test"),
+                                   site=self.test_site,
+                                   pkg_type=Package.COMPONENT)
             # then try to validate it
             self.assertRaises(ValidationError, non_cert_pkg.full_clean)
         finally:
@@ -224,8 +213,8 @@ class PackageTestCase(TransactionTestCase):
         """Unit test for :py:meth:`~utl_files.models.Package.to_dict`."""
         for pkg in Package.objects.all():
             pkgdict = pkg.to_dict()
-            self.assertSetEqual(set(pkgdict.keys()), set(["id", "app", "name",
-                                                          "version", "is_certified"]))
+            self.assertSetEqual(
+                set(pkgdict.keys()), set(["id", "app", "name", "version", "is_certified"]))
             self.assertEqual(pkgdict["id"], pkg.id)
             self.assertEqual(pkgdict["app"], pkg.app)
             self.assertEqual(pkgdict["name"], pkg.name)
@@ -280,9 +269,8 @@ class UTLFileTestCase(TestCase):
         # if I make PKG_DIRECTORY absolute, it won't work on other systems. But, if it's
         # relative, it won't work if we're in the wrong directory. So, as a non-solution:
         if not os.path.isdir(cls.PKG_DIRECTORY):
-            raise Exception(
-                "Test data not found. UTLFileTestCase must be run from project root"
-                " directory (location of manage.py).")
+            raise Exception("Test data not found. UTLFileTestCase must be run from project root"
+                            " directory (location of manage.py).")
 
         cls.app = Application.objects.get(name='editorial')
         cls.pkg = Package(name=cls.TEST_PKG,
@@ -308,8 +296,7 @@ class UTLFileTestCase(TestCase):
         """Unit test for :py:meth:`~utl_files.models.UTLFile.base_filename`."""
         self.assertEqual(UTLFile.objects.count(), 2)
         thefile = UTLFile.objects.get(file_path=self.SIMPLE_UTL_FILE)
-        self.assertEqual(thefile.base_filename,
-                         os.path.basename(self.SIMPLE_UTL_FILE))
+        self.assertEqual(thefile.base_filename, os.path.basename(self.SIMPLE_UTL_FILE))
 
     def test_full_file_path(self):
         """:py:meth:`utl_file.models.UTLFile instance has attribute `full_file_path`."""
@@ -327,8 +314,8 @@ class UTLFileTestCase(TestCase):
     def test_str(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`str`."""
         self.assertEqual(
-            str(self.simple_utl), "{}/{}:{}".format(
-                self.TEST_APP, self.TEST_PKG, self.SIMPLE_UTL_FILE))
+            str(self.simple_utl), "{}/{}:{}".format(self.TEST_APP, self.TEST_PKG,
+                                                    self.SIMPLE_UTL_FILE))
 
     def test_get_macros_none(self):
         """:py:meth:`utl_file.models.UTLFile.get_macros` can successfully do nothing."""
@@ -347,9 +334,7 @@ class UTLFileTestCase(TestCase):
         self.assertEqual(macro_rcd.start, start)
         self.assertEqual(macro_rcd.end, end)
         if not self.macro_file_text:
-            with open(
-                os.path.join(self.PKG_DIRECTORY,
-                             self.MACROS_FILE), 'r') as macin:
+            with open(os.path.join(self.PKG_DIRECTORY, self.MACROS_FILE), 'r') as macin:
                 self.macro_file_text = macin.read()
         self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
 
@@ -360,5 +345,4 @@ class UTLFileTestCase(TestCase):
         self.assertEqual(MacroRef.objects.count(), 14)
         self._verify_macro("archived_asset", 38, 1504, 2069)
         self._verify_macro("free_archive_period", 54, 2071, 2741)
-        self._verify_macro("ifAnonymousUser", 356, 12033,
-                           12667)  # last one in file
+        self._verify_macro("ifAnonymousUser", 356, 12033, 12667)  # last one in file

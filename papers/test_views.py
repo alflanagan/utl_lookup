@@ -18,7 +18,6 @@ from papers.models import NewsPaper
 from papers.views import index
 
 
-
 class IndexTestCase(TestCase):
     """Unit tests for view :py:func:`~utl_lookup.papers.views.index`."""
 
@@ -28,7 +27,7 @@ class IndexTestCase(TestCase):
                         re.compile('id="select_paper_btn"'),
                         re.compile('data-toggle="dropdown"'),
                         re.compile('<ul class="dropdown-menu" id="select_paper_menu"'),
-                        re.compile('<li data-paper="[0-9]+"><a href="#">')]
+                        re.compile('<li data-paper="[0-9]+"><a href="#">')]  # yapf: disable
 
     PAPER_REGEX = r'<li data-paper="[0-9]+"><a href="#">{}</a></li>'
 

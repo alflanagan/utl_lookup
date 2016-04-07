@@ -55,8 +55,7 @@ class Application(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk,
-                "name": self.name}
+        return {"id": self.pk, "name": self.name}
 
 
 class Package(models.Model):
@@ -82,8 +81,7 @@ class Package(models.Model):
     # One problem is that unique key for certified pkgs is name + version, but unique key for
     # customized packages is site + name + download date/time (note TN IDE doesn't enforce
     # bumping version number on change, and global skins don't have version)
-    name = models.CharField(max_length=250,
-                            help_text="TownNews name for this package.")
+    name = models.CharField(max_length=250, help_text="TownNews name for this package.")
     version = models.CharField(max_length=20, blank=True,  # global skins have no version
                                help_text="Version number for the package as a whole.")
     is_certified = models.BooleanField(help_text="Is officially certified/supported by TownNews.")
@@ -94,12 +92,17 @@ class Package(models.Model):
                             help_text="The application to which this package belongs",
                             null=True)
     last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.",
-                                         null=True, blank=True)
+                                         null=True,
+                                         blank=True)
     disk_directory = models.FilePathField(max_length=4096,
-                                          allow_files=False, allow_folders=True, blank=True,
+                                          allow_files=False,
+                                          allow_folders=True,
+                                          blank=True,
                                           help_text="The location of the package's files on disk, "
                                           "relative to some common root directory.")
-    site = models.ForeignKey(TownnewsSite, null=True, blank=True,
+    site = models.ForeignKey(TownnewsSite,
+                             null=True,
+                             blank=True,
                              help_text="For customized packages, the site that 'owns' the "
                              "customizations.")
 
@@ -109,14 +112,11 @@ class Package(models.Model):
     BLOCK = TNPackage.BLOCK
     COMPONENT = TNPackage.COMPONENT
 
-    PACKAGE_CHOICES = (
-        (TNPackage.GLOBAL_SKIN, "global skin"),
-        (TNPackage.SKIN, "application skin"),
-        (TNPackage.BLOCK, "block"),
-        (TNPackage.COMPONENT, "component"),
-    )
-    pkg_type = models.CharField(max_length=1,
-                                choices=PACKAGE_CHOICES)
+    PACKAGE_CHOICES = ((TNPackage.GLOBAL_SKIN, "global skin"),
+                       (TNPackage.SKIN, "application skin"),
+                       (TNPackage.BLOCK, "block"),
+                       (TNPackage.COMPONENT, "component"), )
+    pkg_type = models.CharField(max_length=1, choices=PACKAGE_CHOICES)
 
     # override
     def validate_unique(self, exclude=None):
@@ -169,23 +169,23 @@ class Package(models.Model):
     # it
     # @classmethod
     # def _get_props(cls, directory):
-        # """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
-        # # would be better to do this in PackageProp, but I need property values before creating
-        # # Package object, and I can't create PackageProp objects until after
-        # if not isinstance(directory, Path):
-            # directory = Path(directory)
-        # props = {}
-        # # known config properties are:
-        # # apparently required: block_types capabilities name title type version
-        # # optional: app
-        # with (directory / 'package/config.ini').open() as propin:
-            # for line in propin:
-                # key, value = line[:-1].split('=')
-                # props[key] = value[1:-1]
+    #     """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
+    #     # would be better to do this in PackageProp, but I need property values before creating
+    #     # Package object, and I can't create PackageProp objects until after
+    #     if not isinstance(directory, Path):
+    #         directory = Path(directory)
+    #     props = {}
+    #     # known config properties are:
+    #     # apparently required: block_types capabilities name title type version
+    #     # optional: app
+    #     with (directory / 'package/config.ini').open() as propin:
+    #         for line in propin:
+    #             key, value = line[:-1].split('=')
+    #             props[key] = value[1:-1]
 
-        # if "app" not in props:
-            # props["app"] = "Global"
-        # return props
+    #     if "app" not in props:
+    #         props["app"] = "Global"
+    #     return props
 
     @classmethod
     def load_from(cls, directory: Path, site: TownnewsSite, pkg_type: str) -> "Package":
@@ -281,13 +281,15 @@ class PackageDep(models.Model):
     pkg = models.ForeignKey(Package,
                             help_text="The package which has this dependency",
                             on_delete=models.CASCADE)
-    dep_name = models.CharField(max_length=200, blank=False,
+    dep_name = models.CharField(max_length=200,
+                                blank=False,
                                 help_text="The name of the required package")
     dep_pkg = models.ForeignKey(Package, null=True,  # may be Null if package not in db.
                                 related_name="dep_pkg",
                                 help_text="The full data on the required package (opt.)",
                                 on_delete=models.CASCADE)
-    dep_version = models.CharField(max_length=50, blank=False,
+    dep_version = models.CharField(max_length=50,
+                                   blank=False,
                                    help_text="The specific version required.")
 
     class Meta:  # pylint: disable=missing-docstring
@@ -315,7 +317,8 @@ class PackageDep(models.Model):
         for dep in PackageDep.objects.filter(dep_pkg=None):
             # only look for certified packages for now. Handling of custom packages needs to be
             # redone (FIXME).
-            dep_pkg = Package.objects.filter(name=self.dep_name, version=self.dep_version,
+            dep_pkg = Package.objects.filter(name=self.dep_name,
+                                             version=self.dep_version,
                                              is_certified=True)
             if dep_pkg:
                 dep.dep_pkg = dep_pkg
@@ -343,9 +346,7 @@ class UTLFile(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk,
-                "path": self.file_path,
-                "package": self.pkg.id, }
+        return {"id": self.pk, "path": self.file_path, "package": self.pkg.id, }
 
     @property
     def base_filename(self):
@@ -400,9 +401,12 @@ class UTLFile(models.Model):
         xref = UTLMacroXref(utldoc, text)
         for macro in xref.macros:
             isinstance(macro, UTLMacro)
-            new_macro = MacroDefinition(name=macro.name, source=self,
-                                        text=text[macro.start:macro.end], start=macro.start,
-                                        end=macro.end, line=macro.line)
+            new_macro = MacroDefinition(name=macro.name,
+                                        source=self,
+                                        text=text[macro.start:macro.end],
+                                        start=macro.start,
+                                        end=macro.end,
+                                        line=macro.line)
             new_macro.full_clean()
             new_macro.save()
 
@@ -427,14 +431,9 @@ class MacroDefinition(models.Model):
     start = models.IntegerField(
         null=True,
         help_text="Character offset in file at which macro defintion starts.")
-    end = models.IntegerField(
-        null=True,
-        help_text="Character offset in file at which macro definition ends."
-    )
-    line = models.IntegerField(
-        null=True,
-        help_text="Line number of macro definition in file."
-    )
+    end = models.IntegerField(null=True,
+                              help_text="Character offset in file at which macro definition ends.")
+    line = models.IntegerField(null=True, help_text="Line number of macro definition in file.")
 
     class Meta:  # pylint: disable=C0111
         # source and name are NOT unique; legal to redefine macro in a file
@@ -460,12 +459,9 @@ class MacroRef(models.Model):
     source = models.ForeignKey(UTLFile, on_delete=models.CASCADE)
     start = models.IntegerField(
         help_text="Character offset in source file of first character of macro call.")
-    line = models.IntegerField(
-        null=True,
-        help_text="Line number of macro call in file.")
-    text = models.CharField(
-        max_length=4000,
-        help_text="The actual text of the macro call, with args.")
+    line = models.IntegerField(null=True, help_text="Line number of macro call in file.")
+    text = models.CharField(max_length=4000,
+                            help_text="The actual text of the macro call, with args.")
     macro_name = models.CharField(
         max_length=4000,
         help_text="The ID or expression identifying the macro to be called.")

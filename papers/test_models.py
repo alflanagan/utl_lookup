@@ -27,9 +27,7 @@ class TownnewsSiteTestCase(TestCase):
         """Unit test for :py:meth:`papers.models.TownnewsSite`."""
         paper = NewsPaper(name=self.TEST_PAPER)
         paper.save()
-        item1 = TownnewsSite(URL=self.TEST_URL,
-                             name=self.TEST_NAME,
-                             paper=paper)
+        item1 = TownnewsSite(URL=self.TEST_URL, name=self.TEST_NAME, paper=paper)
         item1.full_clean()
         item1.save()
         readback = TownnewsSite.objects.get(URL=self.TEST_URL)
@@ -42,9 +40,7 @@ class TownnewsSiteTestCase(TestCase):
         """Unit test for :py:prop:`~papers.models.TownnewsSite.domain`."""
         paper = NewsPaper(name=self.TEST_PAPER)
         paper.save()
-        item1 = TownnewsSite(URL=self.TEST_URL,
-                             name=self.TEST_NAME,
-                             paper=paper)
+        item1 = TownnewsSite(URL=self.TEST_URL, name=self.TEST_NAME, paper=paper)
         self.assertEqual(item1.domain, 'toaddagger.com')
 
     def test_str(self):

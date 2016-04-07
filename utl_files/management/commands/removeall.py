@@ -8,7 +8,6 @@ from utl_files.models import Package, PackageError
 class Command(BaseCommand):
     help = 'Drops all Townnews packages currently known.'
 
-
     def handle(self, *args, **options):
         for pkg in Package.objects.all():
             pkg.delete()

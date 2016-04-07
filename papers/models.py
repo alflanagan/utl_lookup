@@ -6,9 +6,7 @@ from django.db import models
 
 class TownnewsSite(models.Model):
     """A Townnews website, referred to by its main URL and managed as a unit."""
-    URL = models.URLField(max_length=250,
-                          unique=True,
-                          help_text="The sites main URL")
+    URL = models.URLField(max_length=250, unique=True, help_text="The sites main URL")
     name = models.CharField(max_length=100,
                             blank=True,
                             help_text="The site brand (may be same as URL)")

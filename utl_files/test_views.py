@@ -25,8 +25,7 @@ class api_global_skins_for_siteTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         try:
-            cls.paper = NewsPaper.objects.get(
-                name='The Richmond Times-Dispatch')
+            cls.paper = NewsPaper.objects.get(name='The Richmond Times-Dispatch')
         except NewsPaper.DoesNotExist:
             cls.paper = NewsPaper(name='The Richmond Times-Dispatch')
             cls.paper.save()
@@ -34,9 +33,7 @@ class api_global_skins_for_siteTestCase(TestCase):
         try:
             cls.tn_site = TownnewsSite(name='RTD')
         except TownnewsSite.DoesNotExist:
-            cls.tn_site = TownnewsSite(URL='http://richmond.com',
-                                       name='RTD',
-                                       paper=cls.paper)
+            cls.tn_site = TownnewsSite(URL='http://richmond.com', name='RTD', paper=cls.paper)
             cls.tn_site.save()
 
     def test_create(self):
@@ -56,8 +53,7 @@ class api_files_for_custom_pkgTestCase(TestCase):
          "is_certified": True,
          "app": "editorial",
          "last_download": "2016-02-27T13:12:11Z",
-         "disk_directory":
-         "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
+         "disk_directory": "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
          "site": "http://agnet.net",
          "pkg_type": "s", }
     ]
@@ -117,9 +113,8 @@ class api_files_for_custom_pkgTestCase(TestCase):
         request = None
 
         for record in self.TEST_PACKAGES:
-            response = api_files_for_custom_pkg(
-                request, record["site"].replace('http://', ''), record["name"],
-                record["last_download"])
+            response = api_files_for_custom_pkg(request, record["site"].replace('http://', ''),
+                                                record["name"], record["last_download"])
         json_out = response.getvalue().decode('utf-8')
         file_list = json.loads(json_out)
         self.assertSetEqual(set(self.TEST_FILES), set(file_list))

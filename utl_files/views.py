@@ -8,8 +8,8 @@ from jsonview.decorators import json_view
 from .models import Package, UTLFile, MacroRef, MacroDefinition, Application
 from papers.models import TownnewsSite
 
-
 # pylint: disable=no-member
+
 
 def home(request):
     """Display the main page: user selects site, skins, and that sets context for searches."""
@@ -34,8 +34,7 @@ def demo(request):
 def search(request, macro_name):
     """A page to do macro searches -- will probably become tab on home."""
     macros = MacroDefinition.objects.filter(name=macro_name)
-    context = {"macros": macros,
-               "macro_name": macro_name}
+    context = {"macros": macros, "macro_name": macro_name}
     return render(request, 'utl_files/search.html', context)
 
 
@@ -108,7 +107,7 @@ def api_global_skins_for_site(_, site_url):
     :py:class:`TownnewsSite` record whose URL == `site_url`.
 
     """
-    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
+    site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
     return [skin.name for skin in skins]
 
@@ -119,7 +118,7 @@ def api_app_skins_for_site(_, site_url):
     :py:class:`TownnewsSite` record whose URL == `site_url`.
 
     """
-    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
+    site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.SKIN)
     skin_list = []
     for skin in skins:
@@ -143,6 +142,6 @@ def api_files_for_custom_pkg(_, site_url, pkg_name, pkg_last_download):
     :returns: Returns a list of files (as path names relative to the package)
 
     """
-    site = get_object_or_404(TownnewsSite, URL='http://'+site_url)
+    site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     pkg = Package.objects.get(site=site, name=pkg_name, last_download=pkg_last_download)
     return [f.file_path for f in UTLFile.objects.filter(pkg=pkg)]

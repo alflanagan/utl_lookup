@@ -14,4 +14,3 @@ class Command(BaseCommand):
         for pkg in Package.objects.all():
             isinstance(pkg, Package)
             print("{}: {}".format(pkg.name, pkg.version))
-

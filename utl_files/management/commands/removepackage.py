@@ -5,6 +5,7 @@ from utl_files.models import Package, TownnewsSite
 
 # pylint:disable=no-member
 
+
 class Command(BaseCommand):
     """Command 'manage.py removepackage'."""
     help = 'Removes a stored Townnews package.'
@@ -28,6 +29,7 @@ class Command(BaseCommand):
             pkg.delete()
         except Package.DoesNotExist:
             raise CommandError("Can't remove package '{}:{}' ({}) as it is not present "
-                               "(try manage.py listpackages.)".format(options['package-site'],
-                                                                      options['package-name'],
-                                                                      options['package-ver']))
+                               "(try manage.py listpackages.)".format(
+                                   options['package-site'],
+                                   options['package-name'],
+                                   options['package-ver']))  # yapf: disable

@@ -23,13 +23,12 @@ def print_dup_macro_defns():
     for utl_file in definitions:
         for macro_name in definitions[utl_file]:
             if definitions[utl_file][macro_name] > 1:
-                print(utl_file.pkg.name, utl_file.pkg.version, utl_file.file_path,
-                      macro_name, definitions[utl_file][macro_name])
+                print(utl_file.pkg.name, utl_file.pkg.version, utl_file.file_path, macro_name,
+                      definitions[utl_file][macro_name])
 
 
 class Command(BaseCommand):
     help = 'Searches for UTL files that define a macro of the same name more than once.'
-
 
     def handle(self, *args, **options):
         print_dup_macro_defns()

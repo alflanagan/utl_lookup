@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-
 """utl_lookup URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -45,4 +44,4 @@ urlpatterns = [
 
     url(r'api/app_skins_for_site/([^/]+)/', views.api_app_skins_for_site,
         name="api_app_skins_for_site"),
-]
+]  # yapf: disable
