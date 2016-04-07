@@ -80,34 +80,46 @@ class PackageTestCase(TransactionTestCase):
     TEST_VERSION = "1.10.0.3"
 
     TEST_PKG = "editorial-core-base"
-    PKG_DIRECTORY = "utl_files/test_data/skin-editorial-core-base"
+    PKG_DIRECTORY = "skin-editorial-core-base"
 
     UNCERT_PKG = "custom-newsletter-antwort-columns"
     UNCERT_SITE = "omaha.com"
-    UNCERT_DIR = "utl_files/test_data/omaha.com/skins/custom-newsletter-antwort-columns_0.15"
+    UNCERT_DIR = "omaha.com/skins/custom-newsletter-antwort-columns_0.15"
+
+    @staticmethod
+    def _find_or_create(model_class, *_, **kwargs):
+        """Attempt to use `kwargs` to retrieve an object from `model_class`. If object does not
+        exist, attempt to create it, again using values in `kwargs`.
+
+        """
+        try:
+            item = model_class.objects.get(**kwargs)
+        except model_class.DoesNotExist:
+            item = model_class(**kwargs)
+            item.full_clean()
+            item.save()
+        return item
 
     def setUp(self):
         """Create a package object for tests."""
+        # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
+        # into errors by default.
+        simplefilter('error')
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.save()
 
-        try:
-            paper = NewsPaper.objects.get(name='Richmond Times-Dispatch')
-        except NewsPaper.DoesNotExist:
-            paper = NewsPaper(name='Richmond Times-Dispatch')
-            paper.full_clean()
-            paper.save()
-
-        try:
-            thesite = TownnewsSite.objects.get(URL='http://richmond.com')
-        except TownnewsSite.DoesNotExist:
-            thesite = TownnewsSite(URL='http://richmond.com',
-                                   name='RTD',
-                                   paper=paper)
-            thesite.full_clean()
-            thesite.save()
-        self.test_site = thesite
-
+        self.paper = self._find_or_create(NewsPaper,
+                                          name='Richmond Times-Dispatch')
+        self.paper2 = self._find_or_create(NewsPaper,
+                                           name='Omaha World-Herald')
+        self.test_site = self._find_or_create(TownnewsSite,
+                                              URL='http://richmond.com',
+                                              name='RTD',
+                                              paper=self.paper)
+        self.test_site2 = self._find_or_create(TownnewsSite,
+                                               URL='http://omaha.com',
+                                               name='omaha.com',
+                                               paper=self.paper2)
         pkg = Package(
             name=self.TEST_NAME,
             version=self.TEST_VERSION,
@@ -116,29 +128,16 @@ class PackageTestCase(TransactionTestCase):
             last_download="2015-05-01 13:00:00Z",
             disk_directory=("/data/exported/richmond.com/skins/testing/"
                             "some_totally_bogus_package"),
-            site=thesite,
+            site=self.test_site,
             pkg_type=Package.SKIN)
         pkg.full_clean()
         pkg.save()
 
-        non_cert_pkg = Package(
-            name='non-certified-package',
-            version='1.2.3',
-            is_certified=False,
-            app=self.test_app,
-            last_download="2015-05-01 13:00:00Z",
-            disk_directory=("/data/exported/richmond.com/skins/testing/"
-                            "some_totally_bogus_package"),
-            site=thesite,
-            pkg_type=Package.SKIN)
-        non_cert_pkg.full_clean()
-        non_cert_pkg.save()
         # load files from our test directory, not system directory
-        settings.TNPACKAGE_FILES_ROOT = os.path.realpath('.')
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
 
     def test_insert(self):
         """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
-        self.assertEqual(Package.objects.count(), 2)
         pkg = Package.objects.get(name=self.TEST_NAME,
                                   version=self.TEST_VERSION)
         self.assertEqual(pkg.name, self.TEST_NAME)
@@ -148,6 +147,7 @@ class PackageTestCase(TransactionTestCase):
 
     def test_delete(self):
         """Unit test of deletion of :py:class:`~utl_files.models.Package` object."""
+        original_count = Package.objects.count()
         pkg = Package(name='short-lived-pkg',
                       version=self.TEST_VERSION,
                       is_certified=False,
@@ -160,7 +160,7 @@ class PackageTestCase(TransactionTestCase):
         pkg = Package.objects.get(name='short-lived-pkg',
                                   version=self.TEST_VERSION)
         pkg.delete()
-        self.assertEqual(Package.objects.count(), 2)
+        self.assertEqual(Package.objects.count(), original_count)
         self.assertRaises(Package.DoesNotExist,
                           Package.objects.get,
                           name='short-lived-pkg',
@@ -217,7 +217,6 @@ class PackageTestCase(TransactionTestCase):
 
     def test_str(self):
         """Unit test for :py:meth:`~utl_files.models.Package.__str__`."""
-        self.assertEqual(Package.objects.count(), 2)
         for pkg in Package.objects.all():
             self.assertEqual(str(pkg), "{}/{}/{}".format(pkg.app, pkg.name, pkg.version))
 
@@ -239,9 +238,10 @@ class PackageTestCase(TransactionTestCase):
         editorial.full_clean()
         editorial.save()
         # TODO: capture warning message and verify
-        simplefilter('ignore')
+        # simplefilter('ignore')
 
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
+
         the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
         self.assertEqual(the_pkg.name, self.TEST_PKG)
         self.assertRaises(ValueError, Package.load_from, full_load_path, self.test_site,
@@ -252,18 +252,13 @@ class PackageTestCase(TransactionTestCase):
         is non-certified, loads meta info.
 
         """
-        try:
-            editorial = Application.objects.get(name='editorial')
-        except Application.DoesNotExist:
-            editorial = Application(name='editorial')
-            editorial.full_clean()
-            editorial.save()
+        self._find_or_create(Application, name='editorial')
 
         # TODO: capture warning message and verify
-        simplefilter('ignore')
+        # simplefilter('ignore')
 
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
-        the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
+        the_pkg = Package.load_from(full_load_path, self.test_site2, Package.SKIN)
         self.assertEqual(the_pkg.name, self.UNCERT_PKG)
 
 
