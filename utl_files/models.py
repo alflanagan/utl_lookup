@@ -4,6 +4,7 @@ import os
 import json
 import time
 from pathlib import Path
+from warnings import warn
 
 import pytz
 
@@ -193,9 +194,13 @@ class Package(models.Model):
             raise ValueError("pkg_type must be one of the symbolic constants defined in TNPackage")
 
         new_pkg = TNPackage.load_from(directory, "")
+        isinstance(site, TownnewsSite)
         last_download = None
         if not new_pkg.is_certified:
-            custom_meta = TNSiteMeta(site.name, Path(settings.TNPACKAGE_FILES_ROOT) / site.name)
+            meta_path = Path(settings.TNPACKAGE_FILES_ROOT) / site.domain
+            custom_meta = TNSiteMeta(site.name, meta_path)
+            if not custom_meta.loaded:
+                warn("Failed to find meta data for {} at {}.".format(site.URL, meta_path))
             if (new_pkg.name in custom_meta.data and
                     "last_download" in custom_meta.data[new_pkg.name]):
                 # Path(fname).stat().st_ctime is giving us UTC
