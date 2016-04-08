@@ -521,11 +521,11 @@ class PackageDepTestCase(TestCase):
                              dep_version='3.15')
         new_dep.full_clean()
         new_dep.save()
-        self.assertDictContainsSubset({"name": self.test_pkg.name,
-                                       "version": self.test_pkg.version,
-                                       "dep_name": self.test_dep.name,
-                                       "dep_version": self.test_dep.version, },
-                                      new_dep.to_dict())
+        self.assertDictContainsSubset(
+            {"name": self.test_pkg.name,
+             "version": self.test_pkg.version,
+             "dep_name": self.test_dep.name,
+             "dep_version": self.test_dep.version, }, new_dep.to_dict())
         self.assertIn("id", new_dep.to_dict())
 
     def test_str(self):
@@ -535,23 +535,16 @@ class PackageDepTestCase(TestCase):
                              dep_pkg=None,
                              dep_version='3.15')
         new_dep.full_clean()
-        self.assertEqual(str(new_dep),
-                         '{}/{}/{} depends on {} ({})'.format(self.test_pkg.app,
-                                                              self.test_pkg.name,
-                                                              self.test_pkg.version,
-                                                              new_dep.dep_name,
-                                                              new_dep.dep_version))
-        new_dep = PackageDep(pkg=self.test_pkg,
-                             dep_name='',
-                             dep_pkg=self.test_dep,
-                             dep_version='')
+        self.assertEqual(
+            str(new_dep), '{}/{}/{} depends on {} ({})'.format(
+                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version, new_dep.dep_name,
+                new_dep.dep_version))
+        new_dep = PackageDep(pkg=self.test_pkg, dep_name='', dep_pkg=self.test_dep, dep_version='')
         new_dep.full_clean()
-        self.assertEqual(str(new_dep),
-                         '{}/{}/{} depends on {} ({})'.format(self.test_pkg.app,
-                                                              self.test_pkg.name,
-                                                              self.test_pkg.version,
-                                                              self.test_dep.name,
-                                                              self.test_dep.version))
+        self.assertEqual(
+            str(new_dep), '{}/{}/{} depends on {} ({})'.format(
+                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version, self.test_dep.name,
+                self.test_dep.version))
 
     def test_check_for_deps(self):
         """Unit test for :py:meth:`utl_files.models.PackageDep.check_for_deps`."""
@@ -575,3 +568,53 @@ class PackageDepTestCase(TestCase):
         new_dep.save()
         # all we really require here is that no exception is thrown
         new_dep.check_for_deps()
+
+
+class MacroDefinitionTestCase(TestCase):
+    """Unit tests for :py:class:`utl_files.models.MacroDefinition`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.app = Application.objects.get(name='editorial')
+        cls.app.save()
+        cls.pkg = Package(
+            name="skin-editorial-core-base",
+            version="1.45.1.0",
+            is_certified=True,
+            app=cls.app,
+            pkg_type=Package.SKIN,
+            disk_directory='utl_files/test_data/certified/skins/skin-editorial-core-base')
+        cls.pkg.full_clean()
+        cls.pkg.save()
+        cls.utl_file = UTLFile(file_path='includes/header.inc.utl', pkg=cls.pkg)
+        cls.utl_file.full_clean()
+        cls.utl_file.save()
+        cls.test_def = MacroDefinition(source=cls.utl_file,
+                                       text='some long text document',
+                                       name='my-bogus-macro',
+                                       start=0,
+                                       end=0,
+                                       line=0)
+        cls.test_def.full_clean()
+        cls.test_def.save()
+
+    def test_str(self):
+        """Unit test for :py:meth:`utl_files.models.MacroDefinition.__str__`."""
+        self.assertEqual(self.test_def.source.id, self.utl_file.id)
+        self.test_def.line = 0
+        self.assertEqual(str(self.test_def), 'my-bogus-macro() [0]')
+        self.test_def.line = 57
+        self.assertEqual(str(self.test_def), 'my-bogus-macro() [57]')
+
+    def test_to_dict(self):
+        """Unit test for :py:meth:`utl_files.models.MacroDefinition.to_dict`."""
+        self.test_def.line = 57
+        self.assertDictContainsSubset(
+            {'end': 0,
+             'file': 'includes/header.inc.utl',
+             'line': 57,
+             'name': 'my-bogus-macro',
+             'pkg': 'skin-editorial-core-base',
+             'pkg_version': '1.45.1.0',
+             'start': 0}, self.test_def.to_dict())
+        self.assertIn('id', self.test_def.to_dict())
