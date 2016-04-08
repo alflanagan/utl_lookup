@@ -1,0 +1,674 @@
+[%-
+/**  oops, we ended comment too early!! */
+ * core-asset-index-headline_list
+ * @param rss_section
+        You can change the section in the event that it
+        is not in a first level directory
+ * @param section_more_link    
+        Setting this property will add a link to the 
+        bottom of the block (most often to be used
+        as a more link with 'news' or 'sports' entered. 
+        However the property will also accept external
+        urls http://domain.com).
+ * @param section_more_link_text
+        Setting this will override the standard
+        more link text which is 'More' + 
+        'section_more_link'    
+ * @param section_more_link_rel    
+        Can be used to set the relationship of the link
+        to the site. For example, setting this property
+        to 'external' will cause the link to open in a 
+        new tab/window
+ * @param preview_size
+        Sets the preview size for the image displayed
+        in the list. (should pick size that is a 
+        standard for the site using the block. 
+        Default is 100. 
+ * @param show_most_viewed
+        setting to one of the values below toggles on
+        -daily
+        -weekly
+        -rolling_week
+        -monthly
+ * @param{Boolean} [show_day=false]
+ * @param{String} [partition_text=events]        
+ */
+
+
+coupon_section = 'coupon';            
+block = this.block;
+custom = block.custom;
+assets = block.assets;
+    
+if assets;
+
+    call cms.component.load('core_base_library');
+    call cms.component.load('core_external_jquery');
+    call cms.component.load('core_external_jqueryui');
+    call cms.component.load('core_yepnope');
+    call cms.component.load('core_external_jquery_plugins');
+    call cms.component.load('core_internal_jquery_plugins');
+    
+    core_base_library_load_styles;
+    core_external_jquery_plugins_common;
+    core_internal_jquery_plugins_common;
+
+    show_day = false;
+    partition_text = 'events';
+    period = custom.show_most_viewed;
+    if custom.max_age_most_viewed; max_age_most_viewed = custom.max_age_most_viewed; else; max_age_most_viewed = 20000; end;
+    if period == 'daily' || period == 'weekly' || period == 'rolling_week' || period == 'monthly';
+        show_most_viewed = true;
+    end;
+    /* transform into most_viewed headline list */
+    if show_most_viewed;
+        max_assets = assets | length;
+        asset_type = assets[0].type;
+        assets = cms.stats.most_viewed('period': period,'maxage': max_age_most_viewed,'type': asset_type, 'maximum': max_assets);
+    end;    
+    /* end tranfrom */
+	target_id = 'block-'+this.block.id;
+	       
+/* use master variable to determine predefined block variable set */ 
+    if custom.template == 'bullet-headlines';
+        /* set toggle variables for block varibale set */
+        rss_link = 'true';
+        rss_query = 'false';
+        section_title = 'false';
+        headline = 'true';
+        show_flags = 'false';
+        show_new_updated = 'false';
+        child_icons = 'false';
+        thumb = 'false';
+        lead_p = 'false';
+        more_link = 'false';
+            more_link_text = 'more';
+        section_more_link = 'false';
+            section_more_link_rel='false';    
+        updated = 'false';
+            updated_icon = 'true';
+            updated_text = 'updated: ';
+            posted_text = 'posted: ';
+        comment_count = 'false';
+        keyword_tags = 'false';
+        related = 'false';
+            related_text = 'related items';
+        /* template class variables */
+        container_class = 'blox-column';
+        ul_class = 'blox-list';
+    else;
+        rss_link = 'true';
+        rss_query = 'false';
+        section_title = 'false';
+        headline = 'true';
+        show_flags = 'true';
+        show_new_updated = 'true';
+        child_icons = 'true';
+        preview_size = 100;
+        thumb = 'true';
+        lead_p = 'false';
+        more_link = 'false';
+            more_link_text = 'more';
+        section_more_link = 'false';
+            section_more_link_rel='false';    
+        updated_icon = 'true';    
+        updated = 'true';
+            updated_text = 'updated: ';
+            posted_text = 'posted: ';
+        comment_count = 'true';
+        keyword_tags = 'true';
+        related = 'true';
+            related_text = 'related items';    
+        /* default class variables */
+        container_class = 'blox-asset-content-block';
+        ul_class = 'blox-recent-list';    
+    end;                
+/* use additional custom block variables to override predefined block variable set */
+    if custom.show_day == 'true'; show_day = true; end;
+    if custom.partition_text; partition_text = custom.partition_text; end;
+    if custom.section_more_link; 
+        section_more_link = custom.section_more_link;
+        section_more_link_text = 'More '+section_more_link | titlecase+' &raquo;';
+        if custom.section_more_link_rel; 
+            section_more_link_rel = custom.section_more_link_rel;
+        end;
+    end;
+    if custom.section_more_link_text; section_more_link_text = custom.section_more_link_text; end;
+    if custom.rss_link; rss_link = custom.rss_link; end;
+    if custom.title; title = custom.title; end;
+    if custom.section_title; section_title = custom.section_title; end;
+    if custom.show_flags; show_flags = custom.show_flags; end;
+    if custom.show_new_updated; show_new_updated = custom.show_new_updated; end;
+    if custom.child_icons; child_icons = custom.child_icons; end;
+    if custom.thumb; thumb = custom.thumb; end;
+    if custom.lead_p || custom.show_lead_p; 
+        lead_p = custom.lead_p;
+        if !lead_p;
+            lead_p = custom.show_lead_p;
+        end;  
+    end;
+    if custom.more_link; more_link = custom.more_link; end;
+    if custom.more_link_text; more_link_text = custom.more_link_text; end;
+    if custom.updated; updated = custom.updated; end;
+    if custom.updated_icon; updated_icon = custom.updated_icon; end;
+    if custom.updated_text; updated_text = custom.updated_text; end;
+    if custom.posted_text; posted_text = custom.posted_text; end;
+    if custom.comment_count; comment_count = custom.comment_count; end;
+    if custom.keyword_tags; keyword_tags = custom.keyword_tags; end;
+    if custom.related; related = custom.related; end;
+    if custom.related_text; related_text = custom.related_text; end;
+    if custom.preview_size; preview_size = custom.preview_size; end;
+    if this.block.custom.title_opens_new_window; title_opens_new_window = this.block.custom.title_opens_new_window; end;
+    if this.block.custom.date_format;
+        dateFormatCustomized = true;
+        date_format = this.block.custom.date_format; 
+    else; 
+        date_format ='D, M d, g:i a T'; 
+    end;
+    if date_format | contains(', g:i a T');
+    /* kinda sketchy */
+        include_time = true;
+    end;
+
+lazyLoad = core_base_library_getCustomProperty('lazy_load', 'boolean', true);
+placeHolder = cms.page.cdn('components/core_external_jquery_plugins/resources/images/place_holder.png');
+    
+%]
+
+[% macro blockMacro_event;
+     %]
+    <dl class="event-datails">
+    
+            <dt class="date[% if date_format == 'd M' %] ui-widget-content[% end %]">
+            <span class="ui-icon ui-icon-calendar float-left"></span>    
+                [%    
+                    all_day_event = false;
+                    if asset.eventstarttime('g:i a') == '12:00 am' && asset.eventstoptime('g:i a') == '11:59 pm';
+                        all_day_event = true;
+                        if date_format | contains(' g:i a T');
+                            date_format = date_format | replace(' g:i a T','');
+                        end;                     
+                    end;    
+                    echo asset.eventstarttime | datetime(date_format);
+                    if all_day_event && include_time;
+                        echo ' all day';
+                    end;
+                %]
+            </dt>
+    [%    
+        if asset.venue.name || asset.venue_name;
+            if asset.venue_name;
+                venue_name = asset.venue_name;
+            else;
+                venue_name = asset.venue.name;
+            end;
+            if asset.venue_city;
+                venue_city = asset.venue_city;
+            else;
+                venue_city = asset.venue.city;
+            end    %]         
+            <dt class="venue">
+            <span class="ui-icon ui-icon-flag float-left"></span>
+            [%    if asset.venue.uuid; %]
+                <a href="[% cms.url('app': 'business') %]business_[% asset.venue.uuid %].html">            [%-    end;
+                    echo venue_name; 
+                if asset.venue.uuid;    
+                    echo '</a>';    
+                end;
+                if venue_city; 
+                    echo ', ' + venue_city | titlecase; 
+                end; %]
+            </dt>
+    [%    end %]
+    </dl>
+    [%   
+ end %]
+
+<div class="[% container_class %] [% echo assets[0].type %]">
+[% /* end macros */ %]
+[% if this.block.title %]
+        <div class="blox-title">
+        [%    core_base_library_rss_link('tBlock' : this.block);
+               core_base_library_title('tBlock' : this.block) %]
+        </div>
+        [%    core_base_library_sublinks('tBlock' : this.block);
+    end;
+    /* recent-list start */ %]
+    
+    <ul class="[% ul_class %]">
+    [% assets = filterAssetsByPublished(assets); %]
+    [% foreach assets as asset;%]
+	
+	[%
+        if asset.tags('section') == coupon_section || asset.type == 'coupon' || asset.type == 'pdfdisplayad';
+            coupon_asset = true;
+            coupon_business = asset.items('relationship' : 'parent', 'type' : 'business')[0];
+        else;
+            coupon_asset = false;    
+        end;
+		
+        if thumb == 'true';
+			photo = core_base_library_assetThumb(
+				'asset':asset,
+				sizeArray:[preview_size]);
+        else; photo = '';
+        end;    
+            
+        if(asset.prologue); 
+            leadP = asset.prologue; 
+        else if asset.description;
+            leadP = asset.description;    
+        else if asset.type == 'event' || asset.type == 'link';
+            leadP = asset.content[0];    
+        else; 
+            leadP = asset.paragraphs[0]; 
+        end;     
+        icon_in_place = false;
+        if this.block.custom.truncate; trunc = this.block.custom.truncate; end;
+        if this.block.custom.custom_truncate; trunc = this.block.custom.custom_truncate; end;
+        if(leadP | length) > trunc;
+            leadP = '<p>' + (leadP | strip_tags | truncate(150,'&hellip;') + '</p>');
+        else;
+            leadP = '<p>' + (leadP | strip_tags | autolink) + '</p>';
+         end; -%]
+[%    if show_day && asset.isOccurrence();
+        if current_divide != asset.eventstarttime | datetime('m/d/Y');
+            current_divide = asset.eventstarttime | datetime('m/d/Y') %]
+            <li class="[% asset.type %] [%echo asset.custom.blox_class%] date-partition[% if asset | iterfirst %] first[% end; if this.block.custom.service_classes | strbool == true; echo core_base_library_serviceClasses(asset);end; %]">
+            <span class="text ui-widget ui-widget-content ui-state-active">
+                [% partition_text | titlecase %]
+            </span>
+            <div class="calendar-date">
+                <span class="day ui-widget-header ui-state-error">
+                [% asset.eventstarttime('l') %]
+                </span>
+                <span class="day-num ui-widget-content">
+                [% asset.eventstarttime('j') %]
+                </span>
+            </div>
+            </li>
+[%        end;            
+    end %] 
+        <li class="[% asset.type %] [%echo asset.custom.blox_class%] [% core_base_library_iterPosClasses(asset) %][%if asset.custom.highlight; echo ' highlight'; end; if this.block.custom.service_classes | strbool == true; echo core_base_library_serviceClasses(asset);end; %]">
+    [%    if coupon_asset %]
+        <script type="text/javascript">
+        /* <![CDATA[ */
+        jQuery(document).ready(function() {
+        // Tell jQuery that our div is to be a dialog  
+            
+               jQuery(".[%- target_id -%]CouponOpen[%- asset | iterpos -%]").click(function() {  
+                   jQuery("#[%- target_id -%]Coupon[%- asset | iterpos -%]").dialog({ 
+                       [% if asset.width -%]
+                           width: [% asset.width + 20 -%],
+                       [% else if asset.type == 'pdfdisplayad' -%]
+                           width:320,
+                       [% else %]
+                           width: 640,
+                       [% end -%]
+                       modal: true,
+                       resizable: false
+                   });   
+            });  
+        }); 
+        /* ]]> */
+        </script>
+        <div id="[%- target_id -%]Coupon[%- asset | iterpos -%]" title="[% asset.title | html %]" style="display:none;">
+			[% if asset.type == 'pdfdisplayad' && custom.popup|strbool %]
+				<div>
+					<script type="text/javascript">
+					/* <![CDATA[ */
+					function zoomSwf( id, amount ) {
+						var el = document.getElementById(id);
+						if ( el )  el.Zoom(amount);
+					}
+					
+					$(function(){
+                        // create buttons
+						$(".jquery-ui-button").button();
+						$(".display-controls").buttonset();
+					});
+					/* ]]> */
+					</script>
+
+					<span class="ui-widget-header ui-corner-all display-control-toolbar">
+						<a class="download jquery-ui-button" href="[% asset.resource_url %]" rel="external"><span class="ui-icon ui-icon-newwin float-left" style="margin-right:5px;"></span>View the PDF</a>
+						<span class="display-controls">
+							<a class="display-ad-control" title="Zoom in" href="javascript:zoomSwf('[% asset.uuid | jsquote %]',50)">
+								<span class="ui-icon ui-icon-zoomin"></span>
+							</a>
+							<a class="display-ad-control" title="Zoom out" href="javascript:zoomSwf('[% asset.uuid | jsquote %]',200)">
+									<span class="ui-icon ui-icon-zoomout"></span>
+							</a>
+							<a class="display-ad-control" title="Reset" href="javascript:zoomSwf('[% asset.uuid | jsquote %]', 0)">
+									<span class="ui-icon ui-icon-arrow-4-diag"></span>
+							</a>
+						</span>
+						<span class="clear"></span>
+					</span>        
+					<object id="[% asset.uuid | jsquote %]" name="[% asset.uuid | jsquote %]" wmode="opaque" width="100%" height="500" type="application/x-shockwave-flash" data="[% asset.flash_url | jsquote %]">
+						<param name="movie" value="[% asset.flash_url | jsquote %]">
+						<param name="wmode" value="opaque">
+					</object>
+				</div>
+			[% else %]		
+				[% 
+					if asset.description || asset.content;
+						image_focus = false;
+					else; 
+						image_focus = true;
+						photo = core_base_library_assetThumb(
+								'asset':asset,
+								sizeArray:[300]); 
+					end;
+				if photo.url; %]
+					<p>
+                                            [% if lazyLoad %]
+						<img class="blox-img-loader image" title="[% asset.title %]" alt="[% photo.caption | html %]" src="[% placeHolder %]" data-original="[% photo.url %]" [% if image_focus; echo 'style="width:100%;"'; end %]/>
+                                            [% else %]
+                                                <img title="[% asset.title %]" alt="[% photo.caption | html %]" src="[% photo.url %]" [% if image_focus; echo 'style="width:100%;"'; end %]/>
+                                            [% end %]
+					</p>
+				[% end %]  
+			[% end %]		
+			
+			[% if asset.byline %]
+				<p class="byline">[% asset.byline %]</p>
+			[% end;
+				if asset.description %]
+					<p style="text-align:left">[% asset.description %]</p>
+			[%    else %]
+					<div style="text-align:left">
+				[%    asset.content %]
+					</div>
+			[%     end %]
+			[% if coupon_business %]
+			<div class="coupon-business ui-widget-content ui-corner-all">
+			[%     if coupon_business.logo %]
+				<div class="biz-logo">    
+					<a href="[% coupon_business.url %]">
+					[% if coupon_business.logo %]
+                                            [% if lazyLoad %]
+						<div class="logo-clip"><a href="[% coupon_business.url %]"><img class="blox-img-loader blox-specials-gallery-img" alt="[% coupon_business.name %]" src="[% placeHolder %]" data-original="[% coupon_business.logo.url %]"/></a></div>
+                                            [% else %]
+                                                <div class="logo-clip"><a href="[% coupon_business.url %]"><img class="blox-specials-gallery-img" alt="[% coupon_business.name %]" src="[% coupon_business.logo.url %]"/></a></div>
+                                            [% end %]
+					[% else %]
+                                            [% if lazyLoad %]
+						<div class="logo-clip"><a href="[% coupon_business.url %]"><img class="blox-img-loader blox-specials-gallery-img" alt="[% coupon_business.name %]" src="[% placeHolder %]" data-original="[% cms.page.app %]/[% cms.page.skin %]/resources/images/[% if level == 'power' %]power[% else %]enhanced[% end %]_logo.png"/></a></div>
+                                            [% else %]
+                                                <div class="logo-clip"><a href="[% coupon_business.url %]"><img class="blox-specials-gallery-img" alt="[% coupon_business.name %]" src="[% cms.page.app %]/[% cms.page.skin %]/resources/images/[% if level == 'power' %]power[% else %]enhanced[% end %]_logo.png"/></a></div>
+                                            [% end %]
+                                                
+					[% end %]
+					</a>    
+				</div>    
+			[%    end %]    
+				<div class="biz-content">
+					<h4><a class="title" href="[% coupon_business.url %]" class="link">[% if (coupon_business.name | length > 23) -%][%- echo coupon_business.name | truncate('23','...') | titlecase %][% else; echo coupon_business.name | titlecase; end; %]</a></h4>
+					[% if coupon_business.phone('use_whisper':true) %]<p class="tel">[% coupon_business.phone('use_whisper':true) %]</p>[% end %]
+					[% if coupon_business.fax %]<p class="tel">fax: [% coupon_business.fax %]</p>[% end %]
+					[% if coupon_business.city || coupon_business.state || coupon_business.zip %]
+						<p class="adr"> 
+							[% if coupon_business.city; bCity = coupon_business.city | html; bCity; %], [% end %]
+							[% if coupon_business.state; bState = coupon_business.state | html; bState; %]  [% end %]
+							[% if coupon_business.zip; bZip = coupon_business.zip | html; bZip; %][% end %]
+						</p>
+					[% end %]
+					[% biz_hours = coupon_business.hours.isOpen;
+					if biz_hours == true; %]
+						<p class="mp-open">Currently OPEN.</p>
+					[% else if biz_hours == false; %]
+						<p class="mp-closed">Currently CLOSED.</p>
+					[% else;
+						break;
+					end; %]
+					<h5 class="moreInfo"><a href="[%coupon_business.url%]">More Info</a></h5>
+				</div>
+			<div class="clear"></div>    
+			</div>
+			[% end %]
+				<a class="jquery-ui-button print-button" href="[% asset.url %]?mode=[% if asset.type == 'image' %]coupon_print[% else %]print[% end %]" rel="external">
+					Print
+				</a>
+				
+				
+        </div>
+            [% if photo.url %]
+                <a class="[%- target_id -%]CouponOpen[%- asset | iterpos -%]" href="javascript:void(0)" title="[% asset.title | html %]">
+                    [% if lazyLoad %]
+                        <img class="blox-img-loader avatar" alt="[% photo.caption | html %]" src="[% placeHolder %]" data-original="[% photo.url %]" [% if image_focus; echo 'style="width:100px;"'; end; %] />
+                    [% else %]
+                        <img class="avatar" alt="[% photo.caption | html %]" src="[% photo.url %]" [% if image_focus; echo 'style="width:100px;"'; end; %] />
+                    [% end %]
+                </a>
+            [% end %]
+        [% else %]    
+            [% if photo.url %]
+                <a href="[% asset.url %]" title="[% asset.title | html %]" class="link">
+                    [% if lazyLoad %]
+                        <img class="blox-img-loader avatar" alt="[% photo.caption | html %]" src="[% placeHolder %]" data-original="[% photo.url %]" />
+                    [% else %]
+                        <img class="avatar" alt="[% photo.caption | html %]" src="[% photo.url %]" />
+                    [% end %]
+                </a>
+            [% end %]
+        [% end %]    
+            <div class="blox-recent-block[% if photo.url; echo ' has-photo'; end %]">
+				[% if section_title == 'true' %]
+					<h3>[% asset.tags('section') %]</h3>
+				[% end %]
+				[% if headline == 'true' %]
+					<h4 class="blox-headline">
+					[% if coupon_asset && custom.popup|strbool%]
+						<a class="[%- target_id -%]CouponOpen[%- asset | iterpos -%]" href="javascript: void(0)" title="[% asset.title | html %]">
+					[% else %]    
+						<a href="[% asset.url %]" title="[% asset.title | html %]" [% if title_opens_new_window=="true" %]rel="external"[% end %]>
+					[% end %]    
+							[% asset.title | strip_tags %]
+						</a>
+						[% if child_icons == 'true'; child; end; %]
+					</h4>
+				[%    if asset.fields.f_int_price.value;
+					if !cms.component.load('core_base_classifieds'); echo '<!--core_base_classifieds load failed-->'; end; %]
+					<div class="price">    
+						$[% core_base_classifieds_formatNum(asset.fields.f_int_price.value) %] 
+					</div>            
+				[%    end %]    
+			[% if show_flags == 'true' || show_new_updated == 'true' %]
+				<ul class="blox-flags headline-list">
+			[%    if asset.fields.f_list_listing_type.value;
+					asset_list_type = asset.fields.f_list_listing_type.value %]
+					<li>
+						<span class="listing-type ui-state-error ui-corner-all [% asset_list_type %]">
+							[% asset_list_type | replace('_',' ') %]
+						</span>
+					</li>
+			[%    end;
+				if show_flags == 'true' && asset.flags > 0 || this.block.custom.service_classes | strbool == true;
+					if this.block.custom.service_classes | strbool == true;
+						core_base_library_premiumFlag(asset);
+					end %]              
+					<li>[% core_base_library_assetFlags(asset) %]</li>
+			[%    end;
+				if show_new_updated == 'true' %]
+					<li>[% core_base_library_new_updated(asset) %]</li>
+			[%    end %]
+				   </ul>
+			[% end;
+					end;
+					blockMacro_event;
+					if lead_p == 'true'; 
+						leadP;
+					end %]
+	
+				[% if updated == 'true' || comment_count == 'true' || (keyword_tags == 'true' && asset.tags('type':'keyword')) %]
+				<ul class="blox-comments">
+					[% if updated == 'true' && asset.lastupdated !="null" %]
+					<li>
+						[% if updated_icon != 'false' %]
+							[% if lazyLoad %]
+								<img class="blox-img-loader" src="[% placeHolder %]" data-original="global/resources/images/icon-03.gif" alt="icon" />
+							[% else %]
+								<img src="global/resources/images/icon-03.gif" alt="icon" />
+							[% end %]
+						[% end %]
+						<span class="blox-updated">
+						[% if asset.lastupdated %]
+							[% if custom.update_text; 
+								custom.update_text; 
+								else; 
+								echo 'Updated:'; end; %]
+								[%    if cms.system.time('d') - 1 == asset.lastupdated('d') && (asset.lastupdated('m/y') == cms.system.time('m/y')); 
+									echo 'Yesterday';
+									else if (asset.lastupdated('d') < cms.system.time('d') && asset.lastupdated('m') == cms.system.time('m')) || asset.lastupdated('m') < cms.system.time('m') || asset.lastupdated('y') < cms.system.time('y') ;
+									asset.lastupdated('F d');
+								
+									else; asset.lastupdated('g:i a'); end; %]
+						[% else if posted_text;
+							posted_text; asset.starttime('F d');  
+						   else %]
+							Posted: [% asset.starttime('F d');
+						   end %]
+						</span>
+					</li>
+					[% end %]
+					[% if comment_count == 'true' %]
+						[% if asset.no_comments != true %]
+					<li>
+						[% core_base_library_comment_count('target': asset) %]
+					</li>
+						[% end %]
+					[% end %]
+				</ul>
+					   [% if keyword_tags == 'true' && asset.tags('type':'keyword') && custom.show_keywords == 'true' %]
+			
+			<ul class="blox-keywords"> 
+					<li>
+						[% foreach asset.tags('keyword') as keyword;
+							if keyword | startswith('#') != 'true'; %]
+								[% if icon_in_place != 'true';
+									icon_in_place = 'true'; %]
+										[% if lazyLoad %]
+											<img class="blox-img-loader" src="[% placeHolder %]" data-original="global/resources/images/icon-05.gif" alt="icon" />
+										[% else %]
+											<img src="global/resources/images/icon-05.gif" alt="icon" />
+										[% end %]
+								[% end %]
+								<a class="tn-tag-link" href="/topic/?q=[% keyword %]&amp;t=&amp;l=25&amp;d=&amp;d1=&amp;d2=&amp;f=html&amp;s=&amp;sd=desc&amp;s=start_time">[% keyword | titlecase | trim %]</a>[% if keyword | iterpos == 2 || keyword | iterlast; echo ''; else; echo ','; end; %]
+							[% end; 
+							if keyword | iterpos == 2; break; end;    
+							end; %] 
+					</li>
+			</ul>
+			[% end %]    
+				[% end  /* comment count keywords updated */ %]
+            </div>
+        <span class="clear"></span>
+		
+		
+			
+			[% /*
+			#tntracking
+			Customized by : cnorton
+			Date : 2013-12-06
+			Unfuddle : 3851
+			Description : add business info to classified ads
+			*/ %]
+			[% macro displayRelatedBusiness(asset=this.asset);
+				aBusinesses = [];
+				aBusinesses[aBusinesses|length] = asset.biz;
+				if !aBusinesses|length;
+					aBusinesses[aBusinesses|length] = asset.business;
+				end;
+				if !aBusinesses|length;
+					foreach asset.items('relationship':'parent','type':'business') as business;
+						aBusinesses[aBusinesses|length] = business;	
+					end;
+				end;
+				if !aBusinesses|length;
+					foreach asset.items('relationship':'sibling','type':'business') as business;
+						aBusinesses[aBusinesses|length] = business;	
+					end;
+				end;
+				if !aBusinesses|length;
+					foreach asset.items('relationship':'child','type':'business') as business;
+						aBusinesses[aBusinesses|length] = business;	
+					end;
+				end;
+				bizPosted = false;
+				foreach aBusinesses as biz;
+					if biz.title;
+						if !bizPosted;
+							bWidth = biz.logo.width;
+							bHeight = biz.logo.height;
+							if bWidth<bHeight;
+								ratio = 'vertical';
+							else;
+								ratio = 'horizontal';
+							end; %]
+							<style>
+							.related-business{
+								margin-top:10px;}
+								.related-business .logo{}
+									.related-business .logo img{
+										width:auto;
+										height:auto;
+										max-width:100px;
+										max-height:100px;
+                                                                                margin:0 0 0 10px;                                                                                
+										padding:1px;
+                                                                                float:right;                                                                                
+										border:1px solid #ddd;}
+								.related-business .{
+									text-align:right;}
+									.related-business . p{
+										padding:0;
+										font-size:12px;
+										line-height:1.5em;}
+							</style>
+							<div class="related-business">
+								[% if biz.logo %]
+									<a class="logo" href="[% biz.url %]">
+										<img src="[% biz.logo.url %]" />
+									</a>
+								[% end %]
+								<div class="">
+									<p><strong><a id="biz_uuid_[%biz.uuid%]" href="[% biz.url %]">[% biz.title %]</a></strong></p>
+
+									[% if biz.phone('use_whisper':true) %]
+										<p><strong>Phone:</strong>
+										[% biz.phone('use_whisper':true)| html %]</p>
+									[% end %]
+								</div>
+								<div class="clear"></div>
+							</div>
+							[% bizPosted = true %]
+						[% end %]
+					[% end %]
+				[% end %]
+			[% end %]
+			[%
+				if custom.show_business|strbool;
+					displayRelatedBusiness(asset);
+				end;
+			%]
+        </li>
+    [% end /* foreach */ %]    
+    </ul>
+    [%     if section_more_link != 'false' %]
+        <span class="more-link">
+            <a href="[% if section_more_link | startswith('http') == false %]/[% end; section_more_link %]"[% if section_more_link_rel != 'false' %] rel="[% section_more_link_rel %]"[% end %]>[% section_more_link_text %]</a>
+        </span>
+    [% end %]
+    [% core_base_library_more_stories(this.block) %]
+    <div class="clear"></div>
+</div>
+<script type="text/javascript">
+/* <![CDATA[ */
+jQuery(document).ready(function() {
+    jQuery(".jquery-ui-button").button();
+});
+/* ]]> */
+</script>
+[%- end;
+core_base_library_blockWidgetCommonScripts;

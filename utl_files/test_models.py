@@ -11,6 +11,8 @@ from django.db.utils import DataError
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
+from testplus.mock_objects import MockStream
+
 from .models import (Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError,
                      PackageError, PackageProp, PackageDep)
 from papers.models import TownnewsSite, NewsPaper
@@ -285,26 +287,39 @@ class UTLFileTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
-
         # if I make PKG_DIRECTORY absolute, it won't work on other systems. But, if it's
         # relative, it won't work if we're in the wrong directory. So, as a non-solution:
-        if not (Path('utl_files/test_data') / cls.PKG_DIRECTORY).is_dir():
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
+
+        if not (Path(settings.TNPACKAGE_FILES_ROOT) / cls.PKG_DIRECTORY).is_dir():
             raise Exception("Test data not found. UTLFileTestCase must be run from project root"
                             " directory (location of manage.py).")
 
         cls.app = Application.objects.get(name='editorial')
+        cls.app.save()
         cls.pkg = Package(name=cls.TEST_PKG,
                           version=cls.TEST_VERSION,
                           is_certified=True,
                           app=cls.app,
+                          pkg_type=Package.SKIN,
                           disk_directory=cls.PKG_DIRECTORY)
+        cls.pkg.full_clean()
         cls.pkg.save()
         # one of the simplest UTL files in the test data
         cls.simple_utl = UTLFile(file_path=cls.SIMPLE_UTL_FILE, pkg=cls.pkg)
+        cls.simple_utl.full_clean()
         cls.simple_utl.save()
         cls.macros_utl = UTLFile(file_path=cls.MACROS_FILE, pkg=cls.pkg)
+        cls.macros_utl.full_clean()
         cls.macros_utl.save()
+        cls.parse_err_pkg = Package(name='custom-parsing-error',
+                                    version='0.1',
+                                    is_certified=False,
+                                    app=cls.app,
+                                    pkg_type=Package.BLOCK,
+                                    disk_directory='omaha.com/blocks/custom-parsing-error')
+        cls.parse_err_pkg.full_clean()
+        cls.parse_err_pkg.save()
 
     def test_create(self):
         """Unit test for :py:meth:`~utl_files.models.UTLFile`."""
@@ -367,6 +382,18 @@ class UTLFileTestCase(TestCase):
         self._verify_macro("archived_asset", 38, 1504, 2069)
         self._verify_macro("free_archive_period", 54, 2071, 2741)
         self._verify_macro("ifAnonymousUser", 356, 12033, 12667)  # last one in file
+
+    def test_parsing_error(self):
+        """Unit test for :py:meth:`utl_file.models.UTLFile.get_macros` parser error handling."""
+        with MockStream().capture_stderr() as fake_stderr:
+            for utl_fname in (Path(settings.TNPACKAGE_FILES_ROOT) /
+                              Path(self.parse_err_pkg.disk_directory)).glob('**/*.utl'):
+                new_file = UTLFile.create_from(utl_fname, self.parse_err_pkg)
+                new_file.full_clean()
+                new_file.save()
+            self.assertIn("ERROR", fake_stderr.logged)
+            self.assertIn("block.utl", fake_stderr.logged)
+            self.assertIn("Syntax error", fake_stderr.logged)
 
 
 class PackagePropTestCase(TestCase):

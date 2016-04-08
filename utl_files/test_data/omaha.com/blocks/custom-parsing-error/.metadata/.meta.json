@@ -1,0 +1,16 @@
+{
+    "type": "block",
+    "version": 0.1,
+    "certified": false,
+    "title": "",
+    "description": "",
+    "dependencies": [],
+    "properties": [],
+    "capabilities": [],
+    "blockTypes": [],
+    "previewImageWidth": null,
+    "previewImageHeight": null,
+    "previewThumbWidth": null,
+    "previewThumbHeight": null,
+    "app": "editorial"
+}

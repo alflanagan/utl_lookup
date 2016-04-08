@@ -411,7 +411,8 @@ class UTLFile(models.Model):
             logging.error(" parsing '{}': {}".format(self.file_path, upe))
             return
 
-        if utldoc is None:
+        # not sure if None value is possible
+        if utldoc is None:  # pragma: no cover
             logging.error(" parsing '{}': returned None.".format(self.file_path))
 
         xref = UTLMacroXref(utldoc, text)
