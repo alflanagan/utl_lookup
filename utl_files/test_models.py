@@ -251,16 +251,18 @@ class PackageTestCase(TransactionTestCase):
     def test_load_from_failure(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)` error cases."""
 
-        the_site = self._find_or_create(TownnewsSite, URL='http://dothaneagle.com',
-                                        name='The Dothan Eagle', paper=self.paper2)
+        the_site = self._find_or_create(TownnewsSite,
+                                        URL='http://dothaneagle.com',
+                                        name='The Dothan Eagle',
+                                        paper=self.paper2)
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.ERROR_PKG_DIR)
         self.assertRaises(UserWarning, Package.load_from, full_load_path, the_site, Package.SKIN)
         site_meta_file = Path(settings.TNPACKAGE_FILES_ROOT) / 'dothaneagle.com/site_meta.json'
         self.assertFalse(site_meta_file.exists())
         Application.objects.get(name='editorial').delete()
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
-        self.assertRaises(UTLFileImportError, Package.load_from, full_load_path,
-                          self.test_site2, Package.SKIN)
+        self.assertRaises(UTLFileImportError, Package.load_from, full_load_path, self.test_site2,
+                          Package.SKIN)
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
         editorial = Application(name='editorial')
         editorial.save()
@@ -413,8 +415,7 @@ class PackagePropTestCase(TestCase):
         new_prop.full_clean()
         new_prop.save()
         try:
-            self.assertDictContainsSubset({"key": "fred",
-                                           "value": "wilma", }, new_prop.to_dict())
+            self.assertDictContainsSubset({"key": "fred", "value": "wilma", }, new_prop.to_dict())
             self.assertIn("id", new_prop.to_dict())
         finally:
             new_prop.delete()  # clean up for other tests

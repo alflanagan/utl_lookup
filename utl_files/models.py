@@ -264,9 +264,7 @@ class PackageProp(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk,
-                "key": self.key,
-                "value": self.value}
+        return {"id": self.pk, "key": self.key, "value": self.value}
 
 
 class PackageDep(models.Model):
