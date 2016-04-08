@@ -23,7 +23,7 @@ def home(request):
     return render(request, 'utl_files/index.html', context)
 
 
-def demo(request):
+def demo(request):  # pragma: no cover
     """Display a hand-crafted demo page for figuring out what generated output should be."""
     context = {"sites": TownnewsSite.objects.all(),
                "pkgs": Package.objects.all(),
