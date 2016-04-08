@@ -11,7 +11,7 @@ from django.db.utils import DataError
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
-from .models import Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError
+from .models import Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError, PackageError, PackageProp
 from papers.models import TownnewsSite, NewsPaper
 
 # pylint: disable=no-member,invalid-name
@@ -98,9 +98,9 @@ class PackageTestCase(TransactionTestCase):
 
     def setUp(self):
         """Create a package object for tests."""
+        self._find_or_create(Application, name='editorial')
         # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
         # into errors by default.
-        self._find_or_create(Application, name='editorial')
         simplefilter('error')
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.save()
@@ -256,10 +256,17 @@ class PackageTestCase(TransactionTestCase):
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.ERROR_PKG_DIR)
         self.assertRaises(UserWarning, Package.load_from, full_load_path, the_site, Package.SKIN)
         site_meta_file = Path(settings.TNPACKAGE_FILES_ROOT) / 'dothaneagle.com/site_meta.json'
+        self.assertFalse(site_meta_file.exists())
         Application.objects.get(name='editorial').delete()
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
         self.assertRaises(UTLFileImportError, Package.load_from, full_load_path,
                           self.test_site2, Package.SKIN)
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
+        editorial = Application(name='editorial')
+        editorial.save()
+        the_pkg = Package.load_from(full_load_path, self.test_site2, Package.SKIN)
+        the_pkg.disk_directory = "no_such_dir"
+        self.assertRaises(PackageError, the_pkg.get_utl_files)
 
 
 class UTLFileTestCase(TestCase):
@@ -357,3 +364,57 @@ class UTLFileTestCase(TestCase):
         self._verify_macro("archived_asset", 38, 1504, 2069)
         self._verify_macro("free_archive_period", 54, 2071, 2741)
         self._verify_macro("ifAnonymousUser", 356, 12033, 12667)  # last one in file
+
+
+class PackagePropTestCase(TestCase):
+    """Unit tests for :py:class:`uti_files.models.PackageProp`."""
+
+    # pylint:disable=W0201,W0212
+    @classmethod
+    def setUpTestData(cls):
+        """Create a package object for tests."""
+        cls.test_app = PackageTestCase._find_or_create(Application, name='editorial')
+        paper = PackageTestCase._find_or_create(NewsPaper, name='Richmond Times-Dispatch')
+        test_site = PackageTestCase._find_or_create(TownnewsSite,
+                                                    URL='http://richmond.com',
+                                                    name='RTD',
+                                                    paper=paper)
+        cls.test_pkg = Package(name='some-totally-bogus-pkg',
+                               version='1.0',
+                               is_certified=True,
+                               app=cls.test_app,
+                               last_download="2015-05-01 13:00:00Z",
+                               disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                               "some_totally_bogus_package"),
+                               site=test_site,
+                               pkg_type=Package.SKIN)
+        cls.test_pkg.full_clean()
+        cls.test_pkg.save()
+
+    def test_create(self):
+        """Unit test for creation of :py:class:`utl_files.models.PackageProp` instance."""
+        new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="wilma")
+        new_prop.full_clean()
+        new_prop.save()
+        self.assertEqual(PackageProp.objects.count(), 1)
+        test_prop = PackageProp.objects.get(pkg=self.test_pkg, key="fred")
+        self.assertEqual(test_prop.pkg, self.test_pkg)
+        self.assertEqual(test_prop.key, "fred")
+        self.assertEqual(test_prop.value, "wilma")
+
+    def test_str(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageProp.__str__`."""
+        new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="wilma")
+        self.assertEqual(str(new_prop), 'fred: wilma')
+
+    def test_to_dict(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageProp.to_dict`."""
+        new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="wilma")
+        new_prop.full_clean()
+        new_prop.save()
+        try:
+            self.assertDictContainsSubset({"key": "fred",
+                                           "value": "wilma", }, new_prop.to_dict())
+            self.assertIn("id", new_prop.to_dict())
+        finally:
+            new_prop.delete()  # clean up for other tests
