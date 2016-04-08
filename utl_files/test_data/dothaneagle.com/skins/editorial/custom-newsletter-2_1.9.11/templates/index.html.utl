@@ -1,0 +1,39 @@
+[%- include 'newsletter.header.inc.utl'; -%]
+[% 
+
+
+nl_content_border = '';
+if this.url.custom.nl_content_border;
+  nl_content_border = this.url.custom.nl_content_border;
+end;
+
+nl_content_divider_padding = nl_content_padding;
+if this.url.custom.nl_content_divider == true;
+  nl_content_divider_color = '#ccc';
+  if this.url.custom.nl_content_divider_color;
+    nl_content_divider_color = this.url.custom.nl_content_divider_color;
+  end;
+  if this.url.custom.two_column_layout == true;
+    if this.url.custom.nl_content_divider_padding;
+      nl_content_divider_padding = this.url.custom.nl_content_divider_padding;
+    else;
+      nl_content_divider_padding = 10;
+    end;
+  else;
+    nl_content_divider_padding = nl_content_padding;
+  end;
+  nl_content_divider = 'border-right: 1px solid ' + nl_content_divider_color + ';';
+end;
+left_column_left_padding = this.url.custom.left_column_left_padding;
+left_column_right_padding = this.url.custom.left_column_right_padding;
+%]
+
+<table cellspacing="0" cellpadding="0" border="0" style="[% nl_content_border; %]background-color: [%- nl_bgcolor; -%];margin: 0; padding: [% nl_content_margin; %]px; font-family:Arial,Helvetica,sans-serif; font-weight: bold; font-size: 15px; line-height: 13px; color: #333;">
+    <tr>
+        <td style="[% nl_content_divider; %]background-color: [% nl_content_bg_color; %];padding: [% nl_content_padding; %]px [% nl_content_divider_padding; %]px [% nl_content_padding; %]px [% nl_content_padding; %]px; text-align:left;[% if left_column_width; %] width: [%- left_column_width; %]; [% end; %]  [% if left_column_left_padding; %] padding-left: [%- left_column_left_padding; %]px; [% end; %] [% if left_column_right_padding; %] padding-right: [%- left_column_right_padding; %]px; [% end; %]" align="left" valign="top">[%- cms.region('name':'region-1'); -%]</td>
+        [% if this.url.custom.two_column_layout == true; %]
+            <td style="margin: 0 auto;background-color: [% nl_content_bg_color; %];text-align:left;[% if right_column_width; %] width: [%- right_column_width; %]; [% end; %]padding: [% nl_content_padding; %]px [% nl_content_padding; %]px [% nl_content_padding; %]px [% nl_content_divider_padding; %]px;" align="center" valign="top">[%- cms.region('name':'region-2'); -%]</td>
+        [% end; %]
+    </tr>
+    </table>
+[%- include 'newsletter.footer.inc.utl'; -%]

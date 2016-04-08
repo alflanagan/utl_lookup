@@ -212,7 +212,7 @@ class Package(models.Model):
             app = Application.objects.get(name=new_pkg.app)
         except Application.DoesNotExist:
             # much better error message than original
-            raise ImportError("Application type '{}' not found.".format(new_pkg.app))
+            raise UTLFileImportError("Application type '{}' not found.".format(new_pkg.app))
 
         directory = directory.relative_to(settings.TNPACKAGE_FILES_ROOT)
 

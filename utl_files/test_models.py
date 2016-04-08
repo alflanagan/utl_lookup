@@ -11,8 +11,7 @@ from django.db.utils import DataError
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
-from .models import Application, MacroDefinition, MacroRef, Package
-from .models import UTLFile
+from .models import Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError
 from papers.models import TownnewsSite, NewsPaper
 
 # pylint: disable=no-member,invalid-name
@@ -81,6 +80,8 @@ class PackageTestCase(TransactionTestCase):
     UNCERT_SITE = "omaha.com"
     UNCERT_DIR = "omaha.com/skins/custom-newsletter-antwort-columns_0.15"
 
+    ERROR_PKG_DIR = "dothaneagle.com/skins/editorial/custom-newsletter-2_1.9.11"
+
     @staticmethod
     def _find_or_create(model_class, *_, **kwargs):
         """Attempt to use `kwargs` to retrieve an object from `model_class`. If object does not
@@ -99,6 +100,7 @@ class PackageTestCase(TransactionTestCase):
         """Create a package object for tests."""
         # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
         # into errors by default.
+        self._find_or_create(Application, name='editorial')
         simplefilter('error')
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.save()
@@ -222,9 +224,6 @@ class PackageTestCase(TransactionTestCase):
 
     def test_load_from_certified(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""
-        editorial = Application(name='editorial')
-        editorial.full_clean()
-        editorial.save()
         # TODO: capture warning message and verify
         simplefilter('ignore')
         try:
@@ -242,14 +241,25 @@ class PackageTestCase(TransactionTestCase):
         is non-certified, loads meta info.
 
         """
-        self._find_or_create(Application, name='editorial')
-
         # TODO: capture warning message and verify
         # simplefilter('ignore')
 
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
         the_pkg = Package.load_from(full_load_path, self.test_site2, Package.SKIN)
         self.assertEqual(the_pkg.name, self.UNCERT_PKG)
+
+    def test_load_from_failure(self):
+        """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)` error cases."""
+
+        the_site = self._find_or_create(TownnewsSite, URL='http://dothaneagle.com',
+                                        name='The Dothan Eagle', paper=self.paper2)
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.ERROR_PKG_DIR)
+        self.assertRaises(UserWarning, Package.load_from, full_load_path, the_site, Package.SKIN)
+        site_meta_file = Path(settings.TNPACKAGE_FILES_ROOT) / 'dothaneagle.com/site_meta.json'
+        Application.objects.get(name='editorial').delete()
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
+        self.assertRaises(UTLFileImportError, Package.load_from, full_load_path,
+                          self.test_site2, Package.SKIN)
 
 
 class UTLFileTestCase(TestCase):
