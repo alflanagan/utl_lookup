@@ -177,6 +177,8 @@ class PackageTestCase(TransactionTestCase):
                       app=app)
         self.assertRaises(DataError, pkg.save)
         self.assertRaises(ValidationError, pkg.full_clean)
+        self.assertRaises(ValidationError, pkg.full_clean, exclude=["is_certified"])
+        self.assertRaises(ValidationError, pkg.full_clean, exclude=["site"])
 
     def test_errors(self):
         """Unit tests for :py:class:`utl_files.models.Package` error cases."""
@@ -618,3 +620,55 @@ class MacroDefinitionTestCase(TestCase):
              'pkg_version': '1.45.1.0',
              'start': 0}, self.test_def.to_dict())
         self.assertIn('id', self.test_def.to_dict())
+
+
+class MacroRefTestCase(TestCase):
+    """Unit tests for :py:class:`utl_files.models.MacroRef`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.app = Application.objects.get(name='editorial')
+        cls.app.save()
+        cls.pkg = Package(
+            name="skin-editorial-core-base",
+            version="1.45.1.0",
+            is_certified=True,
+            app=cls.app,
+            pkg_type=Package.SKIN,
+            disk_directory='utl_files/test_data/certified/skins/skin-editorial-core-base')
+        cls.pkg.full_clean()
+        cls.pkg.save()
+        cls.utl_file = UTLFile(file_path='includes/header.inc.utl', pkg=cls.pkg)
+        cls.utl_file.full_clean()
+        cls.utl_file.save()
+        cls.test_ref = MacroRef(source=cls.utl_file,
+                                start=2344,
+                                line=123,
+                                text='my-bogus-macro(bogus1, "some text", 7)',
+                                macro_name='my-bogus-macro')
+        cls.test_ref.full_clean()
+        cls.test_ref.save()
+
+    def test_create(self):
+        """Unit test of :py:meth:`utl_files.models.MacroRef`."""
+        test_ref = MacroRef.objects.get(source=self.utl_file,
+                                        start=2344,
+                                        macro_name='my-bogus-macro')
+        self.assertEqual(test_ref.line, 123)
+        self.assertEqual(test_ref.text, 'my-bogus-macro(bogus1, "some text", 7)')
+
+    def test_str(self):
+        """Unit test of :py:meth:`utl_files.models.MacroRef.__str__`."""
+        expected = '{}:{} - {}'.format(self.test_ref.line, self.test_ref.start, self.test_ref.text)
+        self.assertEqual(str(self.test_ref), expected)
+
+    def test_to_dict(self):
+        """Unit test of :py:meth:`utl_files.models.MacroRef.to_dict`."""
+        self.assertDictContainsSubset(
+            {"pkg": self.test_ref.source.pkg.name,
+             "pkg_version": self.test_ref.source.pkg.version,
+             "file": self.test_ref.source.file_path,
+             "line": self.test_ref.line,
+             "text": self.test_ref.text,
+             "name": self.test_ref.macro_name}, self.test_ref.to_dict())
+        self.assertIn('id', self.test_ref.to_dict())
