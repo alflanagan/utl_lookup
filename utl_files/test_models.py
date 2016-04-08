@@ -11,7 +11,8 @@ from django.db.utils import DataError
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
-from .models import Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError, PackageError, PackageProp
+from .models import (Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError,
+                     PackageError, PackageProp, PackageDep)
 from papers.models import TownnewsSite, NewsPaper
 
 # pylint: disable=no-member,invalid-name
@@ -83,7 +84,7 @@ class PackageTestCase(TransactionTestCase):
     ERROR_PKG_DIR = "dothaneagle.com/skins/editorial/custom-newsletter-2_1.9.11"
 
     @staticmethod
-    def _find_or_create(model_class, *_, **kwargs):
+    def find_record_or_create(model_class, *_, **kwargs):
         """Attempt to use `kwargs` to retrieve an object from `model_class`. If object does not
         exist, attempt to create it, again using values in `kwargs`.
 
@@ -98,23 +99,23 @@ class PackageTestCase(TransactionTestCase):
 
     def setUp(self):
         """Create a package object for tests."""
-        self._find_or_create(Application, name='editorial')
+        self.find_record_or_create(Application, name='editorial')
         # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
         # into errors by default.
         simplefilter('error')
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.save()
 
-        self.paper = self._find_or_create(NewsPaper, name='Richmond Times-Dispatch')
-        self.paper2 = self._find_or_create(NewsPaper, name='Omaha World-Herald')
-        self.test_site = self._find_or_create(TownnewsSite,
-                                              URL='http://richmond.com',
-                                              name='RTD',
-                                              paper=self.paper)
-        self.test_site2 = self._find_or_create(TownnewsSite,
-                                               URL='http://omaha.com',
-                                               name='omaha.com',
-                                               paper=self.paper2)
+        self.paper = self.find_record_or_create(NewsPaper, name='Richmond Times-Dispatch')
+        self.paper2 = self.find_record_or_create(NewsPaper, name='Omaha World-Herald')
+        self.test_site = self.find_record_or_create(TownnewsSite,
+                                                    URL='http://richmond.com',
+                                                    name='RTD',
+                                                    paper=self.paper)
+        self.test_site2 = self.find_record_or_create(TownnewsSite,
+                                                     URL='http://omaha.com',
+                                                     name='omaha.com',
+                                                     paper=self.paper2)
         pkg = Package(name=self.TEST_NAME,
                       version=self.TEST_VERSION,
                       is_certified=True,
@@ -251,10 +252,10 @@ class PackageTestCase(TransactionTestCase):
     def test_load_from_failure(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)` error cases."""
 
-        the_site = self._find_or_create(TownnewsSite,
-                                        URL='http://dothaneagle.com',
-                                        name='The Dothan Eagle',
-                                        paper=self.paper2)
+        the_site = self.find_record_or_create(TownnewsSite,
+                                              URL='http://dothaneagle.com',
+                                              name='The Dothan Eagle',
+                                              paper=self.paper2)
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.ERROR_PKG_DIR)
         self.assertRaises(UserWarning, Package.load_from, full_load_path, the_site, Package.SKIN)
         site_meta_file = Path(settings.TNPACKAGE_FILES_ROOT) / 'dothaneagle.com/site_meta.json'
@@ -371,16 +372,16 @@ class UTLFileTestCase(TestCase):
 class PackagePropTestCase(TestCase):
     """Unit tests for :py:class:`uti_files.models.PackageProp`."""
 
-    # pylint:disable=W0201,W0212
+    # pylint:disable=W0201
     @classmethod
     def setUpTestData(cls):
         """Create a package object for tests."""
-        cls.test_app = PackageTestCase._find_or_create(Application, name='editorial')
-        paper = PackageTestCase._find_or_create(NewsPaper, name='Richmond Times-Dispatch')
-        test_site = PackageTestCase._find_or_create(TownnewsSite,
-                                                    URL='http://richmond.com',
-                                                    name='RTD',
-                                                    paper=paper)
+        cls.test_app = PackageTestCase.find_record_or_create(Application, name='editorial')
+        paper = PackageTestCase.find_record_or_create(NewsPaper, name='Richmond Times-Dispatch')
+        test_site = PackageTestCase.find_record_or_create(TownnewsSite,
+                                                          URL='http://richmond.com',
+                                                          name='RTD',
+                                                          paper=paper)
         cls.test_pkg = Package(name='some-totally-bogus-pkg',
                                version='1.0',
                                is_certified=True,
@@ -419,3 +420,131 @@ class PackagePropTestCase(TestCase):
             self.assertIn("id", new_prop.to_dict())
         finally:
             new_prop.delete()  # clean up for other tests
+
+
+class PackageDepTestCase(TestCase):
+    """Unit tests for :py:class:`utl_files.models.PackageDep`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        """Create required objects"""
+        cls.test_app = PackageTestCase.find_record_or_create(Application, name='editorial')
+        cls.test_pkg = Package(name='some-totally-bogus-pkg',
+                               version='1.0',
+                               is_certified=True,
+                               app=cls.test_app,
+                               last_download="2015-05-01 13:00:00Z",
+                               disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                               "some_totally_bogus_package"),
+                               site=None,
+                               pkg_type=Package.SKIN)
+        cls.test_pkg.full_clean()
+        cls.test_pkg.save()
+        cls.test_dep = Package(name='incredibly-important-library',
+                               version='3.15',
+                               is_certified=True,
+                               app=cls.test_app,
+                               last_download="2014-02-01 13:00:00Z",
+                               disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                               "incredibly-important-library"),
+                               site=None,
+                               pkg_type=Package.SKIN)
+        cls.test_dep.full_clean()
+        cls.test_dep.save()
+
+    def test_create(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageDep`."""
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='incredibly-important-library',
+                             dep_pkg=self.test_dep,
+                             dep_version='3.15')
+        new_dep.full_clean()
+        new_dep.save()
+        self.assertGreater(PackageDep.objects.count(), 0)
+        renew_dep = PackageDep.objects.get(pkg=self.test_pkg, dep_pkg=self.test_dep)
+        self.assertIsNotNone(renew_dep)
+        self.assertEqual(renew_dep.pkg.id, self.test_pkg.id)
+        self.assertEqual(renew_dep.dep_pkg.id, self.test_dep.id)
+        self.assertEqual(renew_dep.dep_name, 'incredibly-important-library')
+        self.assertEqual(renew_dep.dep_version, '3.15')
+
+    def test_dupes(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageDep.full_clean` with duplicate data.
+
+        """
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='incredibly-important-library',
+                             dep_pkg=self.test_dep,
+                             dep_version='3.15')
+        new_dep.full_clean()
+        new_dep.save()
+        new_dep2 = PackageDep(pkg=self.test_pkg, dep_name='', dep_pkg=self.test_dep, dep_version='')
+        self.assertRaises(ValidationError, new_dep2.full_clean)
+        new_dep3 = PackageDep(pkg=self.test_pkg,
+                              dep_name='incredibly-important-library',
+                              dep_pkg=None,
+                              dep_version='3.15')
+        self.assertRaises(ValidationError, new_dep3.full_clean)
+
+    def test_to_dict(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageDep.to_dict`."""
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='incredibly-important-library',
+                             dep_pkg=self.test_dep,
+                             dep_version='3.15')
+        new_dep.full_clean()
+        new_dep.save()
+        self.assertDictContainsSubset({"name": self.test_pkg.name,
+                                       "version": self.test_pkg.version,
+                                       "dep_name": self.test_dep.name,
+                                       "dep_version": self.test_dep.version, },
+                                      new_dep.to_dict())
+        self.assertIn("id", new_dep.to_dict())
+
+    def test_str(self):
+        """Unit tests for :py:meth:`utl_files.models.PackageDep.__str__`."""
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='incredibly-important-library',
+                             dep_pkg=None,
+                             dep_version='3.15')
+        new_dep.full_clean()
+        self.assertEqual(str(new_dep),
+                         '{}/{}/{} depends on {} ({})'.format(self.test_pkg.app,
+                                                              self.test_pkg.name,
+                                                              self.test_pkg.version,
+                                                              new_dep.dep_name,
+                                                              new_dep.dep_version))
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='',
+                             dep_pkg=self.test_dep,
+                             dep_version='')
+        new_dep.full_clean()
+        self.assertEqual(str(new_dep),
+                         '{}/{}/{} depends on {} ({})'.format(self.test_pkg.app,
+                                                              self.test_pkg.name,
+                                                              self.test_pkg.version,
+                                                              self.test_dep.name,
+                                                              self.test_dep.version))
+
+    def test_check_for_deps(self):
+        """Unit test for :py:meth:`utl_files.models.PackageDep.check_for_deps`."""
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name=self.test_dep.name,
+                             dep_pkg=None,
+                             dep_version=self.test_dep.version)
+        new_dep.full_clean()
+        new_dep.save()
+        self.assertFalse(PackageDep.objects.filter(pkg=self.test_pkg,
+                                                   dep_pkg=self.test_dep).exists())
+        new_dep.check_for_deps()
+        self.assertTrue(PackageDep.objects.filter(pkg=self.test_pkg,
+                                                  dep_pkg=self.test_dep).exists())
+        # add a dep that doesn't match any  package
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='does-not-exist',
+                             dep_pkg=None,
+                             dep_version='1.0')
+        new_dep.full_clean()
+        new_dep.save()
+        # all we really require here is that no exception is thrown
+        new_dep.check_for_deps()

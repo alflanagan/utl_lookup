@@ -1,7 +1,6 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
 
 import os
-import json
 import time
 from pathlib import Path
 from warnings import warn
@@ -276,19 +275,18 @@ class PackageDep(models.Model):
                             help_text="The package which has this dependency",
                             on_delete=models.CASCADE)
     dep_name = models.CharField(max_length=200,
-                                blank=False,
+                                blank=True,
                                 help_text="The name of the required package")
     dep_pkg = models.ForeignKey(Package, null=True,  # may be Null if package not in db.
+                                blank=True,
                                 related_name="dep_pkg",
                                 help_text="The full data on the required package (opt.)",
                                 on_delete=models.CASCADE)
     dep_version = models.CharField(max_length=50,
-                                   blank=False,
+                                   blank=True,
                                    help_text="The specific version required.")
 
     class Meta:  # pylint: disable=missing-docstring
-        # one version of a package is dependent on at most one version of another package
-        unique_together = ("pkg", "dep_name")
         verbose_name = "package dependency"
         verbose_name_plural = "package dependencies"
 
@@ -301,7 +299,11 @@ class PackageDep(models.Model):
                 "dep_version": self.dep_version}
 
     def __str__(self):
-        return "{} depends on {} ({})".format(self.pkg, self.dep_name, self.dep_version)
+        str_fmt = "{} depends on {} ({})"
+        if self.dep_pkg:
+            return str_fmt.format(self.pkg, self.dep_pkg.name, self.dep_pkg.version)
+        else:
+            return str_fmt.format(self.pkg, self.dep_name, self.dep_version)
 
     def check_for_deps(self):
         """Looks for dependencies which don't have pointer to Package table. For each, checks
@@ -309,14 +311,34 @@ class PackageDep(models.Model):
 
         """
         for dep in PackageDep.objects.filter(dep_pkg=None):
-            # only look for certified packages for now. Handling of custom packages needs to be
-            # redone (FIXME).
-            dep_pkg = Package.objects.filter(name=self.dep_name,
-                                             version=self.dep_version,
-                                             is_certified=True)
-            if dep_pkg:
-                dep.dep_pkg = dep_pkg
-                dep.save()
+            try:
+                dep_pkg = Package.objects.get(name=dep.dep_name,
+                                              version=dep.dep_version,
+                                              is_certified=True)
+            except Package.DoesNotExist:
+                continue
+            dep.dep_pkg = dep_pkg
+            dep.save()
+
+    # override
+    def validate_unique(self, exclude=None):
+        """Verifies uniqueness constraint on the record. Either the combination (pkg, dep_pkg)
+        is unique, or the combination (pkg, dep_name, dep_version) is unique.
+
+        This allows us to specify a dependency on a package not present in the database.
+
+        """
+        super().validate_unique(exclude)
+        if self.dep_pkg is not None:
+            if PackageDep.objects.filter(pkg=self.pkg, dep_pkg=self.dep_pkg).exists():
+                raise ValidationError("PackageDep object with duplicate (pkg, dep_pkg) combination"
+                                      " (dep_pkg not null)")
+        else:
+            if PackageDep.objects.filter(pkg=self.pkg,
+                                         dep_name=self.dep_name,
+                                         dep_version=self.dep_version).exists():
+                raise ValidationError("PackageDep object with duplicate (pkg, dep_name, "
+                                      "dep_version) combination (dep_pkg is null)")
 
 
 class UTLFile(models.Model):
