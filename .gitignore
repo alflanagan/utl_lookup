@@ -11,3 +11,4 @@ data/
 parse_file.py
 # static files collection directory
 /static/
+*_wsgi.sh
