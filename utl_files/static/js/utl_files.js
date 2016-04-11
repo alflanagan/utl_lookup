@@ -32,6 +32,8 @@ $(function() {
     };
 
 
+    $("#tree-view").jstree();
+
     /**
      * Enable a control if there is data in an array, disable otherwise.
      *
@@ -81,7 +83,9 @@ $(function() {
         the_label.innerText = the_site;
 
         $("#id_global_skin li").detach();
+        $("#id_global_skin_label").html("Global Skin<span class=\"caret\">");
         $("#id_app_skin li").detach();
+        $("#id_app_skin_label").html("App Skin<span class=\"caret\">");
 
         $.getJSON("api/global_skins_for_site/" + the_site + "/").done(
             function(data) {
