@@ -107,7 +107,11 @@ def api_global_skins_for_site(_, site_url):
     :py:class:`TownnewsSite` record whose URL == `site_url`.
 
     """
-    site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
+    # "certified" will return 0 skins -- but don't trigger Site Not Found error
+    if site_url == "certified":
+        site = get_object_or_404(TownnewsSite, URL="http://townnews.com")
+    else:
+        site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
     return [skin.name for skin in skins]
 

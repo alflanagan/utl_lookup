@@ -12,11 +12,11 @@
 import sys
 from copy import deepcopy
 import json
-from io import TextIOWrapper, StringIO
+from io import StringIO
+from wsgiref.util import FileWrapper
 
 from django.test import TestCase
 from django.core.handlers.wsgi import WSGIRequest
-from wsgiref.util import FileWrapper
 
 from utl_files import views
 from utl_files.models import Application, Package, UTLFile
@@ -24,6 +24,7 @@ from papers.models import NewsPaper, TownnewsSite
 
 
 def make_wsgi_request(request_text):
+    """Create a :py:class:`WSGIRequest` instance for the query GET ``request_text``."""
     the_input = StringIO()
     environ = {'wsgi.file_wrapper': FileWrapper,
                'SERVER_SOFTWARE': 'WSGIServer/0.2',
@@ -46,7 +47,8 @@ def make_wsgi_request(request_text):
                'REMOTE_ADDR': '127.0.0.1',
                'RUN_MAIN': 'true',
                'wsgi.url_scheme': 'http',
-               'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0',
+               'HTTP_USER_AGENT': ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:45.0) '
+                                   'Gecko/20100101 Firefox/45.0'),
                'CONTENT_LENGTH': '',
                'SERVER_PROTOCOL': 'HTTP/1.1',
                'PYTHONIOENCODING': 'UTF-8',
@@ -165,8 +167,8 @@ class api_files_for_custom_pkgTestCase(TestCase):
         request = None
 
         for record in self.TEST_PACKAGES:
-            response = views.api_files_for_custom_pkg(request, record["site"].replace('http://', ''),
-                                                      record["name"], record["last_download"])
+            response = views.api_files_for_custom_pkg(request, record["site"].replace(
+                'http://', ''), record["name"], record["last_download"])
         json_out = response.getvalue().decode('utf-8')
         file_list = json.loads(json_out)
         self.assertSetEqual(set(self.TEST_FILES), set(file_list))
@@ -247,9 +249,8 @@ class homeTestCase(TestCase):
         for pkg in Package.objects.all():
             active_sites.add(pkg.site.domain)
         for tnsite in TownnewsSite.objects.all():
-            if tnsite.domain in active_sites:
-                self.assertIn('<li value="{0}">{0}</li>'.format(tnsite.domain),
-                              result)
+            if tnsite.domain in active_sites or tnsite.domain == 'certified':
+                self.assertIn('<li value="{0}">{0}</li>'.format(tnsite.domain), result)
             else:
                 self.assertNotIn(tnsite.domain, result)
 
@@ -325,9 +326,8 @@ class searchTestCase(TestCase):
         result = response.content.decode('utf-8')
         # TODO: will probably get better results if we actually load some macros
 
-
-# Local Variables:
-# python-indent-offset: 4
-# fill-column: 100
-# indent-tabs-mode: nil
-# End:
+        # Local Variables:
+        # python-indent-offset: 4
+        # fill-column: 100
+        # indent-tabs-mode: nil
+        # End:
