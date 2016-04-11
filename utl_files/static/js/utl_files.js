@@ -6,8 +6,14 @@
  *
  */
 
+/* jshint 
+      esversion: 6, unused: true, curly: true, eqeqeq: true, forin: true, noarg: true,
+      nocomma: true, strict: true, undef: true, varstmt: true, jquery: true, devel: true,
+      asi: true
+*/
 
 $(function() {
+    "use strict";
 
     /**
      * Click event handler for global_skin selection control.
@@ -15,8 +21,8 @@ $(function() {
      * @param {Object} evt The object describing the event which we
      * are responding to.
      */
-    var global_skin_onclick = function(evt) {
-        var new_text = evt.target.textContent;
+    const global_skin_onclick = function(evt) {
+        const new_text = evt.target.textContent;
         $("#id_global_skin_label").prop("innerText", new_text);
     };
 
@@ -26,8 +32,8 @@ $(function() {
      * @param {Object} evt The object describing the event which we
      * are responding to.
      */
-    var app_skin_onclick = function(evt) {
-        var new_text = evt.target.textContent;
+    const app_skin_onclick = function(evt) {
+        const new_text = evt.target.textContent;
         $("#id_app_skin_label").prop("innerText", new_text);
     };
 
@@ -41,7 +47,7 @@ $(function() {
      * @param {Object} control The control(s) to be enabled, a JQuery
      * selector.
      */
-    var enable_if_data = function(data, control) {
+    let enable_if_data = function(data, control) {
         if (data.length > 0) {
             control.removeAttr("disabled");
         } else {
@@ -57,19 +63,21 @@ $(function() {
      *
      * @param {Array} data The content to be assigned for each <li>.
      * @param {Object} parent The element(s) to which tags will be
-     * added, a Jquery selector.
+     *     added, a Jquery selector.
      * @param {function} click_handler Optional handler for the
-     * created elements' onclick event.
+     *     created elements' onclick event.
      */
-    var add_li_from_data = function(data, parent, click_handler) {
+    const add_li_from_data = function(data, parent, click_handler) {
         data.forEach(function(datum) {
-            var new_elem;
-            new_elem = $('<li>' + datum + '</li>');
-            if (click_handler != undefined) {
+            const new_elem = $('<li>' + datum + '</li>');
+            if (click_handler !== undefined) {
                 new_elem.on("click", click_handler);
             };
             parent.append(new_elem);
         });
+        if (data.length === 1) {
+            parent.children("li").click();
+        }
     };
 
     // note our dropdown menus have form
@@ -77,8 +85,8 @@ $(function() {
     //    <button id="id_MODEL_label"></button>
     //    <ul id="id_MODEL">...
     $("#id_site li").on("click", function(evt) {
-        var the_site = evt.target.textContent;
-        var the_label = $("#id_site_label")[0];
+        const the_site = evt.target.textContent,
+            the_label = $("#id_site_label")[0];
 
         the_label.innerText = the_site;
 
@@ -94,9 +102,10 @@ $(function() {
             }
         ).fail(function() {
             console.log("ERROR in api call to global_skins_for_site.");
-            for (var i = 0; i < arguments.length; i++) {
-                console.log(arguments[i]);
-            }
+            arguments.forEach(
+                function(arg) {
+                    console.log(arg)
+                })
         });
 
         $.getJSON("api/app_skins_for_site/" + the_site + "/").done(
@@ -106,7 +115,7 @@ $(function() {
             }
         ).fail(function() {
             console.log("ERROR in api call to app_skins_for_site.");
-            for (var i = 0; i < arguments.length; i++) {
+            for (let i = 0; i < arguments.length; i++) {
                 console.log(arguments[i]);
             }
         });
