@@ -23,7 +23,13 @@ class TownnewsSite(models.Model):
 
     @property
     def domain(self):
-        """The URL without the 'http://' prefix, occasionally useful."""
+        """The URL without the 'http://' prefix, occasionally useful. (The dummy site for
+        certified packages will return 'certified')
+
+        """
+        # special case
+        if self.URL == "http://townnews.com":
+            return "certified"
         return self.URL.replace('http://', '')
 
 
