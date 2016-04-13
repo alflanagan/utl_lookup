@@ -160,7 +160,10 @@ class Package(models.Model):
                 "app": self.app,
                 "name": self.name,
                 "version": self.version,
-                "is_certified": "y" if self.is_certified else "n"}
+                "is_certified": "y" if self.is_certified else "n",
+                "downloaded": self.last_download,
+                "pkg_type": self.pkg_type,
+                "location": self.disk_directory,}
 
     # for now we're not using package/config.ini, but leaving this as I'm not sure we don't need
     # it
@@ -271,6 +274,9 @@ class PackageDep(models.Model):
     version.
 
     """
+    # Database best practice would probably be to have two tables, one relating two packages and
+    # the other relating a package to a name/version pair. Easier to get primary key right that
+    # way. But you'd have to check for duplication between tables.
     pkg = models.ForeignKey(Package,
                             help_text="The package which has this dependency",
                             on_delete=models.CASCADE)
@@ -503,3 +509,22 @@ class MacroRef(models.Model):
                 "line": self.line,
                 "text": self.text,
                 "name": self.macro_name}
+
+
+class CertifiedUsedBy(models.Model):
+    """Implements many-to-many relationship between certified packages and sites.
+
+    Could possibly use ManyToManyField, but I think it will need custom code.
+
+    """
+    package = models.ForeignKey(Package, models.CASCADE, null=False, blank=False)
+    site = models.ForeignKey(TownnewsSite, models.CASCADE, null=False, blank=False)
+    class Meta:
+        unique_together = ("package", "site")
+
+    #override
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude)
+        if "package" not in exclude:
+            if not self.package.is_certified:
+                raise ValidationError("Non-certified package is only related to one site")
