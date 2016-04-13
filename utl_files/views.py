@@ -122,7 +122,10 @@ def api_app_skins_for_site(_, site_url):
     :py:class:`TownnewsSite` record whose URL == `site_url`.
 
     """
-    site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
+    if site_url == "certified":
+        site = get_object_or_404(TownnewsSite, URL='http://townnews.com')
+    else:
+        site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.SKIN)
     skin_list = []
     for skin in skins:
