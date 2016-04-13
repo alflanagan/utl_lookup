@@ -2,10 +2,11 @@
 """Views of models in :py:mod:`utl_files`."""
 from urllib.parse import quote_plus
 
-from django.shortcuts import render, HttpResponse, get_object_or_404
+from django.shortcuts import render, get_object_or_404
+from django.http.response import Http404, HttpResponse
 from jsonview.decorators import json_view
 
-from .models import Package, UTLFile, MacroRef, MacroDefinition, Application
+from .models import Package, UTLFile, MacroRef, MacroDefinition, Application, CertifiedUsedBy
 from papers.models import TownnewsSite
 
 # pylint: disable=no-member
@@ -152,3 +153,55 @@ def api_files_for_custom_pkg(_, site_url, pkg_name, pkg_last_download):
     site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     pkg = Package.objects.get(site=site, name=pkg_name, last_download=pkg_last_download)
     return [f.file_path for f in UTLFile.objects.filter(pkg=pkg)]
+
+
+# pylint: disable=invalid-name
+@json_view
+def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_is_certified, skin_app,
+                                     skin_name, skin_version):
+    """Return a list of all the packages which apply to a page on a particular site, with a
+    particular global skin active, and a particular skin applied.
+
+    :param str site_domain: The site's domain (i.e. URL of front page with 'http://' removed)
+
+    :param str global_pkg_name: The name of the global skin active for the site.
+
+    :param str skin_is_certified: 'y' if the applied skin for the page is certfied; 'n' if not.
+
+    :param str skin_app: The application containing the skin.
+
+    :param str skin_name: The name of the skin in BLOX.
+
+    :param str skin_version: The version of the applied skin. If `skin_is_certified` is 'n',
+        this parameter is ignored, and the most recently download copy of the skin will be used.
+
+    """
+    the_site = get_object_or_404(TownnewsSite, URL='http://{}'.format(site_domain))
+    global_app = get_object_or_404(Application, name='global')
+    global_skins = Package.objects.filter(site=the_site, app=global_app, name=global_pkg_name)
+    if not global_skins.exists():
+        raise Http404("No global skin '{}' found for site '{}'".format(global_pkg_name,
+                                                                       the_site.URL))
+    # for now, just get most recent download
+    global_skin = global_skins.latest('last_download')
+    if skin_is_certified.startswith(('y', 'Y', )):
+        app_skin = get_object_or_404(Package,
+                                     name=skin_name,
+                                     version=skin_version,
+                                     is_certified=True)
+    else:
+        app_skins = Package.objects.filter(name=skin_name, site=the_site)
+        if not app_skins.exists():
+
+            raise Http404("Custom application skin '{}' not found for site '{}'"
+                          "".format(skin_name, the_site.URL))
+        app_skin = app_skins.latest('last_download')
+
+    matched_pkgs = [global_skin, app_skin]
+    for pkg in Package.objects.filter(site=the_site,
+                                      pkg_type__in=[Package.BLOCK, Package.COMPONENT]):
+        matched_pkgs.append(pkg)
+    for certif in CertifiedUsedBy.objects.filter(site=the_site):
+        matched_pkgs.append(certif.package)
+
+    return [pkg.to_dict() for pkg in matched_pkgs]

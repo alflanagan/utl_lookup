@@ -14,7 +14,9 @@ from copy import deepcopy
 import json
 from io import StringIO
 from wsgiref.util import FileWrapper
+from datetime import datetime
 
+import pytz
 from django.test import TestCase
 from django.core.handlers.wsgi import WSGIRequest
 
@@ -167,8 +169,9 @@ class api_files_for_custom_pkgTestCase(TestCase):
         request = None
 
         for record in self.TEST_PACKAGES:
-            response = views.api_files_for_custom_pkg(request, record["site"].replace(
-                'http://', ''), record["name"], record["last_download"])
+            response = views.api_files_for_custom_pkg(request, record["site"].replace('http://',
+                                                                                      ''),
+                                                      record["name"], record["last_download"])
         json_out = response.getvalue().decode('utf-8')
         file_list = json.loads(json_out)
         self.assertSetEqual(set(self.TEST_FILES), set(file_list))
@@ -325,6 +328,73 @@ class searchTestCase(TestCase):
         response = views.search(request, 'some-macro-name')
         result = response.content.decode('utf-8')
         # TODO: will probably get better results if we actually load some macros
+
+
+class api_packages_for_site_with_skinsTestCase(TestCase):
+    """Unit tests for function :py:func:`~utl_files.views.api_packages_for_site_with_skins`."""
+    GSKIN_NAME = "global-richmond-portal_temp"
+    ASKIN_NAME = "awesome-custom-skin"
+    ASKIN_VER = "1.3.4"
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.app, _ = Application.objects.get_or_create(name="editorial")
+        cls.gl_app, _ = Application.objects.get_or_create(name="global")
+        cls.paper, _ = NewsPaper.objects.get_or_create(name='Richmond Times-Dispatch')
+        cls.tn_site, _ = TownnewsSite.objects.get_or_create(URL='http://richmond.com',
+                                                            name='RTD',
+                                                            paper=cls.paper)
+        cls.global_skin, _ = Package.objects.get_or_create(
+            name=cls.GSKIN_NAME,
+            version="",
+            is_certified=False,
+            app=cls.gl_app,
+            last_download=datetime(1923, 3, 12, 10, 23, 0, tzinfo=pytz.utc),  # yapf: disable
+            disk_directory="/my/stuff/richmond.com/global_skins/{}".format(cls.GSKIN_NAME),
+            site=cls.tn_site,
+            pkg_type=Package.GLOBAL_SKIN)
+        cls.app_skin, _ = Package.objects.get_or_create(
+            name=cls.ASKIN_NAME,
+            version=cls.ASKIN_VER,
+            is_certified=False,
+            app=cls.app,
+            last_download=datetime(1950, 1, 23, 16, 12, 38, tzinfo=pytz.utc),  # yapf: disable
+            disk_directory="/my/stuff/richmond.com/skins/editorial/awesome-custom-skin_1.3.4/",
+            site=cls.tn_site,
+            pkg_type=Package.SKIN)
+
+    def test_create(self):
+        """Unit test for :py:meth:`utl_files.views.api_packages_for_site_with_skins`."""
+        request = make_wsgi_request("files/api_packages_for_site_with_skins/{}/{}/N/{}/{}/{}/"
+                                    "".format(self.tn_site.domain, self.GSKIN_NAME, self.app.name,
+                                              self.ASKIN_NAME, self.ASKIN_VER))
+        response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                          self.GSKIN_NAME, "N", self.app.name,
+                                                          self.ASKIN_NAME, self.ASKIN_VER)
+        actual = json.loads(response.getvalue().decode('utf-8'))
+
+        expected_all = {"global-richmond-portal_temp":
+                        {"is_certified": "n",
+                         "version": "",
+                         "downloaded": "1923-03-12T10:23:00Z",
+                         "name": "global-richmond-portal_temp",
+                         "app": "global",
+                         "location":
+                         "/my/stuff/richmond.com/global_skins/global-richmond-portal_temp",
+                         "pkg_type": "g", },
+                        "awesome-custom-skin":
+                        {"is_certified": "n",
+                         "version": "1.3.4",
+                         "downloaded": "1950-01-23T16:12:38Z",
+                         "name": "awesome-custom-skin",
+                         "app": "editorial",
+                         "location":
+                         "/my/stuff/richmond.com/skins/editorial/awesome-custom-skin_1.3.4/",
+                         "pkg_type": "s", }}
+        self.assertEqual(len(actual), len(expected_all))
+        for pkg_dict in actual:
+            expected = expected_all[pkg_dict["name"]]
+            self.assertDictContainsSubset(expected, pkg_dict)
 
         # Local Variables:
         # python-indent-offset: 4
