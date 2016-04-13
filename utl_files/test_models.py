@@ -220,12 +220,16 @@ class PackageTestCase(TransactionTestCase):
         for pkg in Package.objects.all():
             pkgdict = pkg.to_dict()
             self.assertSetEqual(
-                set(pkgdict.keys()), set(["id", "app", "name", "version", "is_certified"]))
+                set(pkgdict.keys()), set(["id", "app", "name", "version", "is_certified",
+                                          "downloaded", "pkg_type", "location"]))
             self.assertEqual(pkgdict["id"], pkg.id)
-            self.assertEqual(pkgdict["app"], pkg.app)
+            self.assertEqual(pkgdict["app"], pkg.app.name)
             self.assertEqual(pkgdict["name"], pkg.name)
             self.assertEqual(pkgdict["version"], pkg.version)
             self.assertEqual(pkgdict["is_certified"], 'y' if pkg.is_certified else 'n')
+            self.assertEqual(pkgdict["downloaded"], pkg.last_download)
+            self.assertEqual(pkgdict["pkg_type"], pkg.pkg_type),
+            self.assertEqual(pkgdict["location"], pkg.disk_directory)
 
     def test_load_from_certified(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""

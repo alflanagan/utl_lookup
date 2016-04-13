@@ -87,6 +87,7 @@ class Package(models.Model):
     app = models.ForeignKey(Application,
                             on_delete=models.CASCADE,
                             help_text="The application to which this package belongs",
+                            blank=True,
                             null=True)
     last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.",
                                          null=True,
@@ -157,13 +158,13 @@ class Package(models.Model):
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
         return {"id": self.pk,
-                "app": self.app,
+                "app": self.app.name,
                 "name": self.name,
                 "version": self.version,
                 "is_certified": "y" if self.is_certified else "n",
                 "downloaded": self.last_download,
                 "pkg_type": self.pkg_type,
-                "location": self.disk_directory,}
+                "location": self.disk_directory, }
 
     # for now we're not using package/config.ini, but leaving this as I'm not sure we don't need
     # it
@@ -519,6 +520,7 @@ class CertifiedUsedBy(models.Model):
     """
     package = models.ForeignKey(Package, models.CASCADE, null=False, blank=False)
     site = models.ForeignKey(TownnewsSite, models.CASCADE, null=False, blank=False)
+
     class Meta:
         unique_together = ("package", "site")
 
