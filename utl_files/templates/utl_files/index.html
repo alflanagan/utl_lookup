@@ -3,15 +3,19 @@
 {% load bootstrap3 %}
 
 {% block page_css %}
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jstree/3.0.9/themes/default/style.min.css" />
+{% comment %}Note that jstree dark theme fails completely (?!?!) {% endcomment %}
+<link rel="stylesheet" href="{% static 'styles/jstree/style.min.css' %}" />
 {% endblock %}
 
 {% block page_body %}
 <div class="row center-block">
   <div id="search-bar">
-{% comment %} after a LOT of work, I've concluded it is easier to describe the form manually here than
- it is to create custom forms, fields, widgets, templates, etc. for bootstrap 3 (which even
- crispy forms does not seem to handle as well as it should). {% endcomment %}
+    {% comment %}
+        after a LOT of work, I've concluded it is easier to describe
+        the form manually here than it is to create custom forms,
+        fields, widgets, templates, etc. for bootstrap 3 (which even
+        crispy forms does not seem to handle as well as it should).
+    {% endcomment %}
  {% autoescape on %}
   <form class="form-inline" id="package-context-form" role="search">
 
@@ -20,7 +24,7 @@
               aria-expanded="false">
         Site<span class="caret"></span>
       </button>
-      <ul id="id_site" class="dropdown-menu" aria_labelledby="site_label">
+      <ul id="id_site" class="dropdown-menu" aria_labelledby="id_site_label">
       {% for site in active_sites %}
         <li value="{{ site }}">{{ site }}</li>
       {% endfor %}
@@ -34,7 +38,7 @@
         aria-expanded="false" disabled="true">
         Global Skin<span class="caret"></span>
       </button>
-      <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="global_skin_label">
+      <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="id_global_skin_label">
       </ul>
     </div>
 
@@ -42,7 +46,7 @@
       <button id="id_app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
       aria-expanded="false" disabled="true">App Skin<span class="caret"></span>
       </button>
-      <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="app_skin_label">
+      <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="id_app_skin_label">
       </ul>
     </div>
 
@@ -55,12 +59,14 @@
   </div>
   <div id="tree-view" class="panel-body">
     <ul class="list-group">
-    <li class="list-group-item">Site Templates
-      <ul class="list-group">
-        <li class="list-group-item">Global Skin</li>
-        <li class="list-group-item">Skins</li>
-      </ul></li>
-      <li class="list-group-item">Flex</li>
+    <li class="list-group-item">Packages
+      <ul class="list-group" id="packages_list">
+        <li class="list-group-item" id="pkgs_global_list">Global</li>
+        <li class="list-group-item" id="pkgs_skin_list">Skin</li>
+        <li class="list-group-item" id="pkgs_blocks_list">Blocks</li>
+        <li class="list-group-item" id="pkgs_components_list">Components</li>
+      </ul>
+    </li>
   </ul>
     </div>
   </div>
@@ -82,6 +88,6 @@
 {% endblock %}
 
 {% block javascript_libraries %}
-<script src="//cdnjs.cloudflare.com/ajax/libs/jstree/3.0.9/jstree.min.js"></script>
+<script src="{% static 'js/jstree.js' %}"></script>
 <script src="{% static 'js/utl_files.js' %}"></script>
 {% endblock %}
