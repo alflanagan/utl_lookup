@@ -46,4 +46,10 @@ urlpatterns = [
 
     url(r'api/app_skins_for_site/([^/]+)/', views.api_app_skins_for_site,
         name="api_app_skins_for_site"),
+
+    #api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name):
+    url(r'api/packages_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
+        views.api_packages_for_site_with_skins,
+        name = "api_packages_for_site_with_skins"),
+
 ]  # yapf: disable
