@@ -1,8 +1,1 @@
-.btn-pick-one {
-  background: light-grey;
-}
-#tree-panel,
-#tab-panel {
-  padding-right: 0;
-  padding-left: 0;
-}
+.btn-pick-one{background:light-grey}#tab-panel,#tree-panel{padding-right:0;padding-left:0}li.jstree-node{overflow:hidden;font-size:.9em}/*# sourceMappingURL=site.css.map */
