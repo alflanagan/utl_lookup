@@ -6,7 +6,7 @@
  *
  */
 
-/* jshint 
+/* jshint
       esversion: 6, unused: true, curly: true, eqeqeq: true, forin: true, noarg: true,
       nocomma: true, strict: true, undef: true, varstmt: true, jquery: true, devel: true,
       asi: true
@@ -56,7 +56,10 @@ $(function () {
             }
             this.onclick = onclick.bind(this)
 
-            /** 
+            // ensure existing list items have click handler
+            $(ul_id + " li").on("click", this.onclick)
+
+            /**
              * @return {String} The text of the currently selected item
              */
             this.text = () => $(this.label_id).prop("innerText")
@@ -69,23 +72,24 @@ $(function () {
              * @param {Array} data A list of items to be added.
              */
             this.add_li_from_data = data => {
-                    this.picked = false
+                    // if only 0 or 1 option, allow tree fill
+                    this.picked = (data.length < 2)
                     data.forEach(
-                            function (datum) {
-                                const new_elem = $('<li>' + datum + '</li>')
-                                new_elem.on("click", this.onclick)
-                                $(this.ul_id).append(new_elem)
-                            })
-                        // don't force user to select from a set of one
-                    if (data.length === 1) {
-                        $(this.ul_id).children("li").click()
-                        this.picked = true
-                    }
-                    if (data.length === 0) {
+                        datum => {
+                            const new_elem = $('<li>' + datum + '</li>')
+                            new_elem.on("click", this.onclick)
+                            $(this.ul_id).append(new_elem)
+                        })
+                    switch (data.length) {
+                    case 0:
                         $(this.label_id).attr("disabled", "")
-                            // if we are empty, don't block filling tree
-                        this.picked = true
-                    } else {
+                        break;
+                    case 1:
+                        $(this.label_id).attr("disabled", "")
+                        // automatically select for user
+                        $(this.ul_id).children("li").click()
+                        break;
+                    default:
                         $(this.label_id).removeAttr("disabled")
                     }
                 } //add_li_from_data
@@ -96,47 +100,92 @@ $(function () {
             this.reset = () => {
                 $(this.ul_id + " li").detach()
                 $(this.label_id).html(this.label_text + "<span class=\"caret\">")
-                $(this.label_id).attr("disabled", "")
+                $(this.label_id).attr("disabled", "true")
                 this.picked = false
             }
+
+            /**
+             * Call an API function, and fill the drop-down from the
+             * results.
+             *
+             * @param {String} api_name The API name (the fixed part of the
+             * URL that follows 'api/')
+             *
+             * @param {String} site_name The name of the site selected
+             *
+             */
+            this.fill_from_api = (api_name, site_name) => {
+                    this.reset()
+                    $.getJSON("api/" + api_name + "/" + site_name + "/")
+                        .done(data => {
+                            // console.log(data)
+                            this.add_li_from_data(data)
+                        })
+                        .fail(() => {
+                            console.log("ERROR in api call to " + api_name + "/" + site_name + ".")
+                            arguments.forEach(
+                                function (arg) {
+                                    console.log(arg)
+                                })
+                        })
+                } // fill_from_api()
 
             return this;
 
         } // DropDownControl
 
+    /**
+     * An object that represents child node in the Tree
+     * View. Depending on the selections made in the search area, a
+     * child node may have children which are the names of packages.
+     *
+     */
+    const TreeViewPackageList = function (list_id) {
+            this.list_id = list_id;
+
+            /**
+             * Reset tree control by deleting child nodes.
+             */
+            this.reset = () => {
+                    let jst = $(TREE_VIEW).jstree();
+                    while (jst.get_node(this.list_id).children.length > 0) {
+                        jst.get_node(this.list_id).children.forEach(kid_id => {
+                            jst.delete_node(kid_id);
+                        })
+                    }
+                } // reset()
+
+            /**
+             * Add a package to the tree view.
+             *
+             * @param {Object} A package data object from the JSON return from API
+             */
+            this.add_pkg = (pkg) => {
+                $(TREE_VIEW).jstree().create_node(this.list_id, pkg.name)
+            }
+
+        } // TreeViewPackageList
+
     let site_control = new DropDownControl("#id_site", "#id_site_label", "Site"),
         global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin"),
         skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin");
 
+    let global_node = new TreeViewPackageList(GLOBAL_LIST),
+        skin_node = new TreeViewPackageList(SKIN_LIST),
+        block_node = new TreeViewPackageList(BLOCK_LIST),
+        comp_node = new TreeViewPackageList(COMP_LIST);
+
+    /**
+     * Fill the secondary controls whenever a site is selected.
+     */
     site_control.handler = function () {
-        global_control.reset()
-        skin_control.reset()
+            global_control.fill_from_api("global_skins_for_site", site_control.text())
+            skin_control.fill_from_api("app_skins_for_site", site_control.text())
+        } // site_control.handler()
 
-        $.getJSON("api/global_skins_for_site/" + site_control.name() + "/")
-            .done(function (data) {
-                global_control.add_li_from_data(data)
-            })
-            .fail(function () {
-                console.log("ERROR in api call to global_skins_for_site.")
-                arguments.forEach(
-                    function (arg) {
-                        console.log(arg)
-                    })
-            })
-
-        $.getJSON("api/app_skins_for_site/" + site_control.name() + "/")
-            .done(function (data) {
-                skin_control.add_li_from_data(data)
-            })
-            .fail(function () {
-                console.log("ERROR in api call to app_skins_for_site.")
-                arguments.forEach(function (arg) {
-                    console.log(arg)
-                })
-            })
-
-    }
-
+    /**
+     * Fill the Tree View when search form is completed.
+     */
     global_control.handler = skin_control.handler = function () {
         add_files_to_tree()
     }
@@ -146,7 +195,14 @@ $(function () {
      * been made.
      */
     const add_files_to_tree = function () {
+            const jst = $(TREE_VIEW).jstree();
+
             if (!(site_control.picked && global_control.picked && skin_control.picked)) {
+                global_node.reset()
+                skin_node.reset()
+                block_node.reset()
+                comp_node.reset()
+
                 return
             }
             /* split out application from skin name */
@@ -154,33 +210,26 @@ $(function () {
             let app_name = skin_name[0];
             skin_name = skin_name[1];
 
-            $.getJSON("/files/api/packages_for_site_with_skins/" + site_control.name() +
-                    "/" + global_control.name() + "/" + app_name + "/" + skin_name + "/")
+            $.getJSON("/files/api/packages_for_site_with_skins/" + site_control.text() +
+                    "/" + global_control.text() + "/" + app_name + "/" + skin_name + "/")
                 .done(
                     function (data) {
-                        let global_li = $(GLOBAL_LIST),
-                            skin_li = $(SKIN_LIST),
-                            block_li = $(BLOCK_LIST),
-                            comp_li = $(COMP_LIST);
-                        // console.log("api_packages_for_site_with_skins succeeded! Now do something with it.")
                         data.forEach(function (datum) {
-                            // console.log(datum)
                             switch (datum.pkg_type) {
                             case 'b':
-                                console.log('block ' + datum.name)
-                                add_pkg_data_to_li(block_li, datum)
+                                // console.log('block ' + datum.name)
+                                block_node.add_pkg(datum)
                                 break
                             case 'g':
-                                console.log('global ' + datum.name)
-                                add_pkg_data_to_li(global_li, datum)
+                                // console.log('global ' + datum.name)
+                                global_node.add_pkg(datum)
                                 break
                             case 's':
-                                console.log('skin ' + datum.name)
-                                add_pkg_data_to_li(skin_li, datum)
+                                // console.log('skin ' + datum.name)
+                                skin_node.add_pkg(datum)
                                 break
                             case 'c':
-                                console.log('comp ' + datum.name)
-                                add_pkg_data_to_li(comp_li, datum)
+                                comp_node.add_pkg(datum)
                                 break
                             default:
                                 console.log("WARNING: Unexpected package type: '" + datum.pkg_typej + "'")
@@ -196,16 +245,6 @@ $(function () {
                             });
                     });
         } // add_files_to_tree()
-
-    /**
-     * Add a package to the tree view as a child of the given <li> element.
-     *
-     * @param {Object} The <li> element that is parent of new node
-     * @param {Object} A package data object from the JSON return from API
-     */
-    const add_pkg_data_to_li = function (li_element, pkg) {
-        $(TREE_VIEW).jstree().create_node(li_element, pkg.name)
-    }
 
     //============= immediate code =====================================
     $(TREE_VIEW).jstree({
