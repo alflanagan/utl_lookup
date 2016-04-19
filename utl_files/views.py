@@ -164,49 +164,59 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
     """Return a list of all the packages which apply to a page on a particular site, with a
     particular global skin active, and a particular skin applied.
 
-    :param str site_domain: The site's domain (i.e. URL of front page with 'http://' removed)
+    :param str site_domain: The site's domain (i.e. URL of front page with 'http://' removed) OR
+        "certified" to get certified packages.
 
-    :param str global_pkg_name: The name of the global skin active for the site.
+    :param str global_pkg_name: The name of the global skin active for the site. Ignored if
+        `site_domain` is "certified".
 
     :param str skin_app: The application containing the skin.
 
     :param str skin_name: The name of the skin in BLOX.
 
     """
-    the_site = get_object_or_404(TownnewsSite, URL='http://{}'.format(site_domain))
-    global_app = get_object_or_404(Application, name='global')
-    pkg_app = get_object_or_404(Application, name=skin_app)
+    # "certified" is a special case
+    if site_domain != 'certified':
+        the_site = get_object_or_404(TownnewsSite, URL='http://{}'.format(site_domain))
+        global_app = get_object_or_404(Application, name='global')
+        pkg_app = get_object_or_404(Application, name=skin_app)
 
-    global_skins = Package.objects.filter(site=the_site, app=global_app, name=global_pkg_name)
-    if not global_skins.exists():
-        raise Http404("No global skin '{}' found for site '{}'".format(global_pkg_name,
-                                                                       the_site.URL))
-    # just get most recent download
-    global_skin = global_skins.latest('last_download')
+        global_skins = Package.objects.filter(site=the_site, app=global_app, name=global_pkg_name)
+        if not global_skins.exists():
+            raise Http404("No global skin '{}' found for site '{}'".format(global_pkg_name,
+                                                                           the_site.URL))
+        # just get most recent download
+        global_skin = global_skins.latest('last_download')
 
-    # Is there a customized app skin?
-    custom_app_skin = Package.objects.filter(site=the_site, app=pkg_app, name=skin_name)
-    selected_skin = None
-    if custom_app_skin.exists():
-        selected_skin = custom_app_skin.latest('last_download')
-    else:
-        # try to find certified package to match
-        cert_pkgs = Package.objects.filter(is_certified=True, app=pkg_app, name=skin_name)
-        if cert_pkgs.exists():
-            for cert_pkg in cert_pkgs:
-                used_by = CertifiedUsedBy.objects.filter(package=cert_pkg, site=the_site)
-                if used_by.exists():
-                    selected_skin = cert_pkg
-                    break
-            if selected_skin is None:
-                # we don't have an entry in CertifiedUsedBy. How did we get here?
-                # never mind, try to find matching certified package
-                selected_skin = cert_pkgs.latest('last_download')
+        # Is there a customized app skin?
+        custom_app_skin = Package.objects.filter(site=the_site, app=pkg_app, name=skin_name)
+        selected_skin = None
+        if custom_app_skin.exists():
+            selected_skin = custom_app_skin.latest('last_download')
         else:
-            raise Http404("Unable to find app skin {}::{}".format(skin_app, skin_name))
+            # try to find certified package to match
+            # TODO: improve this by checking CertifiedUsedBy first
+            cert_pkgs = Package.objects.filter(is_certified=True, app=pkg_app, name=skin_name)
+            if cert_pkgs.exists():
+                for cert_pkg in cert_pkgs:
+                    used_by = CertifiedUsedBy.objects.filter(package=cert_pkg, site=the_site)
+                    if used_by.exists():
+                        selected_skin = cert_pkg
+                        break
+                if selected_skin is None:
+                    # we don't have an entry in CertifiedUsedBy. How did we get here?
+                    # never mind, try to find matching certified package
+                    selected_skin = cert_pkgs.latest('last_download')
+            else:
+                raise Http404("Unable to find app skin {}::{}".format(skin_app, skin_name))
 
 
-    matched_pkgs = [global_skin, selected_skin]
+        matched_pkgs = [global_skin, selected_skin]
+    else:
+        # certified has no skins
+        matched_pkgs = []
+        # special "dummy" site
+        the_site = get_object_or_404(TownnewsSite, URL='http://townnews.com')
 
     for pkg in Package.objects.filter(site=the_site,
                                       pkg_type__in=[Package.BLOCK, Package.COMPONENT]):
