@@ -12,11 +12,20 @@ Module to register classes from :py:mod:`utl_files` for the admin application.
 from django.contrib import admin
 
 # Register your models here.
-from .models import (Application, Package, UTLFile, PackageDep, PackageProp, MacroRef,
-                     MacroDefinition)
+from .models import (Application, CertifiedUsedBy, Package, UTLFile, PackageDep, PackageProp,
+                     MacroRef, MacroDefinition)
+
+@admin.register(Package)
+class PkgManager(admin.ModelAdmin):
+    fieldsets = (
+        (None, {'fields': ('name', 'pkg_type', 'app', 'last_download', 'disk_directory',
+                           'is_certified', ),}),
+        ('If Certified', {'fields': ('version', ),}),
+        ('If Custom', {'fields': ('site', ),})
+    )
 
 admin.site.register(Application)
-admin.site.register(Package)
+admin.site.register(CertifiedUsedBy)
 admin.site.register(UTLFile)
 admin.site.register(PackageDep)
 admin.site.register(PackageProp)

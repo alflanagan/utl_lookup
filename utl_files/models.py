@@ -153,7 +153,19 @@ class Package(models.Model):
             raise ValidationError(error_list, code, params)
 
     def __str__(self):
-        return "{}/{}/{}".format(self.app, self.name, self.version)
+        if self.is_certified:
+            if self.app.name == 'global':
+                return "certified/{}/{}".format(self.name, self.version)
+            else:
+                return "certified/{}::{}/{}".format(self.app, self.name, self.version)
+        else:
+            if self.app.name == 'global':
+                return "{}/{}({})".format(self.site, self.name,
+                                          self.last_download.strftime('%Y-%m-%d %H:%M'))
+            else:
+                return "{}/{}::{}({})".format(self.site, self.app, self.name,
+                                              self.last_download.strftime('%Y-%m-%d %H:%M'))
+
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
@@ -312,7 +324,8 @@ class PackageDep(models.Model):
         else:
             return str_fmt.format(self.pkg, self.dep_name, self.dep_version)
 
-    def check_for_deps(self):
+    @staticmethod
+    def check_for_deps():
         """Looks for dependencies which don't have pointer to Package table. For each, checks
         whether dependency exists and if found, adds it to the dep_pkg field.
 
@@ -521,7 +534,7 @@ class CertifiedUsedBy(models.Model):
     package = models.ForeignKey(Package, models.CASCADE, null=False, blank=False)
     site = models.ForeignKey(TownnewsSite, models.CASCADE, null=False, blank=False)
 
-    class Meta:
+    class Meta:  # pylint: disable=C0111
         unique_together = ("package", "site")
 
     #override
