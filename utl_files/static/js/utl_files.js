@@ -7,9 +7,25 @@
  */
 
 /* jshint
-      esversion: 6, unused: true, curly: true, eqeqeq: true, forin: true, noarg: true,
-      nocomma: true, strict: true, undef: true, varstmt: true, jquery: true, devel: true,
-      asi: true
+      asi: true,
+      bitwise: true,
+      browser: true,
+      curly: true,
+      devel: true,
+      eqeqeq: true,
+      esversion: 6,
+      forin: true,
+      freeze: true,
+      jquery: true,
+      futurehostile: true,
+      latedef: true,
+      noarg: true,
+      nocomma: true,
+      nonew: true,
+      strict: true,
+      undef: true,
+      unused: true,
+      varstmt: true
 */
 
 $(function () {
@@ -48,13 +64,12 @@ $(function () {
              * of the dropdown items is clicked. Updates control, then calls
              * user-supplied handler, if any.
              */
-            let onclick = function (evt) {
+            this.onclick = evt => {
                 const new_text = evt.target.textContent
                 $(this.label_id).prop(INNER_TEXT, new_text)
                 this.picked = true
                 this.handler(this)
             }
-            this.onclick = onclick.bind(this)
 
             // ensure existing list items have click handler
             $(ul_id + " li").on("click", this.onclick)
@@ -86,7 +101,7 @@ $(function () {
                         break;
                     case 1:
                         $(this.label_id).attr("disabled", "")
-                        // automatically select for user
+                            // automatically select for user
                         $(this.ul_id).children("li").click()
                         break;
                     default:
@@ -135,9 +150,9 @@ $(function () {
         } // DropDownControl
 
     /**
-     * An object that represents child node in the Tree
-     * View. Depending on the selections made in the search area, a
-     * child node may have children which are the names of packages.
+     * An object that represents a node in the Tree View. Depending on
+     * the selections made in the search area, a node may have
+     * children which are the names of packages.
      *
      */
     const TreeViewPackageList = function (list_id) {
@@ -147,13 +162,35 @@ $(function () {
              * Reset tree control by deleting child nodes.
              */
             this.reset = () => {
-                    let jst = $(TREE_VIEW).jstree();
+                    let jst = $(TREE_VIEW).jstree(),
+                        del_kid = (an_id) => jst.delete_node(an_id);
                     while (jst.get_node(this.list_id).children.length > 0) {
-                        jst.get_node(this.list_id).children.forEach(kid_id => {
-                            jst.delete_node(kid_id);
-                        })
+                        jst.get_node(this.list_id).children.forEach(del_kid)
                     }
                 } // reset()
+
+            this.onselect_node = (node, selected) => {
+                // object keys:
+                //
+                // node: timeStamp, isTrigger, namespace, rnamespace,
+                //       result, target, delegateTarget,
+                //       currentTarget, handleObj, data
+                //
+                // selected: node, selected, event, instance
+                //
+                // selected.event: originalEvent, type,
+                //                 isDefaultPrevented, timeStamp,
+                //                 toElement, screenY, screenX, pageY,
+                //                 pageX, offsetY, offsetX, clientY,
+                //                 clientX, buttons, button, which,
+                //                 view, target, shiftKey,
+                //                 relatedTarget, metaKey, eventPhase,
+                //                 detail, currentTarget, ctrlKey,
+                //                 cancelable, bubbles, altKey,
+                //                 delegateTarget, handleObj, data
+
+            }
+            $(TREE_VIEW).on("select_node.jstree", this.onselect_node)
 
             /**
              * Add a package to the tree view.
@@ -163,7 +200,6 @@ $(function () {
             this.add_pkg = (pkg) => {
                 $(TREE_VIEW).jstree().create_node(this.list_id, pkg.name)
             }
-
         } // TreeViewPackageList
 
     let site_control = new DropDownControl("#id_site", "#id_site_label", "Site"),
@@ -184,18 +220,10 @@ $(function () {
         } // site_control.handler()
 
     /**
-     * Fill the Tree View when search form is completed.
-     */
-    global_control.handler = skin_control.handler = function () {
-        add_files_to_tree()
-    }
-
-    /**
      * Populate the contents of the tree view if all three selections have
      * been made.
      */
     const add_files_to_tree = function () {
-            const jst = $(TREE_VIEW).jstree();
 
             if (!(site_control.picked && global_control.picked && skin_control.picked)) {
                 global_node.reset()
@@ -245,6 +273,13 @@ $(function () {
                             });
                     });
         } // add_files_to_tree()
+
+    /**
+     * Fill the Tree View when search form is completed.
+     */
+    global_control.handler = skin_control.handler = function () {
+        add_files_to_tree()
+    }
 
     //============= immediate code =====================================
     $(TREE_VIEW).jstree({
