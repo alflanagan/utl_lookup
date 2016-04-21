@@ -225,3 +225,30 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
         matched_pkgs.append(certif.package)
 
     return [pkg.to_dict() for pkg in matched_pkgs]
+
+@json_view
+def api_package_files_certified(_, pkg_name, pkg_version=None):
+    """Return a list of all the files in a certified package.
+
+    :param str pkg_name: The name of the pkg in BLOX.
+
+    :param str version: The package version. If ommitted, and only one record is found, returns
+        that, otherwise returns 404 error.
+
+    """
+    if pkg_version:
+        the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name,
+                                    version=pkg_version)
+    else:
+        try:
+            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name)
+        except Package.MultipleObjectsReturned:
+            raise Http404("Can't determine files for certified package '{}' without version"
+                          "".format(pkg_name))
+
+    utlfiles = UTLFile.objects.filter(pkg=the_pkg)
+
+    results = []
+    for utlfile in utlfiles:
+        results.append(utlfile.to_dict())
+    return results

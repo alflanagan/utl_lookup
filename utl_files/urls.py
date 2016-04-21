@@ -50,6 +50,23 @@ urlpatterns = [
     #api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name):
     url(r'api/packages_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
         views.api_packages_for_site_with_skins,
-        name = "api_packages_for_site_with_skins"),
+        name="api_packages_for_site_with_skins"),
+
+
+    url(r'api/package_files/certified/([^/]+)/([^/]+)/',
+        views.api_package_files_certified,
+        name="api_package_files_certified"),
+    url(r'api/package_files/certified/([^/]+)/',
+        views.api_package_files_certified,
+        name="api_package_files_certified_fromname"),
+
+    # api_files_for_custom_pkg(_, site_url, pkg_name, pkg_last_download):
+    #     url(r'api/package_files/([^/]+)/([^/]+)/([^/]+)/',
+    #         views.api_package_files_custom,
+    #         name="api_package_files_custom_app"),
+    #     url(r'api/package_files/([^/]+)/([^/]+)/',
+    #         views.api_package_files_custom,
+    #         name="api_package_files_custom"),
+
 
 ]  # yapf: disable
