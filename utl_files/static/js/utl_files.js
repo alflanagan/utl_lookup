@@ -155,42 +155,73 @@ $(function () {
      * children which are the names of packages.
      *
      */
-    const TreeViewPackageList = function (list_id) {
-            this.list_id = list_id;
+    const TreeViewPackageList = function (list_id, site_control, skin_control) {
+            this.list_id = list_id
+            this.site_control = site_control
+            this.skin_control = skin_control
+            this.jst = $(TREE_VIEW).jstree()
 
             /**
              * Reset tree control by deleting child nodes.
              */
             this.reset = () => {
-                    let jst = $(TREE_VIEW).jstree(),
-                        del_kid = (an_id) => jst.delete_node(an_id);
-                    while (jst.get_node(this.list_id).children.length > 0) {
-                        jst.get_node(this.list_id).children.forEach(del_kid)
+                    let del_kid = (an_id) => this.jst.delete_node(an_id);
+                    while (this.jst.get_node(this.list_id).children.length > 0) {
+                        this.jst.get_node(this.list_id).children.forEach(del_kid)
                     }
                 } // reset()
 
             this.onselect_node = (node, selected) => {
-                // object keys:
-                //
-                // node: timeStamp, isTrigger, namespace, rnamespace,
-                //       result, target, delegateTarget,
-                //       currentTarget, handleObj, data
-                //
-                // selected: node, selected, event, instance
-                //
-                // selected.event: originalEvent, type,
-                //                 isDefaultPrevented, timeStamp,
-                //                 toElement, screenY, screenX, pageY,
-                //                 pageX, offsetY, offsetX, clientY,
-                //                 clientX, buttons, button, which,
-                //                 view, target, shiftKey,
-                //                 relatedTarget, metaKey, eventPhase,
-                //                 detail, currentTarget, ctrlKey,
-                //                 cancelable, bubbles, altKey,
-                //                 delegateTarget, handleObj, data
+                    // object keys:
+                    //
+                    // node: timeStamp, isTrigger, namespace, rnamespace,
+                    //       result, target, delegateTarget,
+                    //       currentTarget, handleObj, data
+                    //
+                    // selected: node, selected, event, instance
+                    //
+                    // selected.event: originalEvent, type,
+                    //                 isDefaultPrevented, timeStamp,
+                    //                 toElement, screenY, screenX, pageY,
+                    //                 pageX, offsetY, offsetX, clientY,
+                    //                 clientX, buttons, button, which,
+                    //                 view, target, shiftKey,
+                    //                 relatedTarget, metaKey, eventPhase,
+                    //                 detail, currentTarget, ctrlKey,
+                    //                 cancelable, bubbles, altKey,
+                    //                 delegateTarget, handleObj, data
+                    /* split out application from skin name */
+                    const API_PATH = "/files/api/package_files/",
+                        pkg_name = this.skin_control.text();
+                    let api_call = API_PATH + this.site_control.text() + "/";
 
-            }
-            $(TREE_VIEW).on("select_node.jstree", this.onselect_node)
+                    if (pkg_name.includes("::")) {
+                        let split_name = pkg_name.split("::"),
+                            app_name = split_name[0],
+                            skin_name = split_name[1];
+                        api_call += app_name + "/" + skin_name + "/"
+                    } else {
+                        api_call += pkg_name + "/"
+                    }
+
+                    $.getJSON(api_call)
+                        .done(
+                            function (data) {
+                                data.forEach(function (datum) {
+                                    console.log(datum)
+                                })
+                            })
+                        .fail(
+                            function () {
+                                console.log("ERROR in api call to /files/packages_for_site_with_skins/.");
+                                arguments.forEach(
+                                    function (arg) {
+                                        console.log(arg);
+                                    })
+                            })
+
+                } // this.onselect_node()
+            this.jst.on("select_node.jstree", this.onselect_node)
 
             /**
              * Add a package to the tree view.
@@ -198,7 +229,7 @@ $(function () {
              * @param {Object} A package data object from the JSON return from API
              */
             this.add_pkg = (pkg) => {
-                $(TREE_VIEW).jstree().create_node(this.list_id, pkg.name)
+                this.jst.create_node(this.list_id, pkg.name)
             }
         } // TreeViewPackageList
 
@@ -206,10 +237,10 @@ $(function () {
         global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin"),
         skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin");
 
-    let global_node = new TreeViewPackageList(GLOBAL_LIST),
-        skin_node = new TreeViewPackageList(SKIN_LIST),
-        block_node = new TreeViewPackageList(BLOCK_LIST),
-        comp_node = new TreeViewPackageList(COMP_LIST);
+    let global_node = new TreeViewPackageList(GLOBAL_LIST, site_control, skin_control),
+        skin_node = new TreeViewPackageList(SKIN_LIST, site_control, skin_control),
+        block_node = new TreeViewPackageList(BLOCK_LIST, site_control, skin_control),
+        comp_node = new TreeViewPackageList(COMP_LIST, site_control, skin_control);
 
     /**
      * Fill the secondary controls whenever a site is selected.
