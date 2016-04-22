@@ -67,8 +67,7 @@ $(function () {
        * user-supplied handler, if any.
        */
       this.onclick = evt => {
-        const new_text = evt.target.textContent
-        $(this.label_id).prop(INNER_TEXT, new_text)
+        this.text(evt.target.textContent)
         this.picked = true
         this.handler(this)
       }
@@ -79,7 +78,29 @@ $(function () {
       /**
        * @return {String} The text of the currently selected item
        */
-      this.text = () => $(this.label_id).prop("innerText")
+      this.text = arg => {
+        if (arg === undefined) {
+          return $(this.label_id).prop("innerText")
+        } else {
+          this.label_text = arg
+          $(this.label_id).html(this.label_text + "<span class=\"caret\"></span>")
+          return arg
+        }
+      }
+
+      /**
+       * Disable the control
+       */
+      this.disable = () => {
+        $(this.label_id).attr("disabled", "")
+      }
+
+      /**
+       * Enable the control
+       */
+      this.enable = () => {
+        $(this.label_id).removeAttr("disabled")
+      }
 
       /**
        * Fills the dropdown with strings in items param
@@ -99,31 +120,39 @@ $(function () {
             })
           switch (data.length) {
             case 0:
-              $(this.label_id).attr("disabled", "")
+              this.disable()
               break;
             case 1:
-              $(this.label_id).attr("disabled", "")
+              this.disable()
                 // automatically select for user
               $(this.ul_id).children("li").click()
               break;
             default:
-              $(this.label_id).removeAttr("disabled")
+              this.enable()
           }
         } //add_li_from_data
 
       /**
        * Resets dropdown to empty, disabled state
+       *
+       * @param {String} new_label If present, text displayed on
+       * button is changed to this value
        */
-      this.reset = () => {
+      this.reset = (new_label) => {
         $(this.ul_id + " li").detach()
-        $(this.label_id).html(this.label_text + "<span class=\"caret\">")
-        $(this.label_id).attr("disabled", "true")
+        if (new_label !== undefined) {
+          this.label_text = new_label
+        }
+        this.text(this.label_text)
+        this.disable()
         this.picked = false
       }
 
       /**
        * Call an API function, and fill the drop-down from the
        * results.
+       *
+       * IMPORTANT: caller should reset control first
        *
        * @param {String} api_name The API name (the fixed part of the
        * URL that follows 'api/')
@@ -132,7 +161,6 @@ $(function () {
        *
        */
       this.fill_from_api = (api_name, site_name) => {
-          this.reset()
           $.getJSON("api/" + api_name + "/" + site_name + "/")
             .done(data => {
               // console.log(data)
@@ -217,7 +245,7 @@ $(function () {
             api_call = "",
             full_name = pkg.name
 
-          if (pkg.app) {
+          if (pkg.app !== "global") {
             full_name = pkg.app + "::" + pkg.name
           }
 
@@ -306,21 +334,30 @@ $(function () {
     } // TreeViewPackageList
 
   const TreeView = function () {
-      this.site_control = new DropDownControl("#id_site", "#id_site_label", "Site"),
-        this.global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin"),
-        this.skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin")
+      this.site_control = new DropDownControl("#id_site", "#id_site_label", "Site")
+      this.global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin")
+      this.skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin")
 
-      this.global_node = new TreeViewPackageList(GLOBAL_LIST, this.site_control, this.skin_control),
-        this.skin_node = new TreeViewPackageList(SKIN_LIST, this.site_control, this.skin_control),
-        this.block_node = new TreeViewPackageList(BLOCK_LIST, this.site_control, this.skin_control),
-        this.comp_node = new TreeViewPackageList(COMP_LIST, this.site_control, this.skin_control)
+      this.global_node = new TreeViewPackageList(GLOBAL_LIST, this.site_control, this.skin_control)
+      this.skin_node = new TreeViewPackageList(SKIN_LIST, this.site_control, this.skin_control)
+      this.block_node = new TreeViewPackageList(BLOCK_LIST, this.site_control, this.skin_control)
+      this.comp_node = new TreeViewPackageList(COMP_LIST, this.site_control, this.skin_control)
 
       /**
        * Fill the secondary controls whenever a site is selected.
        */
       this.site_control.handler = () => {
-          this.global_control.fill_from_api("global_skins_for_site", this.site_control.text())
-          this.skin_control.fill_from_api("app_skins_for_site", this.site_control.text())
+          if (this.site_control.text() !== "certified") {
+            this.global_control.reset("Global Skin")
+            this.global_control.fill_from_api("global_skins_for_site", this.site_control.text())
+            this.skin_control.reset("App Skin")
+            this.skin_control.fill_from_api("app_skins_for_site", this.site_control.text())
+            this.reset_nodes()
+          } else {
+            this.global_control.reset("N/A")
+            this.skin_control.reset("N/A")
+            this.make_api_call("certified", "ignored", "ignored", "ignored")
+          }
         } // site_control.handler()
 
       /**
@@ -343,6 +380,8 @@ $(function () {
               "/" + global_skin + "/" + app_name + "/" + skin_name + "/")
             .done(
               data => {
+                this.reset_nodes()
+
                 data.forEach(datum => {
                   switch (datum.pkg_type) {
                     case 'b':
@@ -425,6 +464,7 @@ $(function () {
     //possible: use 'data' to set up automatic ajax call to populate the node
   })
 
+  // technically, so far, we don't have to have TreeView as a constructor
   let the_tree = new TreeView()
 
 })
