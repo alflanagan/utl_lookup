@@ -136,23 +136,32 @@ def api_app_skins_for_site(_, site_url):
             skin_list.append(skin.name)
     return skin_list
 
-
+# RTD/core_site_richmond(2016-03-03 18:32)
+# api/package_files/richmond.com/core_site_richmond/
+# api/package_files/omaha.com/editorial%3A%3Aeditorial-custom-widget/
 @json_view
-def api_files_for_custom_pkg(_, site_url, pkg_name, pkg_last_download):
+def api_package_files_custom(_, site_url, pkg_name):
     """Returns a list of files in the customized package.
 
     :param str site_url: The site's main URL, omitting the 'http://' prefix
 
-    :param str pkg_name: The name of the package in BLOX ('true' name, not displayed name)
+    :param str pkg_name: The name of the package in BLOX. If the package is a skin, the name
+        should have the format application name + "::" + package name. (In a URL, "::" is
+        "%3A%3A")
 
-    :param str pkg_last_download: The date/time of the package's last download
-
-    :returns: Returns a list of files (as path names relative to the package)
+    :returns: Returns a list of dictionaries of :py:class:`~utl_files.models.UTLFile` values
+        (from :py:meth:`~utl_files.models.UTLFile.to_dict`)
 
     """
     site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
-    pkg = Package.objects.get(site=site, name=pkg_name, last_download=pkg_last_download)
-    return [f.file_path for f in UTLFile.objects.filter(pkg=pkg)]
+    if "::" in pkg_name:
+        app, pkg_name = pkg_name.split("::")
+        app = get_object_or_404(Application, name=app)
+    else:
+        app = get_object_or_404(Application, name="global")
+
+    pkg = get_object_or_404(Package, site=site, name=pkg_name, app=app)
+    return [f.to_dict() for f in UTLFile.objects.filter(pkg=pkg)]
 
 
 # /files/api/api_packages_for_site_with_skins/richmond.com/global-richmond-portal_temp/
@@ -210,7 +219,6 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
             else:
                 raise Http404("Unable to find app skin {}::{}".format(skin_app, skin_name))
 
-
         matched_pkgs = [global_skin, selected_skin]
     else:
         # certified has no skins
@@ -226,22 +234,37 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
 
     return [pkg.to_dict() for pkg in matched_pkgs]
 
+
 @json_view
 def api_package_files_certified(_, pkg_name, pkg_version=None):
     """Return a list of all the files in a certified package.
 
-    :param str pkg_name: The name of the pkg in BLOX.
+    :param str pkg_name: The name of the package in BLOX. If the package is a skin, the name
+        should have the format application name + "::" + package name. (In a URL, "::" is
+        "%3A%3A")
 
     :param str version: The package version. If ommitted, and only one record is found, returns
         that, otherwise returns 404 error.
 
     """
+    app = None
+    if "::" in pkg_name:
+        app, pkg_name = pkg_name.split("::")
+        app = get_object_or_404(Application, name=app)
+
     if pkg_version:
-        the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name,
-                                    version=pkg_version)
+        if app:
+            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name,
+                                        version=pkg_version)
+        else:
+            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name, app=app,
+                                        version=pkg_version)
     else:
         try:
-            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name)
+            if app:
+                the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name, app=app)
+            else:
+                the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name)
         except Package.MultipleObjectsReturned:
             raise Http404("Can't determine files for certified package '{}' without version"
                           "".format(pkg_name))
