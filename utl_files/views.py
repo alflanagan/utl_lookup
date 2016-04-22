@@ -229,8 +229,9 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
     for pkg in Package.objects.filter(site=the_site,
                                       pkg_type__in=[Package.BLOCK, Package.COMPONENT]):
         matched_pkgs.append(pkg)
-    for certif in CertifiedUsedBy.objects.filter(site=the_site):
-        matched_pkgs.append(certif.package)
+    if site_domain != "certified":
+        for certif in CertifiedUsedBy.objects.filter(site=the_site):
+            matched_pkgs.append(certif.package)
 
     return [pkg.to_dict() for pkg in matched_pkgs]
 
