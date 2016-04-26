@@ -40,6 +40,7 @@ $(function () {
 
   /**
    * An object that represents a bootstrap dropdown control on the page.
+   * @constructor
    *
    * @param {String} ul_id The id attribute of the <ul> element used
    * for dropdown
@@ -49,6 +50,7 @@ $(function () {
    * no item is selected
    * @param {Function} select_handler Function called when a
    * drop-down item is selected. Gets this object as an argument
+   * @global
    */
   const DropDownControl = function (ul_id, label_id, label_text, select_handler) {
       this.label_id = label_id
@@ -179,11 +181,13 @@ $(function () {
   /**
    * An object to manage the list of files in a tab on the right-hand
    * side of the screen.
+   * @constructor
    * 
    * @param {String} root_id The ID of the HTML element that acts as
    * the root of the created tree
    *
    * @returns {Object} The new object
+   * @global
    */
   const FilesView = function (fileview_id) {
     this.view_id = fileview_id
@@ -212,6 +216,7 @@ $(function () {
    * An object that represents a node in the Tree View. Depending on
    * the selections made in the search area, a node may have
    * children which are the names of packages.
+   * @constructor
    *
    * @param {String} list_id the ID of the HTML element that acts as a
    * root node
@@ -224,6 +229,7 @@ $(function () {
    *
    * @param {FilesView} files_view The file listing display object
    *
+   * @global
    */
   const TreeViewPackageList = function (list_id, site_control, skin_control) {
       this.list_id = list_id
@@ -260,6 +266,7 @@ $(function () {
    * @returns {String} with format "application::package[*]",
    * where the presence of "*" indicates the package is certified
    *
+   * @global
    */
   const pkg_to_string = function (pkg) {
       let full_name = "";
@@ -282,6 +289,7 @@ $(function () {
    *
    * @returns {Object} with keys "app", "name", "is_certified"
    *
+   * @global
    */
   const string_to_pkg = function (pkg_str) {
       let the_app = "global",
@@ -306,6 +314,8 @@ $(function () {
 
   /**
    * Controls the four package list objects in the main tree view.
+   * @constructor
+   * @global
    */
   const TreeView = function () {
       const GLOBAL_LIST = "#pkgs_global_list",
