@@ -335,44 +335,28 @@ $(function () {
       this.comp_node = new TreeViewPackageList(COMP_LIST, this.site_control, this.skin_control)
 
       /**
-       * Handler for selection of a node item.
+       * @summary Handler for selection of a node item.
+       *
+       * @description Makes an AJAX call to the <span
+       * class="file-path">package_files</span> API to retrieve a list
+       * of the files associated with the selected package. Adds each
+       * file name to <var>this.filesView</var>.
        *
        * @param {Object} node JSTree object (not used)
-       * @param {Object} selected The selection object with keys "node",
-       *     "selected", "event", "instance"
        *
-       *     node: DOM node for the selected item.
+       * @param {Object} selected The selection object
        *
-       *     event: A "click" event object.
+       * @param {Object} selected.node DOM node for the selected item.
        *
-       *     instance: I think this is the JSTree object (like result
-       *     of <code>$(TREEVIEW).jstree()</code>)
+       * @param {Object} selected.event A "click" event object.
        *
-       *     selected: An array of strings, the IDs of the selected
-       *     nodes.
+       * @param {Object} selected.instance I think this is the JSTree
+       *     object (like result of <code>$(TREEVIEW).jstree()</code>)
+       *
+       * @param {Object} selected.selected An array of strings, the
+       *     IDs of the selected nodes.
        */
       this.onselect_node = (node, selected) => {
-          // object keys:
-          //
-          // node: timeStamp, isTrigger, namespace, rnamespace,
-          //       result, target, delegateTarget,
-          //       currentTarget, handleObj, data
-          //
-          // selected: node, selected, event, instance
-          //
-          // selected.event: originalEvent, type,
-          //                 isDefaultPrevented, timeStamp,
-          //                 toElement, screenY, screenX, pageY,
-          //                 pageX, offsetY, offsetX, clientY,
-          //                 clientX, buttons, button, which,
-          //                 view, target, shiftKey,
-          //                 relatedTarget, metaKey, eventPhase,
-          //                 detail, currentTarget, ctrlKey,
-          //                 cancelable, bubbles, altKey,
-          //                 delegateTarget, handleObj, data
-          //
-          // selected.selected: the Array the API promised as second
-          // argument
           const API_PATH = "/files/api/package_files/"
           let pkg = string_to_pkg(selected.event.target.textContent),
             api_call = "",
@@ -426,9 +410,12 @@ $(function () {
         } // site_control.handler()
 
       /**
-       * Calls the API /files/api/packages_for_site_with_skins/ to get
-       * the list of packages consistent with the search controls, then
-       * fills the tree nodes from the results
+       * @summary Get packages based on search controls
+       *
+       * @description Calls the API <span
+       * class="file-path">/files/api/packages_for_site_with_skins/</span>
+       * to get the list of packages consistent with the search
+       * controls, then fills the tree nodes from the results
        *
        * @param {String} site_name The site domain name ("richmond.com", "omaha.com", etc.)
        *
@@ -438,7 +425,6 @@ $(function () {
        *
        * @param {String} skin_name The name of the selected skin.
        *
-       * @returns undefined
        */
       this.make_api_call = (site_name, global_skin, app_name, skin_name) => {
           $.getJSON("/files/api/packages_for_site_with_skins/" + site_name +
