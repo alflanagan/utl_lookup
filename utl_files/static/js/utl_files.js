@@ -34,11 +34,8 @@ $(function () {
   "use strict";
 
   // ID selector strings, use constant to avoid mistyping
-  const GLOBAL_LIST = "#pkgs_global_list",
-    SKIN_LIST = "#pkgs_skin_list",
-    BLOCK_LIST = "#pkgs_blocks_list",
-    COMP_LIST = "#pkgs_components_list",
-    TREE_VIEW = "#tree-view",
+  const TREE_VIEW = "#tree-view",
+    FILES_TREE = "#files-tree",
     INNER_TEXT = "innerText";
 
   /**
@@ -52,7 +49,6 @@ $(function () {
    * no item is selected
    * @param {Function} select_handler Function called when a
    * drop-down item is selected. Gets this object as an argument
-   *
    */
   const DropDownControl = function (ul_id, label_id, label_text, select_handler) {
       this.label_id = label_id
@@ -60,6 +56,7 @@ $(function () {
       this.label_text = label_text
       this.picked = false
       this.handler = select_handler
+      console.log('Creating DropDownControl("' + ul_id + '", "' + label_id + "...")
 
       /**
        * An event handler bound to this control, triggered when one
@@ -180,6 +177,38 @@ $(function () {
     } // DropDownControl
 
   /**
+   * An object to manage the list of files in a tab on the right-hand
+   * side of the screen.
+   * 
+   * @param {String} root_id The ID of the HTML element that acts as
+   * the root of the created tree
+   *
+   * @returns {Object} The new object
+   */
+  const FilesView = function (fileview_id) {
+    this.view_id = fileview_id
+
+    console.log('Creating FilesView("' + fileview_id + '")')
+    $(this.view_id).jstree({
+      error: function () {
+        console.log("$('" + this.view_id + "').jstree() Error: ", arguments)
+      },
+      themes: {
+        icons: true,
+        responsive: true
+      }
+    })
+    this.jst = $(this.view_id).jstree()
+    this.root_id = this.jst.create_node(null, "/")
+    this.root_node = this.jst.get_node(this.root_id, true)
+
+    this.add_a_file = utlfile => {
+      this.jst.create_node(this.root_node, utlfile.path)
+    }
+    return this
+  }
+
+  /**
    * An object that represents a node in the Tree View. Depending on
    * the selections made in the search area, a node may have
    * children which are the names of packages.
@@ -192,6 +221,8 @@ $(function () {
    *
    * @param {DropDownControl} skin_control the dropdown used to select
    * an application skin
+   *
+   * @param {FilesView} files_view The file listing display object
    *
    */
   const TreeViewPackageList = function (list_id, site_control, skin_control) {
@@ -211,12 +242,104 @@ $(function () {
         } // reset()
 
       /**
+       * Add a package to the tree view.
+       *
+       * @param {Object} A package data object from the JSON return from API
+       */
+      this.add_pkg = (pkg) => {
+        this.jst.create_node(this.list_id, pkg_to_string(pkg))
+      }
+    } // TreeViewPackageList
+
+  /**
+   * Convert package spec to a display name
+   *
+   * @param {Object} pkg Package specification (from python
+   * <code>Package.to_dict()</code>)
+   *
+   * @returns {String} with format "application::package[*]",
+   * where the presence of "*" indicates the package is certified
+   *
+   */
+  const pkg_to_string = function (pkg) {
+      let full_name = "";
+      if (pkg.app !== "global") {
+        full_name = pkg.app + "::"
+      }
+      full_name += pkg.name
+      if (pkg.is_certified === "y") {
+        full_name += "*"
+      }
+      return full_name
+    } // pkg_to_string()
+
+  /**
+   * Convert a string with a package description to a (partial)
+   * package specification
+   *
+   * @param {String} pkg_str The package string in format created by
+   * pkg_to_string().
+   *
+   * @returns {Object} with keys "app", "name", "is_certified"
+   *
+   */
+  const string_to_pkg = function (pkg_str) {
+      let the_app = "global",
+        the_pkg = pkg_str,
+        is_certified = "n";
+      if (pkg_str.includes('::')) {
+        let parts = pkg_str.split('::')
+        the_app = parts[0]
+        the_pkg = parts[1]
+      }
+      if (the_pkg.endsWith('*')) {
+        is_certified = "y";
+        the_pkg = the_pkg.substring(0, the_pkg.length - 1)
+      }
+      return {
+        "app": the_app,
+        "name": the_pkg,
+        "is_certified": is_certified
+      }
+    } // string_to_pkg()
+
+
+  /**
+   * Controls the four package list objects in the main tree view.
+   */
+  const TreeView = function () {
+      const GLOBAL_LIST = "#pkgs_global_list",
+        SKIN_LIST = "#pkgs_skin_list",
+        BLOCK_LIST = "#pkgs_blocks_list",
+        COMP_LIST = "#pkgs_components_list";
+
+      console.log("creating TreeView())")
+      this.site_control = new DropDownControl("#id_site", "#id_site_label", "Site")
+      this.global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin")
+      this.skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin")
+      this.files_view = new FilesView("#files-tree-root")
+
+      this.global_node = new TreeViewPackageList(GLOBAL_LIST, this.site_control, this.skin_control)
+      this.skin_node = new TreeViewPackageList(SKIN_LIST, this.site_control, this.skin_control)
+      this.block_node = new TreeViewPackageList(BLOCK_LIST, this.site_control, this.skin_control)
+      this.comp_node = new TreeViewPackageList(COMP_LIST, this.site_control, this.skin_control)
+
+      /**
        * Handler for selection of a node item.
        *
-       * WTH does this get called four times?
+       * @param {Object} node JSTree object (not used)
+       * @param {Object} selected The selection object with keys "node",
+       *     "selected", "event", "instance"
        *
-       * @param {Object} node
-       * @param {Object} selected
+       *     node: DOM node for the selected item.
+       *
+       *     event: A "click" event object.
+       *
+       *     instance: I think this is the JSTree object (like result
+       *     of <code>$(TREEVIEW).jstree()</code>)
+       *
+       *     selected: An array of strings, the IDs of the selected
+       *     nodes.
        */
       this.onselect_node = (node, selected) => {
           // object keys:
@@ -241,7 +364,7 @@ $(function () {
           // selected.selected: the Array the API promised as second
           // argument
           const API_PATH = "/files/api/package_files/"
-          let pkg = this.string_to_pkg(selected.event.target.textContent),
+          let pkg = string_to_pkg(selected.event.target.textContent),
             api_call = "",
             full_name = pkg.name
 
@@ -259,6 +382,9 @@ $(function () {
             .done(
               data => {
                 console.log("got " + data.length + " results from " + api_call)
+                data.forEach(datum => {
+                  this.files_view.add_a_file(datum)
+                })
               })
             .fail(
               () => {
@@ -271,77 +397,6 @@ $(function () {
         } // this.onselect_node()
 
       $(TREE_VIEW).on("select_node.jstree", this.onselect_node)
-
-      /**
-       * Convert package spec to a display name
-       *
-       * @param {Object} pkg Package specification (from python
-       * <code>Package.to_dict()</code>)
-       *
-       * @returns {String} with format "application::package[*]",
-       * where the presence of "*" indicates the package is certified
-       *
-       */
-      this.pkg_to_string = (pkg) => {
-          let full_name = "";
-          if (pkg.app !== "global") {
-            full_name = pkg.app + "::"
-          }
-          full_name += pkg.name
-          if (pkg.is_certified === "y") {
-            full_name += "*"
-          }
-          return full_name
-        } // pkg_to_string()
-
-      /**
-       * Convert a string with a package description to a (partial)
-       * package specification
-       *
-       * @param {String} pkg_str The package string in format created by
-       * pkg_to_string().
-       *
-       * @returns {Object} with keys "app", "name", "is_certified"
-       */
-      this.string_to_pkg = (pkg_str) => {
-          let the_app = "global",
-            the_pkg = pkg_str,
-            is_certified = "n";
-          if (pkg_str.includes('::')) {
-            let parts = pkg_str.split('::')
-            the_app = parts[0]
-            the_pkg = parts[1]
-          }
-          if (the_pkg.endsWith('*')) {
-            is_certified = "y";
-            the_pkg = the_pkg.substring(0, the_pkg.length - 1)
-          }
-          return {
-            "app": the_app,
-            "name": the_pkg,
-            "is_certified": is_certified
-          }
-        } // string_to_pkg()
-
-      /**
-       * Add a package to the tree view.
-       *
-       * @param {Object} A package data object from the JSON return from API
-       */
-      this.add_pkg = (pkg) => {
-        this.jst.create_node(this.list_id, this.pkg_to_string(pkg))
-      }
-    } // TreeViewPackageList
-
-  const TreeView = function () {
-      this.site_control = new DropDownControl("#id_site", "#id_site_label", "Site")
-      this.global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin")
-      this.skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin")
-
-      this.global_node = new TreeViewPackageList(GLOBAL_LIST, this.site_control, this.skin_control)
-      this.skin_node = new TreeViewPackageList(SKIN_LIST, this.site_control, this.skin_control)
-      this.block_node = new TreeViewPackageList(BLOCK_LIST, this.site_control, this.skin_control)
-      this.comp_node = new TreeViewPackageList(COMP_LIST, this.site_control, this.skin_control)
 
       /**
        * Fill the secondary controls whenever a site is selected.
@@ -465,8 +520,7 @@ $(function () {
   })
 
   // technically, so far, we don't have to have TreeView as a constructor
-  let the_tree = new TreeView()
-
+  const the_tree = new TreeView()
 })
 
 // Local Variables:
