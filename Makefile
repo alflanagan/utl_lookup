@@ -10,11 +10,18 @@ all: utl_files/static/styles/site.css TAGS docs
 TAGS:
 	etags -R --exclude=data --exclude=demo --exclude=static --exclude='*.min.*' --exclude=$(DOC_DIR) -R
 
-#TODO: target to generate docs
-
 clean:
 	rm -f TAGS utl_files/static/styles/site.css utl_files/static/styles/site.css.map
-	if [ ! -z '$(DOC_DIR)' ]; then rm -rf $(DOC_DIR)/*; fi
+	if [ ! -z '$(DOC_DIR)' ]; then \
+	   rm -f $(DOC_DIR)/*.html; \
+	   rm -f $(DOC_DIR)/*.css; \
+	   rm -rf $(DOC_DIR)/fonts $(DOC_DIR)/scripts $(DOC_DIR)/styles; \
+	fi
 
 docs:
+	if [ ! -z '$(DOC_DIR)' ]; then \
+	   rm -f $(DOC_DIR)/*.html; \
+	   rm -f $(DOC_DIR)/*.css; \
+	   rm -rf $(DOC_DIR)/fonts $(DOC_DIR)/scripts $(DOC_DIR)/styles; \
+	fi
 	jsdoc -c jsdoc.conf -a all --verbose utl_files/static/js/utl_files.js
