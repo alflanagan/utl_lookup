@@ -136,7 +136,9 @@ $(function () {
        * @param {Array} data A list of items to be added.
        */
       this.add_li_from_data = data => {
-          // if only 0 or 1 option, allow tree fill
+          $(this.ul_id + " li").detach()
+            // don't prevent user from filling tree if no options or
+            // just one
           this.picked = (data.length < 2)
           data.forEach(
             datum => {
@@ -221,12 +223,14 @@ $(function () {
 
     console.log('Creating FilesView("' + fileview_id + '")')
     $(this.view_id).jstree({
-      error: function () {
-        console.log("$('" + this.view_id + "').jstree() Error: ", arguments)
-      },
-      themes: {
-        icons: true,
-        responsive: true
+      core: {
+        check_callback: true,
+        multiple: false,
+        error: handle_jstree_error,
+        themes: {
+          icons: true,
+          responsive: true
+        }
       }
     })
     this.jst = $(this.view_id).jstree()
@@ -240,9 +244,36 @@ $(function () {
      *
      */
     this.add_a_file = utlfile => {
-      this.jst.create_node(this.root_node, utlfile.path)
+      let parts = utlfile.path.split("/"),
+          current_data = this.jst.get_node(this.root_id)
+
+      /* for each part of the filename, check for an existing node. If
+       * one does not exist, create it.
+       */
+      for (let i = 0; i < parts.length; i++) {
+        let found_it = false
+        current_data.children.forEach(child_id => {
+          let child_data = this.jst.get_node(child_id)
+          if (child_data.text === parts[i]) {
+            current_data = child_data
+            found_it = true
+          }
+        })
+        if (found_it === false) {
+          let new_node = this.jst.create_node(current_data.id, parts[i])
+          current_data = this.jst.get_node(new_node)
+        }
+      } // for
     } // add_a_file()
 
+    /**
+     * @description Remove all child nodes
+     */
+    this.reset = () => {
+      this.jst.delete_node(this.root_node)
+      this.root_id = this.jst.create_node(null, "/")
+      this.root_node = this.jst.get_node(this.root_id, true)
+    }
     return this
   }
 
@@ -358,6 +389,28 @@ $(function () {
     } // string_to_pkg()
 
   /**
+   * @description Universal handling and reporting of jstree errors.
+   *
+   * @protected
+   *
+   * @param {Object} info Information about the error
+   * @param {Object} info.data Extra data about the error
+   * @param {string} info.error A code identifying the type of error?
+   * @param {string} info.id The id of the element generating the error
+   * @param {string} info.plugin The plugin where the error occurred.
+   * @param {string} info.reason Human-readable error description.
+   */
+  const handle_jstree_error = function (info) {
+    console.error("ERROR signaled by jstree: error '" + info.error + "' occurred in element #" +
+      info.id + " (plugin " + info.plugin + " ): " + info.reason)
+    console.log("Extra data associated with the above error:")
+    let parsed = JSON.parse(info.data)
+    for (var key in parsed) {
+      console.log("    " + key + ": " + parsed[key])
+    }
+  };
+
+  /**
    * @summary Controls the four package list objects in the main tree
    * view.
    *
@@ -408,6 +461,8 @@ $(function () {
           let pkg = string_to_pkg(selected.event.target.textContent),
             api_call = "",
             full_name = pkg.name
+
+          this.files_view.reset()
 
           if (pkg.app !== "global") {
             full_name = pkg.app + "::" + pkg.name
@@ -565,9 +620,7 @@ $(function () {
   $(TREE_VIEW).jstree({
     core: {
       check_callback: true,
-      error: function () {
-        console.log("JSTree Error: ", arguments)
-      },
+      error: handle_jstree_error,
       multiple: false,
       themes: {
         icons: false,
