@@ -39,18 +39,26 @@ $(function () {
     INNER_TEXT = "innerText";
 
   /**
-   * An object that represents a bootstrap dropdown control on the page.
-   * @constructor
+   * @summary An object that represents a bootstrap dropdown control
+   * on the page.
    *
-   * @param {String} ul_id The id attribute of the <ul> element used
+   * @description A bootstrap control is made up of a &lt;div&gt;
+   * containing a &lt;button&gt; and an &lt;ul&gt; list. This object
+   * handles the initial appearance, click handling, and updating the
+   * button text with the value of the selected item.
+   *
+   * @constructor
+   * @global
+   *
+   * @param {string} ul_id The id attribute of the &lt;ul&gt; element used
    * for dropdown
-   * @param {String} label_id The id attribute of the <button>
+   * @param {string} label_id The id attribute of the &lt;button&gt;
    * element acting as a label/trigger
-   * @param {String} label_text The text to show on the control when
+   * @param {string} label_text The text to show on the control when
    * no item is selected
    * @param {Function} select_handler Function called when a
    * drop-down item is selected. Gets this object as an argument
-   * @global
+   *
    */
   const DropDownControl = function (ul_id, label_id, label_text, select_handler) {
       this.label_id = label_id
@@ -61,9 +69,16 @@ $(function () {
       console.log('Creating DropDownControl("' + ul_id + '", "' + label_id + "...")
 
       /**
-       * An event handler bound to this control, triggered when one
-       * of the dropdown items is clicked. Updates control, then calls
+       * @summary Event handler for click on list item.
+       *
+       * @description An event handler triggered when one of the
+       * dropdown items is clicked. Sets label to text of selected
+       * item, sets <var>picked</var> to <code>true</code>, then calls
        * user-supplied handler, if any.
+       *
+       * @param {Object} evt the Event object.
+       *
+       * @param {string} evt.target The list item that was clicked.
        */
       this.onclick = evt => {
         this.text(evt.target.textContent)
@@ -75,7 +90,14 @@ $(function () {
       $(ul_id + " li").on("click", this.onclick)
 
       /**
-       * @return {String} The text of the currently selected item
+       * Get or set the label text.
+       *
+       * @param {string} arg Set the label text for this control to
+       * the value of <var>arg</var> (plus a caret decoration). If
+       * <var>arg</var> is <code>undefined</code>, the text is
+       * unchanged (but still returned).
+       *
+       * @return {string} The text of the currently selected item
        */
       this.text = arg => {
         if (arg === undefined) {
@@ -102,9 +124,14 @@ $(function () {
       }
 
       /**
-       * Fills the dropdown with strings in items param
+       * @summary Fills dropdown with string values
        *
-       * Clicking one of the strings will trigger the onclick() method.
+       * @description Clears the current list, then creates a list
+       * item for each element in <var>data</var>. Clicking the
+       * element will trigger this object's <code>onclick()</code>
+       * handler. If there are no items in <var>data</var>, disables
+       * the control. If there is exactly 1 item in <var>data</var>,
+       * automatically selects it (triggering click event).
        *
        * @param {Array} data A list of items to be added.
        */
@@ -134,7 +161,7 @@ $(function () {
       /**
        * Resets dropdown to empty, disabled state
        *
-       * @param {String} new_label If present, text displayed on
+       * @param {string} new_label If present, text displayed on
        * button is changed to this value
        */
       this.reset = (new_label) => {
@@ -148,15 +175,14 @@ $(function () {
       }
 
       /**
-       * Call an API function, and fill the drop-down from the
-       * results.
+       * @summary Fill the drop-down with results of an API call.
        *
        * IMPORTANT: caller should reset control first
        *
-       * @param {String} api_name The API name (the fixed part of the
+       * @param {string} api_name The API name (the fixed part of the
        * URL that follows 'api/')
        *
-       * @param {String} site_name The name of the site selected
+       * @param {string} site_name The name of the site selected
        *
        */
       this.fill_from_api = (api_name, site_name) => {
@@ -179,15 +205,16 @@ $(function () {
     } // DropDownControl
 
   /**
-   * An object to manage the list of files in a tab on the right-hand
-   * side of the screen.
+   * @description An object to manage the list of files in a tab on
+   * the right-hand side of the screen.
+   *
    * @constructor
+   * @global
    * 
-   * @param {String} root_id The ID of the HTML element that acts as
+   * @param {string} root_id The ID of the HTML element that acts as
    * the root of the created tree
    *
-   * @returns {Object} The new object
-   * @global
+   * @returns {FilesView} The new object
    */
   const FilesView = function (fileview_id) {
     this.view_id = fileview_id
@@ -206,19 +233,30 @@ $(function () {
     this.root_id = this.jst.create_node(null, "/")
     this.root_node = this.jst.get_node(this.root_id, true)
 
+    /**
+     * @summary Add a file to the tree.
+     *
+     * @param {string} utlfile The name of the file to be added.
+     *
+     */
     this.add_a_file = utlfile => {
       this.jst.create_node(this.root_node, utlfile.path)
-    }
+    } // add_a_file()
+
     return this
   }
 
   /**
-   * An object that represents a node in the Tree View. Depending on
-   * the selections made in the search area, a node may have
-   * children which are the names of packages.
-   * @constructor
+   * @summary A node in the Tree View listing packages.
    *
-   * @param {String} list_id the ID of the HTML element that acts as a
+   * @description An object that represents a node in the Tree
+   * View. Depending on the selections made in the search area, a node
+   * may have children which are the names of packages.
+   *
+   * @constructor
+   * @global
+   *
+   * @param {string} list_id the ID of the HTML element that acts as a
    * root node
    *
    * @param {DropDownControl} site_control the dropdown used to select
@@ -229,7 +267,6 @@ $(function () {
    *
    * @param {FilesView} files_view The file listing display object
    *
-   * @global
    */
   const TreeViewPackageList = function (list_id, site_control, skin_control) {
       this.list_id = list_id
@@ -238,7 +275,7 @@ $(function () {
       this.jst = $(TREE_VIEW).jstree()
 
       /**
-       * Reset tree control by deleting child nodes.
+       * @description Reset tree control by deleting child nodes.
        */
       this.reset = () => {
           let del_kid = (an_id) => this.jst.delete_node(an_id);
@@ -248,9 +285,10 @@ $(function () {
         } // reset()
 
       /**
-       * Add a package to the tree view.
+       * @summary Add a package to the tree view.
        *
-       * @param {Object} A package data object from the JSON return from API
+       * @param {Object} A package data object from the JSON return
+       * from API
        */
       this.add_pkg = (pkg) => {
         this.jst.create_node(this.list_id, pkg_to_string(pkg))
@@ -258,15 +296,22 @@ $(function () {
     } // TreeViewPackageList
 
   /**
-   * Convert package spec to a display name
+   * @summary Convert package spec to a display name.
+   *
+   * @global
+   *
+   * @description Given a package spec JSON object, returns a string
+   * which contains the same information, suitable for display but
+   * easily converted back to the JSON representation. (see {@link
+   * string_to_pkg})
    *
    * @param {Object} pkg Package specification (from python
    * <code>Package.to_dict()</code>)
    *
-   * @returns {String} with format "application::package[*]",
-   * where the presence of "*" indicates the package is certified
+   * @returns {string} String with format
+   * "<var>application</var>::<var>package</var>[*]", where the
+   * presence of "*" indicates the package is certified
    *
-   * @global
    */
   const pkg_to_string = function (pkg) {
       let full_name = "";
@@ -281,15 +326,16 @@ $(function () {
     } // pkg_to_string()
 
   /**
-   * Convert a string with a package description to a (partial)
-   * package specification
-   *
-   * @param {String} pkg_str The package string in format created by
-   * pkg_to_string().
-   *
-   * @returns {Object} with keys "app", "name", "is_certified"
+   * @summary Convert a string with a package description to a
+   * (partial) package specification
    *
    * @global
+   *
+   * @param {string} pkg_str The package string in format created by
+   * <code>{@link pkg_to_string}()</code>.
+   *
+   * @returns {Object} Object with keys "app", "name", "is_certified"
+   *
    */
   const string_to_pkg = function (pkg_str) {
       let the_app = "global",
@@ -311,9 +357,10 @@ $(function () {
       }
     } // string_to_pkg()
 
-
   /**
-   * Controls the four package list objects in the main tree view.
+   * @summary Controls the four package list objects in the main tree
+   * view.
+   *
    * @constructor
    * @global
    */
@@ -393,7 +440,16 @@ $(function () {
       $(TREE_VIEW).on("select_node.jstree", this.onselect_node)
 
       /**
-       * Fill the secondary controls whenever a site is selected.
+       * @summary Fill the secondary controls whenever a site is
+       * selected.
+       *
+       * @private
+       *
+       * @description Gets site from site control, calls
+       * <code>api/global_skins_for_site</code> to fill the global
+       * skin control, then <code>api/app_skins_for_site</code> to
+       * fill the skin control.
+       *
        */
       this.site_control.handler = () => {
           if (this.site_control.text() !== "certified") {
@@ -417,13 +473,13 @@ $(function () {
        * to get the list of packages consistent with the search
        * controls, then fills the tree nodes from the results
        *
-       * @param {String} site_name The site domain name ("richmond.com", "omaha.com", etc.)
+       * @param {string} site_name The site domain name ("richmond.com", "omaha.com", etc.)
        *
-       * @param {String} global_skin The selected global skin for the site.
+       * @param {string} global_skin The selected global skin for the site.
        *
-       * @param {String} app_name The name of the applicaton for the selected skin.
+       * @param {string} app_name The name of the applicaton for the selected skin.
        *
-       * @param {String} skin_name The name of the selected skin.
+       * @param {string} skin_name The name of the selected skin.
        *
        */
       this.make_api_call = (site_name, global_skin, app_name, skin_name) => {
@@ -466,6 +522,9 @@ $(function () {
               })
         } // make_api_call()
 
+      /**
+       * @summary Reset search nodes back to original state.
+       */
       this.reset_nodes = () => {
         this.global_node.reset()
         this.skin_node.reset()
@@ -474,7 +533,9 @@ $(function () {
       }
 
       /**
-       * Populate the contents of the tree view if all three selections have
+       * @summary Populate the contents of the tree view.
+       *
+       * @description Does nothing unless all three selections have
        * been made.
        */
       this.add_pkgs_to_tree = () => {
@@ -490,7 +551,9 @@ $(function () {
         } // add_pkgs_to_tree()
 
       /**
-       * Fill the Tree View when search form is completed.
+       * @summary Fill the Tree View when search form is completed.
+       *
+       * @private
        */
       this.global_control.handler = this.skin_control.handler = () => {
         this.add_pkgs_to_tree()
