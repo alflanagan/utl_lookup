@@ -36,7 +36,39 @@ $(function () {
   // ID selector strings, use constant to avoid mistyping
   const TREE_VIEW = "#tree-view",
     FILES_TREE = "#files-tree",
-    INNER_TEXT = "innerText";
+    INNER_TEXT = "innerText",
+    FILES_PNL = "#files-panel",
+    DEFS_PNL = "#defs-panel",
+    REFS_PNL = "#refs-panel";
+
+  const on_tab_click = (evt) => {
+    $(DEFS_PNL).hide()
+    $("#defs-tab").removeClass("active")
+    $(REFS_PNL).hide()
+    $("#refs-tab").removeClass("active")
+    $(FILES_PNL).hide()
+    $("#files-tab").removeClass("active")
+    let the_id = evt.target.id
+    if (! the_id.endsWith("-tab")) {
+      the_id = evt.target.parentNode.id
+}
+    switch (the_id) {
+      case "files-tab":
+        $(FILES_PNL).show()
+        $("#files-tab").addClass("active")
+        break
+      case "defs-tab":
+        $(DEFS_PNL).show()
+        $("#defs-tab").addClass("active")
+        break
+      case "refs-tab":
+        $(REFS_PNL).show()
+        $("#refs-tab").addClass("active")
+    }
+  }
+  $("#files-tab").on("click", on_tab_click)
+  $("#defs-tab").on("click", on_tab_click)
+  $("#refs-tab").on("click", on_tab_click)
 
   /**
    * @summary An object that represents a bootstrap dropdown control
@@ -244,27 +276,27 @@ $(function () {
      *
      */
     this.add_a_file = utlfile => {
-      let parts = utlfile.path.split("/"),
+        let parts = utlfile.path.split("/"),
           current_data = this.jst.get_node(this.root_id)
 
-      /* for each part of the filename, check for an existing node. If
-       * one does not exist, create it.
-       */
-      for (let i = 0; i < parts.length; i++) {
-        let found_it = false
-        current_data.children.forEach(child_id => {
-          let child_data = this.jst.get_node(child_id)
-          if (child_data.text === parts[i]) {
-            current_data = child_data
-            found_it = true
+        /* for each part of the filename, check for an existing node. If
+         * one does not exist, create it.
+         */
+        for (let i = 0; i < parts.length; i++) {
+          let found_it = false
+          current_data.children.forEach(child_id => {
+            let child_data = this.jst.get_node(child_id)
+            if (child_data.text === parts[i]) {
+              current_data = child_data
+              found_it = true
+            }
+          })
+          if (found_it === false) {
+            let new_node = this.jst.create_node(current_data.id, parts[i])
+            current_data = this.jst.get_node(new_node)
           }
-        })
-        if (found_it === false) {
-          let new_node = this.jst.create_node(current_data.id, parts[i])
-          current_data = this.jst.get_node(new_node)
-        }
-      } // for
-    } // add_a_file()
+        } // for
+      } // add_a_file()
 
     /**
      * @description Remove all child nodes
