@@ -119,8 +119,9 @@ class Package(models.Model):
     # override
     def validate_unique(self, exclude=None):
         """
-        Checks unique constraints on the model and raises ``ValidationError``
-        if any failed.
+        Checks unique constraints on the model and raises ``ValidationError`` if any failed. A
+        certified package is unique on just [name, version]; a customized package is unique on
+        [site, last_download, name].
         """
         # unfortunately we're now assuming that validation_unique will use error_list property,
         # not error_dict. if that changes we have a problem...
