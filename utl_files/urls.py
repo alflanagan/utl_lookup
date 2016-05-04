@@ -22,6 +22,8 @@ urlpatterns = [
 
     url(r'^demo/$', views.demo, name='demo'),
 
+    url(r'^macros/$', views.macros, name='macros'),
+
     # search(request, macro_name)
     url(r'^macro/(.+)/', views.search, name='search'),
 
@@ -56,7 +58,7 @@ urlpatterns = [
         name="api_app_skins_for_site"),
 
     # api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name):
-    url(r'api/packages_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
+    url(r'api/packages_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/',
         views.api_packages_for_site_with_skins,
         name="api_packages_for_site_with_skins"),
 
@@ -72,5 +74,11 @@ urlpatterns = [
     url(r'api/package_files/([^/]+)/([^/]+)',
         views.api_package_files_custom,
         name="api_package_files_custom"),
+
+    # api_macros_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name)
+    url(r'api/macros_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/',
+        views.api_macros_for_site_with_skins,
+        name="api_macros_for_site_with_skins"),
+
 
 ]  # yapf: disable

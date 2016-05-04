@@ -3,7 +3,7 @@
 from urllib.parse import quote_plus
 
 from django.shortcuts import render, get_object_or_404
-from django.http.response import Http404, HttpResponse
+from django.http.response import Http404
 from jsonview.decorators import json_view
 
 from .models import Package, UTLFile, MacroRef, MacroDefinition, Application, CertifiedUsedBy
@@ -15,13 +15,25 @@ from papers.models import TownnewsSite
 def home(request):
     """Display the main page: user selects site, skins, and that sets context for searches."""
     pkgs = Package.objects.all()
-    active_sites = set(["certified"])
+    active_sites = set()
     for pkg in pkgs:
         if pkg.site:
             active_sites.add(pkg.site.domain)
 
     context = {"active_sites": active_sites}
     return render(request, 'utl_files/index.html', context)
+
+
+def macros(request):
+    """Display a macro cross-reference page. Similar to home, but macro-oriented."""
+    pkgs = Package.objects.all()
+    active_sites = set()
+    for pkg in pkgs:
+        if pkg.site and pkg.site.domain != "certified":
+            active_sites.add(pkg.site.domain)
+
+    context = {"active_sites": active_sites}
+    return render(request, 'utl_files/macros.html', context)
 
 
 def demo(request):  # pragma: no cover
@@ -34,8 +46,8 @@ def demo(request):  # pragma: no cover
 
 def search(request, macro_name):
     """A page to do macro searches -- will probably become tab on home."""
-    macros = MacroDefinition.objects.filter(name=macro_name)
-    context = {"macros": macros, "macro_name": macro_name}
+    macro_defs = MacroDefinition.objects.filter(name=macro_name)
+    context = {"macros": macro_defs, "macro_name": macro_name}
     return render(request, 'utl_files/search.html', context)
 
 
@@ -96,10 +108,11 @@ def api_packages(_, name=None, version=None):
     return [{"name": pkg.name, "version": pkg.version} for pkg in pkgs]
 
 
+@json_view
 def api_macro_text(_, macro_id):
     """Return the text of a macro definition, identified by integer ID `macro_id`."""
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
-    return HttpResponse(content=macro.text)
+    return {"text": macro.text, "line": macro.line}
 
 
 @json_view
@@ -275,4 +288,60 @@ def api_package_files_certified(_, pkg_name, pkg_version=None):
     results = []
     for utlfile in utlfiles:
         results.append(utlfile.to_dict())
+    return results
+# pylint: disable=invalid-name
+
+
+# api/macros_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/
+@json_view
+def api_macros_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name):
+    """Return a list of all the macros likely to be active for a site, with a particular global
+    skin active, and a particular skin applied.
+
+    :param str site_domain: The site's domain (i.e. URL of front page with 'http://' removed)
+
+    :param str global_pkg_name: The name of the global skin active for the site.
+
+    :param str skin_app: The application containing the skin.
+
+    :param str skin_name: The name of the skin in BLOX.
+
+    """
+    the_site = get_object_or_404(TownnewsSite, URL='http://{}'.format(site_domain))
+    global_app = get_object_or_404(Application, name='global')
+    pkg_app = get_object_or_404(Application, name=skin_app)
+
+    global_skins = Package.objects.filter(site=the_site, app=global_app, name=global_pkg_name)
+    if not global_skins.exists():
+        raise Http404("No global skin '{}' found for site '{}'".format(global_pkg_name,
+                                                                       the_site.URL))
+    # just get most recent download
+    global_skin = global_skins.latest('last_download')
+
+    # Is there a customized app skin?
+    custom_app_skin = Package.objects.filter(site=the_site, app=pkg_app, name=skin_name)
+    selected_skin = None
+    if custom_app_skin.exists():
+        selected_skin = custom_app_skin.latest('last_download')
+    else:
+        # try to find certified package to match
+        cert_pkg = get_object_or_404(CertifiedUsedBy, site=the_site, package__app=pkg_app,
+                                     package_name=skin_name)
+        selected_skin = cert_pkg.package
+
+    matched_pkgs = set([global_skin, selected_skin])
+
+    for pkg in Package.objects.filter(site=the_site,
+                                      pkg_type__in=[Package.BLOCK, Package.COMPONENT]):
+        matched_pkgs.add(pkg)
+
+    for certif in CertifiedUsedBy.objects.filter(site=the_site,
+                                                 package__pkg_type__in=[Package.BLOCK,
+                                                                        Package.COMPONENT]):
+        matched_pkgs.add(certif.package)
+
+    utl_files = UTLFile.objects.filter(pkg__in=matched_pkgs)
+    macro_defs = MacroDefinition.objects.filter(source__in=utl_files)
+    results = [macro_def.to_dict() for macro_def in macro_defs]
+    results.sort(key=lambda x: x["name"])
     return results
