@@ -28,7 +28,8 @@
       varstmt: true
 */
 /* global
-   $, Encoder */
+   $, Encoder 
+*/
 
 $(function () {
   "use strict";
@@ -395,15 +396,17 @@ $(function () {
     this.get_macros_for(site_control.text(), global_control.text(), skin_control.text(),
       (data) => {
         this.macro_list = data // save for later
+
         $("ul#macros-list li").detach()
         data.forEach((datum) => {
           // console.log("macro " + datum.name + " from " + datum.pkg + ":" + datum.pkg_version + " ('" + datum.file + "')")
           // need a better way here for user to detect when there are 2 versions of the same macro
           $("ul#macros-list").append('<li class="list-item" data-value="' + datum.id + '"><a href="#">' + datum.name + '</a></li>')
         })
+
         $("#macros-list .list-item a").on("click", (evt) => {
-          console.log(evt.target.parentNode.dataset.value)
           let item_value = Number(evt.target.parentNode.dataset.value)
+
           this.macro_list.forEach((macro_obj) => {
             if (macro_obj.id === item_value) {
               console.log(macro_obj)
@@ -415,7 +418,9 @@ $(function () {
                     $("#defs-text span").detach()
                     $("#defs-text br").detach()
                     lines.forEach((line) => {
-                      $("#defs-text").append("<span>" + Encoder.htmlEncode(line) + "</span><br>")
+                      // second arg of htmlEncode == true ==> &amp; gets converted to &amp;amp;
+                      // will get converted back by browser
+                      $("#defs-text").append("<span>" + Encoder.htmlEncode(line, true) + "</span><br>")
                     })
                   })
                 .fail(
