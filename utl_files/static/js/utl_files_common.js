@@ -28,7 +28,8 @@
       varstmt: true
 */
 /* global
-   $ */
+   $
+ */
 
 $(function () {
   "use strict";
@@ -221,27 +222,31 @@ $(function () {
          *
          * IMPORTANT: caller should reset control first
          *
-         * @param {string} api_name* One or more parts of the path of
-         * the api call. The called api will be <code>"api/"</code>
-         * followed by each argument, joined with "/"
+         * @param {string} api_name The name of the API, such that the
+         * first part of the URL is <code>"api/" + api_name</code>
+         *
+         * @param {...} url_args The data passed to the API, will be
+         * appended to the end separated by "/"
          *
          */
-        this.fill_from_api = api_name => {
-            let api_call = "api/"
-            for (let i = 0; i < arguments.length; i++) {
-              // TODO: escape entities in arguments
-              api_call += arguments[i] + "/"
-            }
+        this.fill_from_api = (api_name, ...url_args) => {
+            let api_call = "api/" + api_name + "/" + url_args.join("/")
 
             $.getJSON(api_call)
-              .done(data => {
-                // console.log(data)
-                this.add_li_from_data(data)
-              })
-              .fail(() => {
-                console.error("ERROR in api call to " + api_call)
-                console.log(arguments)
-              })
+              .done(
+                data => {
+                  this.add_li_from_data(data)
+                })
+              .fail(
+                (jqXHR, textStatus, errorThrown) => {
+                  console.error("ERROR in api call to " + api_call)
+                  if (textStatus === "error") {
+                    //don't report textStatus, it's useless
+                    console.log("Error is: " + errorThrown)
+                  } else {
+                    console.log("status is " + textStatus + ", error is " + errorThrown)
+                  }
+                })
           } // fill_from_api()
 
       }, // DropDownControl
@@ -390,11 +395,12 @@ $(function () {
                 handler(data)
               })
             .fail(
-              () => {
-                console.error("FAIL of API call " + api_call);
-                console.log("error arguments")
-                for (let i = 0; i < arguments.length; i++) {
-                  console.log(arguments[i])
+              (jqXHR, textStatus, errorThrown) => {
+                if (textStatus === "error") {
+                  //don't report textStatus, it's useless
+                  console.log("Error is: " + errorThrown)
+                } else {
+                  console.log("status is " + textStatus + ", error is " + errorThrown)
                 }
               })
         } // get_macros_for()
