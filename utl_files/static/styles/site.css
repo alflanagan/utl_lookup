@@ -21,7 +21,7 @@
 }
 #files-panel {
   padding: 0px;
-  border-color: #ddd;
+  border-color: #dddddd;
   border-style: solid;
   border-width: 0px 1px 1px 1px;
 }
@@ -30,5 +30,10 @@
 }
 #files-panel ul#files-tree li {
   border-width: 0;
+}
+#defs-text {
+  white-space: pre-wrap;
+  font-family: 'Roboto Mono', 'Courier New', 'Courier', 'Monospace';
+  background-color: #f5f5f5;
 }
 /*# sourceMappingURL=site.css.map */

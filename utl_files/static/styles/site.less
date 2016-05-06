@@ -1,8 +1,18 @@
+@googlefonts: "https://fonts.googleapis.com/css";
+
+@verylightgrey: #f5f5f5;
+@darkergrey: #dddddd;
+@my-mono: 'Roboto Mono', 'Courier New', 'Courier', 'Monospace';
+
+// don't know why @googlefonts fails in below string
+@import url("https://fonts.googleapis.com/css?family=Roboto+Mono");
+
 .btn-pick-one {
   background: light-grey;
 }
 
-#tree-panel, #tab-panel {
+#tree-panel,
+#tab-panel {
   padding-right: 0;
   padding-left: 0;
 }
@@ -13,19 +23,18 @@
 }
 
 #macros-list {
-    overflow: hidden;
-    list-style: none;
+  overflow: hidden;
+  list-style: none;
 }
 
-@import url("https://fonts.googleapis.com/css?family=Roboto+Mono");
 .file-path {
-  font-family: 'Roboto Mono', 'Courier New', 'Courier', 'Monospace';
+  font-family: @my-mono;
   font-weight: 600;
 }
 
 #files-panel {
   padding: 0px;
-  border-color: #ddd;
+  border-color: @darkergrey;
   border-style: solid;
   border-width: 0px 1px 1px 1px;
   ul#files-tree {
@@ -34,4 +43,10 @@
       border-width: 0;
     }
   }
+}
+
+#defs-text {
+  white-space: pre-wrap;
+  font-family: @my-mono;
+  background-color: @verylightgrey;
 }
