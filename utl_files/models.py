@@ -1,7 +1,10 @@
 """Classes to model UTL files in a Townnews site, including file organization."""
 
 import os
+import re
+import sys
 import time
+import json
 from pathlib import Path
 from warnings import warn
 
@@ -167,7 +170,6 @@ class Package(models.Model):
                 return "{}/{}::{}({})".format(self.site, self.app, self.name,
                                               self.last_download.strftime('%Y-%m-%d %H:%M'))
 
-
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
         return {"id": self.pk,
@@ -243,6 +245,11 @@ class Package(models.Model):
         my_pkg.full_clean()
         my_pkg.save()
         my_pkg.get_utl_files()
+        try:
+            PackageProp.from_package_metadata(my_pkg)
+            PackageDep.from_package_metadata(my_pkg)
+        except FileNotFoundError:
+            warn("Skipping import of data from .metadata/.meta.json, file not found")
         return my_pkg
 
     def get_utl_files(self):
@@ -268,7 +275,7 @@ class PackageProp(models.Model):
     """
     pkg = models.ForeignKey(Package, on_delete=models.CASCADE)
     key = models.CharField(max_length=50)
-    value = models.CharField(max_length=250)
+    value = models.TextField()
 
     class Meta:  # pylint: disable=missing-docstring
         unique_together = ("pkg", "key")
@@ -281,6 +288,30 @@ class PackageProp(models.Model):
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
         return {"id": self.pk, "key": self.key, "value": self.value}
+
+    @classmethod
+    def from_package_metadata(cls, package: Package):
+        """Reads the ``.metadata/.meta.json`` file for :py:class:`~utl_files.models.Package`
+        object package and creates appropriate PackageProp instances.
+
+        :raises: NotFoundError if package is not present at package.disk_directory, if there is
+        no ``.meta.json`` file.
+
+        """
+        meta_file = (Path(settings.TNPACKAGE_FILES_ROOT) / Path(package.disk_directory) /
+                     Path('.metadata/.meta.json'))
+        with meta_file.open('r') as meta_in:
+            data = json.load(meta_in)
+        for key in data:
+            # key dependencies handled in PackageDep
+            if key != "dependencies" and data[key]:
+                new_prop = PackageProp(pkg=package, key=key, value=data[key])
+                try:
+                    new_prop.full_clean()
+                except:
+                    print("Key is '{}', value is '{}'.".format(key, data[key]))
+                    raise
+                new_prop.save()
 
 
 class PackageDep(models.Model):
@@ -361,6 +392,45 @@ class PackageDep(models.Model):
                 raise ValidationError("PackageDep object with duplicate (pkg, dep_name, "
                                       "dep_version) combination (dep_pkg is null)")
 
+    @classmethod
+    def from_package_metadata(cls, package: Package):
+        """Reads the ``.metadata/.meta.json`` file for :py:class:`~utl_files.models.Package`
+        object package and creates appropriate PackageDep instances.
+
+        :raises: NotFoundError if package is not present at package.disk_directory, if there is
+        no ``.meta.json`` file.
+
+        """
+        meta_file = (Path(settings.TNPACKAGE_FILES_ROOT) / Path(package.disk_directory) /
+                     Path('.metadata/.meta.json'))
+        with meta_file.open('r') as meta_in:
+            data = json.load(meta_in)
+        if "dependencies" in data:
+            deps = data["dependencies"]
+            for pkg_name in deps:
+                this_dep_pkg = None
+                pkg_version = deps[pkg_name]
+                if Package.objects.filter(name=pkg_name,
+                                          version=pkg_version,
+                                          is_certified=True).exists():
+                    this_dep_pkg = Package.objects.filter(name=pkg_name,
+                                                          version=pkg_version,
+                                                          is_certified=True).first()
+                elif (not package.is_certified and
+                      Package.objects.filter(name=pkg_name,
+                                             version=pkg_version,
+                                             site=package.site).exists()):
+                    this_dep_pkg = Package.objects.filter(name=pkg_name,
+                                                          version=pkg_version,
+                                                          site=package.site).first()
+                if this_dep_pkg:
+                    new_dep = PackageDep(pkg=package, dep_pkg=this_dep_pkg)
+                else:
+                    new_dep = PackageDep(pkg=package, dep_name=pkg_name,
+                                         dep_version=deps[pkg_name])
+                new_dep.full_clean()
+                new_dep.save()
+
 
 class UTLFile(models.Model):
     """Reference information regarding a specific file in the UTL templates directories."""
@@ -395,7 +465,6 @@ class UTLFile(models.Model):
         """The full path of the file, including the package directory."""
         return Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.pkg.disk_directory) / self.file_path
 
-    # TODO: move this to a custom manager
     @classmethod
     def create_from(cls, filename, package):
         """Creates and returns a new :py:class:`utl_files.models.UTLFile` instance.
@@ -473,6 +542,12 @@ class MacroDefinition(models.Model):
                               help_text="Character offset in file at which macro definition ends.")
     line = models.IntegerField(null=True, help_text="Line number of macro definition in file.")
 
+    WS_BEGIN_RE = re.compile(r'\A\s+')
+    "Match whitespace at the beginning of the line"
+
+    SPACES_FOR_TAB = ' ' * 8
+    "Number of spaces to replace \t character in text (match Townnews editor)"
+
     class Meta:  # pylint: disable=C0111
         # source and name are NOT unique; legal to redefine macro in a file
         unique_together = ("source", "start")
@@ -491,6 +566,43 @@ class MacroDefinition(models.Model):
                 "end": self.end,
                 "line": self.line}
 
+    def clean_up_text(self):
+        """Process the macro text. Normalize the macro xxx() line, and trim white extra white
+        space off the left and right."""
+        working = []
+        lines = self.text.split("\n")
+        pos = 0
+        while not lines[pos].strip():
+            pos += 1
+        if 'macro' in lines[pos]:
+            working.append(lines[pos].strip())
+        else:
+            # shouldn't happen
+            return
+        # handle "macro" as the only word on the line
+        if working[0] == 'macro':
+            try:
+                working[0] += " " + lines[pos + 1].strip()
+                pos += 2
+            except IndexError:
+                pass
+        else:
+            pos += 1
+        min_ws_len = 50000000
+        for line in lines[pos:]:
+            line = line.replace('\t', self.SPACES_FOR_TAB)
+            match = self.WS_BEGIN_RE.match(line)
+            if match:
+                min_ws_len = min([min_ws_len, match.end()])
+            elif line.strip():
+                # not blank, no whitespace
+                min_ws_len = 0
+                break  # at minimum already
+        for line in lines[pos:]:
+            line = line.replace('\t', self.SPACES_FOR_TAB)
+            working.append(line[min_ws_len:].rstrip())
+        self.text = "\n".join(working)
+
 
 class MacroRef(models.Model):
     """Records a macro call in a specific UTL file."""
@@ -506,8 +618,13 @@ class MacroRef(models.Model):
 
     class Meta:  # pylint: disable=C0111
         # can't use source, start alone as unique because, e.g.,
-        # articleItem.items('type':'image')[0].preview([300])
-        # is two macro calls
+        # we have records like this:
+        # start | line |               macro_name                | source_id
+        # ------+------+-----------------------------------------+-----------
+        #  3179 |   72 | result.items                            | 10283
+        #  3179 |   72 | result.items('type':'image')[0].preview | 10283
+        # i.e. a macro call can return an object which can be part of another
+        # reference
         unique_together = ("source", "start", "macro_name")
 
     def __str__(self):
@@ -538,7 +655,7 @@ class CertifiedUsedBy(models.Model):
     class Meta:  # pylint: disable=C0111
         unique_together = ("package", "site")
 
-    #override
+    # override
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude)
         if "package" not in exclude:
