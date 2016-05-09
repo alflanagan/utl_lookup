@@ -112,7 +112,8 @@ def api_packages(_, name=None, version=None):
 def api_macro_text(_, macro_id):
     """Return the text of a macro definition, identified by integer ID `macro_id`."""
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
-    return {"text": macro.text, "line": macro.line}
+    return {"text": macro.text, "line": macro.line, "name": macro.name,
+            "source": macro.source.file_path, "package": macro.source.pkg.name,}
 
 
 @json_view
