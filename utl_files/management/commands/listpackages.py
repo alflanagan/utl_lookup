@@ -23,6 +23,9 @@ class Command(BaseCommand):
     #     parser.add_argument('pkg_name', help='OfficeTownnews package')
 
     def handle(self, *args, **options):
-        for pkg in Package.objects.all():
+        for pkg in Package.objects.order_by("site", "name").all():
             isinstance(pkg, Package)
-            print("{}: {}".format(pkg.name, pkg.version))
+            if pkg.site is not None:
+                print("{} -- {}: {}".format(pkg.site.domain, pkg.name, pkg.version))
+            else:
+                print("certified -- {}: {}".format(pkg.name, pkg.version))
