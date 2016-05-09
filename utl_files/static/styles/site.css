@@ -36,4 +36,21 @@
   font-family: 'Roboto Mono', 'Courier New', 'Courier', 'Monospace';
   background-color: #f5f5f5;
 }
+.panel-body .heading-info {
+  border-width: 2px;
+  border-style: inset;
+  border-radius: 5px;
+}
+.panel-body .heading-info div {
+  min-height: 20px;
+  padding: 3px;
+}
+.macro-detail {
+  background-color: #f5f5f5;
+}
+.macro-detail .macro-detail-label {
+  font-weight: 800;
+  font-variant: small-caps;
+  background-color: lightgrey;
+}
 /*# sourceMappingURL=site.css.map */
