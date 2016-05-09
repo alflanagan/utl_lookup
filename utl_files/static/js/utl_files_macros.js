@@ -33,6 +33,7 @@
 
 $(function () {
   "use strict";
+  const utl_files = window.utl_files
 
   // ID selector strings, use constant to avoid mistyping
   const DEFS_PNL = "#defs-panel",
@@ -60,172 +61,6 @@ $(function () {
   $("#defs-tab").on("click", on_tab_click)
   $("#refs-tab").on("click", on_tab_click)
 
-  /**
-   * @summary An object that represents a bootstrap dropdown control
-   * on the page.
-   *
-   * @description A bootstrap control is made up of a &lt;div&gt;
-   * containing a &lt;button&gt; and an &lt;ul&gt; list. This object
-   * handles the initial appearance, click handling, and updating the
-   * button text with the value of the selected item.
-   *
-   * @constructor
-   * @global
-   *
-   * @param {string} ul_id The id attribute of the &lt;ul&gt; element used
-   * for dropdown
-   * @param {string} label_id The id attribute of the &lt;button&gt;
-   * element acting as a label/trigger
-   * @param {string} label_text The text to show on the control when
-   * no item is selected
-   * @param {Function} select_handler Function called when a
-   * drop-down item is selected. Gets this object as an argument
-   *
-   */
-  const DropDownControl = function (ul_id, label_id, label_text, select_handler) {
-      this.label_id = label_id
-      this.ul_id = ul_id
-      this.label_text = label_text
-      this.picked = false
-      this.handler = select_handler
-        // console.log('Creating DropDownControl("' + ul_id + '", "' + label_id + "...")
-
-      /**
-       * @summary Event handler for click on list item.
-       *
-       * @description An event handler triggered when one of the
-       * dropdown items is clicked. Sets label to text of selected
-       * item, sets <var>picked</var> to <code>true</code>, then calls
-       * user-supplied handler, if any.
-       *
-       * @param {Object} evt the Event object.
-       *
-       * @param {string} evt.target The list item that was clicked.
-       */
-      this.onclick = evt => {
-        this.text(evt.target.textContent)
-        this.picked = true
-        this.handler(this)
-      }
-
-      // ensure existing list items have click handler
-      $(ul_id + " li").on("click", this.onclick)
-
-      /**
-       * Get or set the label text.
-       *
-       * @param {string} arg Set the label text for this control to
-       * the value of <var>arg</var> (plus a caret decoration). If
-       * <var>arg</var> is <code>undefined</code>, the text is
-       * unchanged (but still returned).
-       *
-       * @return {string} The text of the currently selected item
-       */
-      this.text = arg => {
-        if (arg === undefined) {
-          return $(this.label_id).prop("innerText")
-        } else {
-          this.label_text = arg
-          $(this.label_id).html(this.label_text + "<span class=\"caret\"></span>")
-          return arg
-        }
-      }
-
-      /**
-       * Disable the control
-       */
-      this.disable = () => {
-        $(this.label_id).attr("disabled", "")
-      }
-
-      /**
-       * Enable the control
-       */
-      this.enable = () => {
-        $(this.label_id).removeAttr("disabled")
-      }
-
-      /**
-       * @summary Fills dropdown with string values
-       *
-       * @description Clears the current list, then creates a list
-       * item for each element in <var>data</var>. Clicking the
-       * element will trigger this object's <code>onclick()</code>
-       * handler. If there are no items in <var>data</var>, disables
-       * the control. If there is exactly 1 item in <var>data</var>,
-       * automatically selects it (triggering click event).
-       *
-       * @param {Array} data A list of items to be added.
-       */
-      this.add_li_from_data = data => {
-          $(this.ul_id + " li").detach()
-            // don't prevent user from filling tree if no options or
-            // just one
-          this.picked = (data.length < 2)
-          data.forEach(
-            datum => {
-              const new_elem = $('<li>' + datum + '</li>')
-              new_elem.on("click", this.onclick)
-              $(this.ul_id).append(new_elem)
-            })
-          switch (data.length) {
-            case 0:
-              this.disable()
-              break;
-            case 1:
-              this.disable()
-                // automatically select for user
-              $(this.ul_id).children("li").click()
-              break;
-            default:
-              this.enable()
-          }
-        } //add_li_from_data
-
-      /**
-       * Resets dropdown to empty, disabled state
-       *
-       * @param {string} new_label If present, text displayed on
-       * button is changed to this value
-       */
-      this.reset = (new_label) => {
-        $(this.ul_id + " li").detach()
-        if (new_label !== undefined) {
-          this.label_text = new_label
-        }
-        this.text(this.label_text)
-        this.disable()
-        this.picked = false
-      }
-
-      /**
-       * @summary Fill the drop-down with results of an API call.
-       *
-       * IMPORTANT: caller should reset control first
-       *
-       * @param {string} api_name The API name (the fixed part of the
-       * URL that follows 'api/')
-       *
-       * @param {string} site_name The name of the site selected
-       *
-       */
-      this.fill_from_api = (api_name, site_name) => {
-          $.getJSON("api/" + api_name + "/" + site_name + "/")
-            .done(data => {
-              // console.log(data)
-              this.add_li_from_data(data)
-            })
-            .fail(() => {
-              console.error("ERROR in api call to " + api_name + "/" + site_name + ".")
-              for (let i = 0; i < arguments.length; i++) {
-                console.log(arguments[i])
-              }
-            })
-        } // fill_from_api()
-
-      return this;
-
-    } // DropDownControl
 
   /**
    * @summary Convert package spec to a display name.
@@ -382,9 +217,9 @@ $(function () {
     } // get_macros_for()
 
   //============= immediate code =====================================
-  const site_control = new DropDownControl("#id_site", "#id_site_label", "Site"),
-    global_control = new DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin"),
-    skin_control = new DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin"),
+  const site_control = new utl_files.DropDownControl("#id_site", "#id_site_label", "Site"),
+    global_control = new utl_files.DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin"),
+    skin_control = new utl_files.DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin"),
     select_form = new SelectSiteSkinsForm(site_control, global_control, skin_control)
 
   function htmlEncode(value) {
@@ -414,6 +249,13 @@ $(function () {
               $.getJSON(api_call)
                 .done(
                   data => {
+                    let pcode = '<p><span class="macro-detail-label">Name:</span> ' + data.name + '</p>'
+
+                    $("#macro-name").html(pcode)
+                    pcode = '<p><span class="macro-detail-label">Package:</span> ' + data.package + '</p>'
+                    $("#macro-package-name").html(pcode)
+                    pcode = '<p><span class="macro-detail-label">File:</span> ' + data.source + '</p>'
+                    $("#macro-file-name").html(pcode)
                     let lines = data.text.split("\n")
                     $("#defs-text span").detach()
                     $("#defs-text br").detach()
