@@ -6,7 +6,7 @@
 #
 
 autopep8==1.2.2
-elpy==1.11.0
+elpy==1.12.0
 flake8==2.5.4             # via elpy
 importmagic==0.1.7
 mccabe==0.4.0             # via flake8
