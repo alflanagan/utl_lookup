@@ -1,0 +1,33 @@
+.comment {
+    color: lightgrey;
+    font-style: italic;
+}
+
+.document {
+    color: blue;
+}
+.identifier {
+    color: red;
+}
+.if_stmt {
+    color: orange;
+}
+.macro_decl {
+    color: green;
+}
+.macro_defn {
+    color: purple;
+}
+
+.macro_decl .macro_name {
+    color: red;
+    font-style: italic;
+}
+
+.id {
+    color: darkcyan
+}
+
+#marked-up {
+    white-space: pre-wrap;
+}
