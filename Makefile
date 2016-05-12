@@ -2,6 +2,10 @@ DOC_DIR = jsdocs
 DOC_CONF = jsdoc.conf
 DOC_README = utl_files/static/js/README.md
 
+PYDOC_DIR = doc
+PYDOC_CONF = doc/conf.py
+PYDOC_MAIN = doc/_build/html/index.html
+
 JS_SOURCES = $(wildcard utl_files/static/js/*.js papers/static/js/*.js)
 PY_SOURCES = $(wildcard *.py */*.py */*/*.py */*/*/*.py */*/*/*/*.py)
 SH_SOURCES = $(wildcard *.sh)
@@ -33,3 +37,15 @@ $(DOC_DIR)/index.html: $(JS_SOURCES) $(DOC_CONF) $(DOC_README)
 	   rm -rf $(DOC_DIR)/fonts $(DOC_DIR)/scripts $(DOC_DIR)/styles; \
 	fi; \
 	jsdoc -c $(DOC_CONF) -a all --verbose $(JS_SOURCES)
+
+$(PYDOC_MAIN): $(PY_SOURCES) $(PYDOC_CONF) $(PYDOC_DIR)/index.rst
+	cd doc && $(MAKE) clean && $(MAKE) html
+
+.PHONY: jsdocs
+jsdocs: $(DOC_DIR)/index.html ;
+
+.PHONY: pydocs
+pydocs: $(PYDOC_MAIN) ;
+
+.PHONY: docs
+docs: jsdocs pydocs ;
