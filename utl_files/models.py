@@ -2,7 +2,6 @@
 
 import os
 import re
-import sys
 import time
 import json
 from pathlib import Path
@@ -22,11 +21,12 @@ from utl_lib.tn_site import TNSiteMeta
 
 from papers.models import TownnewsSite
 
+from utl_files.code_markup import UTLWithMarkup
 # pylint: disable=W0232,R0903,E1101
 
 
 class PackageError(Exception):
-    "Catchall for exceptions raised by Package class"
+    """Catchall for exceptions raised by Package class"""
     pass
 
 
@@ -295,7 +295,7 @@ class PackageProp(models.Model):
         object package and creates appropriate PackageProp instances.
 
         :raises: NotFoundError if package is not present at package.disk_directory, if there is
-        no ``.meta.json`` file.
+            no ``.meta.json`` file.
 
         """
         meta_file = (Path(settings.TNPACKAGE_FILES_ROOT) / Path(package.disk_directory) /
@@ -398,7 +398,7 @@ class PackageDep(models.Model):
         object package and creates appropriate PackageDep instances.
 
         :raises: NotFoundError if package is not present at package.disk_directory, if there is
-        no ``.meta.json`` file.
+            no ``.meta.json`` file.
 
         """
         meta_file = (Path(settings.TNPACKAGE_FILES_ROOT) / Path(package.disk_directory) /
@@ -566,6 +566,10 @@ class MacroDefinition(models.Model):
                 "end": self.end,
                 "line": self.line}
 
+    def clean(self):
+        """Cleans up macro text."""
+        self.clean_up_text()
+
     def clean_up_text(self):
         """Process the macro text. Normalize the macro xxx() line, and trim white extra white
         space off the left and right."""
@@ -602,6 +606,12 @@ class MacroDefinition(models.Model):
             line = line.replace('\t', self.SPACES_FOR_TAB)
             working.append(line[min_ws_len:].rstrip())
         self.text = "\n".join(working)
+
+    @property
+    def text_with_markup(self):
+        """Returns the text of the macro definition, with syntax markup."""
+        twmu = UTLWithMarkup(self.text)
+        return twmu.text
 
 
 class MacroRef(models.Model):

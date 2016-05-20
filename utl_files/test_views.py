@@ -18,6 +18,7 @@ from datetime import datetime
 
 import pytz
 from django.test import TestCase
+from django.http import HttpRequest
 from django.core.handlers.wsgi import WSGIRequest
 
 from utl_files import views
@@ -104,7 +105,7 @@ class api_files_for_custom_pkgTestCase(TestCase):
     TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
 
     TEST_PACKAGES = [
-        {"name": "editorial-core-mobile",
+        {"name": "editorial::editorial-core-mobile",
          "version": "1.54.0.0",
          "is_certified": True,
          "app": "editorial",
@@ -165,16 +166,22 @@ class api_files_for_custom_pkgTestCase(TestCase):
             new_file.save()
 
     def test_success(self):
-        """Unit tests for :py:func:`~utl_files.views.ap_files_for_custom_pkg`."""
-        request = None
-
+        """Unit tests for :func:`~utl_files.views.api_package_files_custom`."""
+        request = HttpRequest()
         for record in self.TEST_PACKAGES:
-            response = views.api_files_for_custom_pkg(request, record["site"].replace('http://',
-                                                                                      ''),
-                                                      record["name"], record["last_download"])
+            site_name = record["site"].replace('http://', '')
+            self.assertTrue(TownnewsSite.objects.filter(URL=record["site"]).exists())
+            site_obj = TownnewsSite.objects.get(URL=record["site"])
+            self.assertTrue(Package.objects.filter())
+            response = views.api_package_files_custom(
+                request,
+                record["site"].replace('http://', ''),
+                record["name"])
         json_out = response.getvalue().decode('utf-8')
         file_list = json.loads(json_out)
-        self.assertSetEqual(set(self.TEST_FILES), set(file_list))
+        self.assertNotIn('error', file_list)
+        path_list = [finfo["path"] for finfo in file_list]
+        self.assertSetEqual(set(self.TEST_FILES), set(path_list))
 
 
 class homeTestCase(TestCase):
@@ -194,17 +201,16 @@ class homeTestCase(TestCase):
 
     EXPECTED_RESULT = ['<!DOCTYPE html>',
                        '<meta charset="utf-8">',
-                       '<meta http-equiv="X-UA-Compatible" content="IE=edge">',
-                       '<meta name="viewport" content="width=device-width, initial-scale=1">',
+                       '<title></title>',
                        '<div class="container">',
                        '<div class="row">',
-                       '<h3 class="app-header text-center">Townnews Template Cross-Reference</h3>',
+                       'Townnews Template Cross-Reference',
                        '<div id="search-bar">',
-                       '<form class="form-inline" id="package-context-form" role="search">',
+                       'id="package-context-form"',
                        '<div id="id_site_div"',
                        '<button id="id_site_label"',
-                       '<ul id="id_site" class="dropdown-menu"',
-                       '<input type="hidden" id="selected_site">',
+                       '<ul id="id_site"',
+                       'id="selected_site"',
                        '<div id="id_global_skin_div"',
                        '<button id="id_global_skin_label"',
                        '<ul id="id_global_skin"',
@@ -212,11 +218,24 @@ class homeTestCase(TestCase):
                        '<button id="id_app_skin_label"',
                        '<ul id="id_app_skin"',
                        '<div id="tree-panel"',
-                       '<h3 class="panel-title">',
-                       '<ul class="list-group">',
-                       '<li class="list-group-item">',
+                       '<li class="list-group-item"',
+                       'id="pkgs_global_list"',
+                       'id="pkgs_skin_list"',
+                       'id="pkgs_blocks_list"',
+                       'id="pkgs_components_list"',
                        '<div id="tab-panel"',
-                       '<div class="panel-body">', ]
+                       '<li id="files-tab"',
+                       '<li id="defs-tab"',
+                       '<li id="refs-tab"',
+                       '<div id="files-panel"',
+                       'id="files-tree"',
+                       'id="files-tree-root"',
+                       '<div id="defs-panel"',
+                       '<div id="refs-panel"']
+    """List of significant parts of generated page (significant mostly in the
+    sense that other code expects them to be present).
+
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -239,6 +258,9 @@ class homeTestCase(TestCase):
             new_pkg = Package(**kwargs)
             new_pkg.save()
             cls.pkgs.append(new_pkg)
+        # Use our custom error messages in place of, rather than in addition
+        # to, the standard error message
+        cls.longMessage = False
 
     def test_view(self):
         """Basic rendering of page."""
@@ -247,13 +269,16 @@ class homeTestCase(TestCase):
         response = views.home(request)
         result = response.content.decode('utf-8')
         for fragment in self.EXPECTED_RESULT:
-            self.assertIn(fragment, result)
+            self.assertIn(fragment, result,
+                          "'{}' not found in output page for /files.".format(fragment))
         active_sites = set()
         for pkg in Package.objects.all():
             active_sites.add(pkg.site.domain)
         for tnsite in TownnewsSite.objects.all():
-            if tnsite.domain in active_sites or tnsite.domain == 'certified':
-                self.assertIn('<li value="{0}">{0}</li>'.format(tnsite.domain), result)
+            if tnsite.domain in active_sites:
+                expected_tag = '<li value="{0}">{0}</li>'.format(tnsite.domain)
+                self.assertIn(expected_tag, result,
+                              "Missing expected '{}' in /files page.".format(expected_tag))
             else:
                 self.assertNotIn(tnsite.domain, result)
 
@@ -369,8 +394,8 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
                                     "".format(self.tn_site.domain, self.GSKIN_NAME, self.app.name,
                                               self.ASKIN_NAME, self.ASKIN_VER))
         response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
-                                                          self.GSKIN_NAME, "N", self.app.name,
-                                                          self.ASKIN_NAME, self.ASKIN_VER)
+                                                          self.GSKIN_NAME, self.app.name,
+                                                          self.ASKIN_NAME)
         actual = json.loads(response.getvalue().decode('utf-8'))
 
         expected_all = {"global-richmond-portal_temp":
@@ -392,6 +417,7 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
                          "/my/stuff/richmond.com/skins/editorial/awesome-custom-skin_1.3.4/",
                          "pkg_type": "s", }}
         self.assertEqual(len(actual), len(expected_all))
+        self.assertNotIn("error", actual)
         for pkg_dict in actual:
             expected = expected_all[pkg_dict["name"]]
             self.assertDictContainsSubset(expected, pkg_dict)

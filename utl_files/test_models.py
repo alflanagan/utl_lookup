@@ -213,7 +213,10 @@ class PackageTestCase(TransactionTestCase):
     def test_str(self):
         """Unit test for :py:meth:`~utl_files.models.Package.__str__`."""
         for pkg in Package.objects.all():
-            self.assertEqual(str(pkg), "{}/{}/{}".format(pkg.app, pkg.name, pkg.version))
+            isinstance(pkg, Package)
+            self.assertEqual(str(pkg), "{}{}::{}/{}".format(
+                "certified/" if pkg.is_certified else "",
+                pkg.app, pkg.name, pkg.version))
 
     def test_to_dict(self):
         """Unit test for :py:meth:`~utl_files.models.Package.to_dict`."""
@@ -542,15 +545,20 @@ class PackageDepTestCase(TestCase):
                              dep_version='3.15')
         new_dep.full_clean()
         self.assertEqual(
-            str(new_dep), '{}/{}/{} depends on {} ({})'.format(
-                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version, new_dep.dep_name,
-                new_dep.dep_version))
-        new_dep = PackageDep(pkg=self.test_pkg, dep_name='', dep_pkg=self.test_dep, dep_version='')
+            str(new_dep), '{}{}::{}/{} depends on {} ({})'.format(
+                "certified/" if self.test_pkg.is_certified else "",
+                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version,
+                new_dep.dep_name, new_dep.dep_version))
+        new_dep = PackageDep(pkg=self.test_pkg,
+                             dep_name='',
+                             dep_pkg=self.test_dep,
+                             dep_version='')
         new_dep.full_clean()
         self.assertEqual(
-            str(new_dep), '{}/{}/{} depends on {} ({})'.format(
-                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version, self.test_dep.name,
-                self.test_dep.version))
+            str(new_dep), '{}{}::{}/{} depends on {} ({})'.format(
+                "certified/" if self.test_pkg.is_certified else "",
+                self.test_pkg.app, self.test_pkg.name, self.test_pkg.version,
+                self.test_dep.name, self.test_dep.version))
 
     def test_check_for_deps(self):
         """Unit test for :py:meth:`utl_files.models.PackageDep.check_for_deps`."""

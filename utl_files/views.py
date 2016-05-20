@@ -115,6 +115,12 @@ def api_macro_text(_, macro_id):
     return {"text": macro.text, "line": macro.line, "name": macro.name,
             "source": macro.source.file_path, "package": macro.source.pkg.name,}
 
+@json_view
+def api_macro_w_syntax(_, macro_id):
+    """Return the text of a macro with ID `macro_id`, with highlighting markup."""
+    macro = get_object_or_404(MacroDefinition, pk=macro_id)
+    return {"text": macro.text_with_markup, "line": macro.line, "name": macro.name,
+            "source": macro.source.file_path, "package": macro.source.pkg.name,}
 
 @json_view
 def api_global_skins_for_site(_, site_url):
@@ -169,7 +175,7 @@ def api_package_files_custom(_, site_url, pkg_name):
     """
     site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     if "::" in pkg_name:
-        app, pkg_name = pkg_name.split("::")
+        app, _ = pkg_name.split("::")
         app = get_object_or_404(Application, name=app)
     else:
         app = get_object_or_404(Application, name="global")

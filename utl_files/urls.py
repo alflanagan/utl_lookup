@@ -41,6 +41,9 @@ urlpatterns = [
     # api_macro_text(_, macro_id)
     url(r'api/macro_def_text/(\d+)/', views.api_macro_text, name="api_macro_text"),
 
+    # api_macro_text(_, macro_id)
+    url(r'api/macro_w_syntax/(\d+)/', views.api_macro_w_syntax, name="api_macro_w_syntax"),
+
     # api_applications(_)
     url(r'api/applications/', views.api_applications, name="api_applications"),
 
