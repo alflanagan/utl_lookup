@@ -10,6 +10,8 @@ Command to import a set of package files into the database.
 
 
 """
+import sys
+
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from utl_files.models import Package, PackageError, TownnewsSite
@@ -47,7 +49,11 @@ class Command(BaseCommand):
             if site_name == "certified":
                 site = None
             else:
-                site = TownnewsSite.objects.get(URL="http://{}".format(site_name))
+                try:
+                    site = TownnewsSite.objects.get(URL="http://{}".format(site_name))
+                except TownnewsSite.DoesNotExist:
+                    sys.stderr.write("I can't find a site record for http://{}. Create one and try again.".format(site_name))
+                    sys.exit(2)
 
             # print("site is " + site_name)
             Package.load_from(pkg_path, site, pkg_type)
