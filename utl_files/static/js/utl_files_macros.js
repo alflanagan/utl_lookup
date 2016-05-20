@@ -28,7 +28,7 @@
       varstmt: true
 */
 /* global
-   $, Encoder 
+   $, Encoder
 */
 
 $(function () {
@@ -245,10 +245,12 @@ $(function () {
           this.macro_list.forEach((macro_obj) => {
             if (macro_obj.id === item_value) {
               console.log(macro_obj)
-              let api_call = "/files/api/macro_def_text/" + item_value.toString() + "/"
+              // let api_call = "/files/api/macro_def_text/" + item_value.toString() + "/"
+              let api_call = "/files/api/macro_w_syntax/" + item_value.toString() + "/"
               $.getJSON(api_call)
                 .done(
                   data => {
+                    // TODO: pre-wrap style mostly works, but wrapping sucks. Define our own formatter?
                     let pcode = '<p><span class="macro-detail-label">Name:</span> ' + data.name + '</p>'
 
                     $("#macro-name").html(pcode)
@@ -262,7 +264,7 @@ $(function () {
                     lines.forEach((line) => {
                       // second arg of htmlEncode == true ==> &amp; gets converted to &amp;amp;
                       // will get converted back by browser
-                      $("#defs-text").append("<span>" + Encoder.htmlEncode(line, true) + "</span><br>")
+                      $("#defs-text").append("<span>" + Encoder.htmlEncode(line, false) + "</span><br>")
                     })
                   })
                 .fail(
