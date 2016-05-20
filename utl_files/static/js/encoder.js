@@ -1,13 +1,31 @@
 /**
- * A Javascript object to encode and/or decode html characters using HTML or Numeric entities that handles double or partial encoding
+ * A Javascript object to encode and/or decode html characters using
+ * HTML or Numeric entities that handles double or partial encoding
+ *
  * Author: R Reid
  * source: http://www.strictly-software.com/htmlencode
  * Licences: GPL, The MIT License (MIT)
  * Copyright: (c) 2011 Robert Reid - Strictly-Software.com
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  * 
  * Revision:
  *  2011-07-14, Jacques-Yves Bleau: 
@@ -24,7 +42,21 @@
  *
  * Revision:
  *  2012-09-23, Alex Oss: 
- *		 - replaced string concatonation in numEncode with string builder, push and join for peformance with ammendments by Rob Reid
+ *
+ * - replaced string concatonation in numEncode with string builder,
+ *   push and join for peformance with ammendments by Rob Reid
+ */
+
+/*
+ * Notes by Lloyd:
+ *
+ * Need a new version of this that uses the officially maintained JSON
+ * table at (https://html.spec.whatwg.org/entities.json) (but should
+ * have fallback locally).
+ *
+ * Should also make this a proper module.
+ *
+ * And are paired Arrays really the most efficient way to do this?
  */
 
 Encoder = {
