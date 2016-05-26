@@ -38,8 +38,11 @@ $(DOC_DIR)/index.html: $(JS_SOURCES) $(DOC_CONF) $(DOC_README)
 	fi; \
 	jsdoc -c $(DOC_CONF) -a all --verbose $(JS_SOURCES)
 
-$(PYDOC_MAIN): $(PY_SOURCES) $(PYDOC_CONF) $(PYDOC_DIR)/index.rst
-	cd doc && $(MAKE) clean && $(MAKE) html
+$(PYDOC_MAIN): $(PY_SOURCES) $(PYDOC_CONF) $(PYDOC_DIR)/*.rst
+	rm -r doc/_build/* doc/api/* doc/management/*; \
+	cd doc; \
+	$(MAKE) clean; \
+	$(MAKE) html
 
 .PHONY: jsdocs
 jsdocs: $(DOC_DIR)/index.html ;

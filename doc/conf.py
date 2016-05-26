@@ -328,3 +328,8 @@ autodoc_default_flags = ["members", "show-inheritance", "special-members"]
 #
 # Can also be a list of documents for which stub pages should be generated.
 autosummary_generate = True
+
+# Local Variables:
+# python-indent-offset: 4
+# indent-tabs-mode: nil
+# End:

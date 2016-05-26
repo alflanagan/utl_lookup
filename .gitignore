@@ -23,3 +23,5 @@ doc/_build/
 doc/api/
 # local copy of django object inventory
 doc/django_objects.inv
+# another generated dir
+doc/management
