@@ -11,4 +11,4 @@ Django==1.9.6
 ply==3.8
 psycopg2==2.6.1
 pytz==2016.4
-uwsgi==2.0.13
+uwsgi==2.0.13.1

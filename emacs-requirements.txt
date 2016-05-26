@@ -5,7 +5,7 @@
 #    pip-compile --output-file emacs-requirements.txt emacs-requirements.in
 #
 
-autopep8==1.2.2
+autopep8==1.2.4
 elpy==1.12.0
 flake8==2.5.4             # via elpy
 importmagic==0.1.7

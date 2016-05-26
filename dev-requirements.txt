@@ -11,7 +11,7 @@ babel==2.3.4              # via sphinx
 backports.shutil-get-terminal-size==1.0.0  # via ipython
 click==6.6                # via pip-tools
 colorama==0.3.7           # via pylint
-coverage==4.0.3
+coverage==4.1
 decorator==4.0.9          # via ipython, traitlets
 docutils==0.12            # via sphinx
 first==2.0.1              # via pip-tools
@@ -23,7 +23,7 @@ Jinja2==2.8               # via sphinx
 lazy-object-proxy==1.2.2  # via astroid
 MarkupSafe==0.23          # via jinja2
 pep8==1.7.0
-pexpect==4.0.1            # via ipython
+pexpect==4.1.0            # via ipython
 pickleshare==0.7.2        # via ipython
 pip-tools==1.6.5
 ptyprocess==0.5.1         # via pexpect
@@ -36,7 +36,7 @@ snowballstemmer==1.2.1    # via sphinx
 Sphinx==1.4.1
 traitlets==4.2.1          # via ipython
 wrapt==1.10.8             # via astroid
-yapf==0.8.0
+yapf==0.8.2
 
 # The following packages are commented out because they are
 # considered to be unsafe in a requirements file:
