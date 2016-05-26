@@ -4,6 +4,7 @@
 
 for SITE in  ../utl_indexer/data/exported/*
 do
+    echo "Importing packages for " $(basename ${SITE})
     for PKG_TYPE in ${SITE}/*
     do
         if [ -d ${PKG_TYPE} ]; then  # skip site_meta.json, etc.
