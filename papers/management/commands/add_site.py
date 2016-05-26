@@ -43,7 +43,10 @@ class Command(BaseCommand):
                     the_paper.save()
                     print("Created NewsPaper '{}'".format(options['paper']))
 
-        new_site = TownnewsSite(URL=options['domain'], name=options['name'], paper=the_paper)
+        new_url = options['domain']
+        if not new_url.startswith('http'):
+            new_url = "http://" + new_url
+        new_site = TownnewsSite(URL=new_url, name=options['name'], paper=the_paper)
         new_site.full_clean()
         new_site.save()
         print("Successfully created new site {}.".format(new_site))
