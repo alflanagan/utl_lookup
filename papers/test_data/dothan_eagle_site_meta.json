@@ -1,0 +1,158 @@
+{
+    "core_base_classifieds": {
+        "version": "1.48.0.0",
+        "zip_name": "component_core_base_classifieds.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "custom-newsletter-2": {
+        "version": "1.9.11",
+        "zip_name": "skin_editorial_custom-newsletter-2.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "core_site_dotham": {
+        "version": "1.7.0.3",
+        "zip_name": "component_core_site_dotham.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "editorial-core-print-directory": {
+        "version": "1.45.1.0",
+        "zip_name": "skin_editorial_editorial-core-print-directory.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_base_classifieds_vehicles": {
+        "version": "1.37.1",
+        "zip_name": "component_core_base_classifieds_vehicles.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-newsletter": {
+        "version": "1.27.1",
+        "zip_name": "skin_editorial_editorial-core-newsletter.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-mobile": {
+        "version": "1.54.0.0",
+        "zip_name": "skin_editorial_editorial-core-mobile.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_base_eedition": {
+        "version": "1.46.0.0",
+        "zip_name": "component_core_base_eedition.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-wrapper": {
+        "version": "1.45.1.0",
+        "zip_name": "skin_editorial_editorial-core-wrapper.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "form-core-base": {
+        "version": "1.53.0.0",
+        "zip_name": "skin_form_form-core-base.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "adowl-core-base": {
+        "version": "1.53.0.0",
+        "zip_name": "skin_adowl_adowl-core-base.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_base_editorial": {
+        "version": "1.43.0.1",
+        "zip_name": "component_core_base_editorial.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "custom-newsletter": {
+        "version": "1.9.7",
+        "zip_name": "skin_editorial_custom-newsletter.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "custom_monster_widget": {
+        "version": "0.1",
+        "zip_name": "component_custom_monster_widget.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "core_base_classifieds_real_estate": {
+        "version": "1.33.1",
+        "zip_name": "component_core_base_classifieds_real_estate.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "global-core-dotham-redesign": {
+        "version": "0",
+        "zip_name": "global_global-core-dotham-redesign.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "editorial-core-widget": {
+        "version": "1.45.0.1",
+        "zip_name": "skin_editorial_editorial-core-widget.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-forms": {
+        "version": "1.53.0.0",
+        "zip_name": "skin_editorial_editorial-core-forms.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_base_calendar": {
+        "version": "1.32.1",
+        "zip_name": "component_core_base_calendar.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_advertising": {
+        "version": "1.49.0.0",
+        "zip_name": "component_core_advertising.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-base": {
+        "version": "1.54.0.0",
+        "zip_name": "skin_editorial_editorial-core-base.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "global-core-dotham": {
+        "version": "0",
+        "zip_name": "global_global-core-dotham.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "N"
+    },
+    "core_base_discussions": {
+        "version": "1.38.0.0",
+        "zip_name": "component_core_base_discussions.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_adowl": {
+        "version": "1.49.0.1",
+        "zip_name": "component_core_adowl.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "editorial-core-discussions": {
+        "version": "1.54.0.0",
+        "zip_name": "skin_editorial_editorial-core-discussions.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    },
+    "core_base_business": {
+        "version": "1.51.0.1",
+        "zip_name": "component_core_base_business.zip",
+        "last_download": 1457558554.7555428,
+        "certified": "Y"
+    }
+}
