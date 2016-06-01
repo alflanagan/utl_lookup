@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """
 Django settings for utl_lookup project.
 
@@ -9,9 +10,11 @@ https://docs.djangoproject.com/en/1.8/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.8/ref/settings/
 """
-
+import sys
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+
+import django.views.debug  # for tieing to wingware IDE
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -108,3 +111,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # The parent directory for all the downloaded UTL files. This will have a subdirectory named
 # "certified", and a subdirectory for each of the sites for which we have custom files.
 TNPACKAGE_FILES_ROOT = '/mnt/extra/Devel/utl_indexer/data/exported/'
+
+
+# monkey-patch for adding debug hook to Django exceptions
+# Absolutely DO NOT put this in production
+def wing_debug_hook(*args, **kwargs):
+    """Detect Wingware IDE and add extra hook for exceptions."""
+    if __debug__ and 'WINGDB_ACTIVE' in os.environ:
+        exc_type, exc_value, traceback = sys.exc_info()
+        sys.excepthook(exc_type, exc_value, traceback)
+    return old_technical_500_response(*args, **kwargs)
+
+old_technical_500_response = django.views.debug.technical_500_response
+django.views.debug.technical_500_response = wing_debug_hook
