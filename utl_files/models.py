@@ -19,7 +19,7 @@ from utl_lib.macro_xref import UTLMacroXref, UTLMacro
 from utl_lib.tn_package import TNPackage
 from utl_lib.tn_site import TNSiteMeta
 
-from papers.models import TownnewsSite
+from papers.models import TownnewsSite, TownnewsSiteMetaData
 
 from utl_files.code_markup import UTLWithMarkup
 # pylint: disable=W0232,R0903,E1101
@@ -147,6 +147,10 @@ class Package(models.Model):
                                           "".format(self.name, self.version))
             else:
                 if not set(["site", "last_download", "name"]).intersection(set(exclude)):
+                    if self.last_download is None:
+                        error_list.append("Package '{}' is not certified but has no downloaded time.".format(self.name))
+                    if self.site is None:
+                        error_list.append("Package '{}' is not certified but site not specified.".format(self.name))
                     if Package.objects.filter(name=self.name,
                                               site=self.site,
                                               last_download=self.last_download).exists():
@@ -266,6 +270,29 @@ class Package(models.Model):
             new_file = UTLFile.create_from(filename, self)
             new_file.full_clean()
             new_file.save()
+
+    @classmethod
+    def find_packages_for(cls, site, pkg_name):
+        """Checks metadata for a site and finds packages with a given name.
+
+        :param [str, TownnewsSite] site: A TownnewsSite instance, or its URL.
+
+        :param str pkg_name: the name of a package to look for.
+
+        :returns: Generator object yielding Package instances.
+
+        """
+        if isinstance(site, str):
+            site = TownnewsSite.objects.get(URL=site)
+
+        mdata = TownnewsSiteMetaData.objects.filter(site=site, pkg_name=pkg_name)
+        for mdatum in mdata:
+            try:
+                pkg = cls.objects.get(name=pkg_name, version=mdatum.version,
+                                      is_certified=True)
+                yield pkg
+            except cls.DoesNotExist:
+                pass
 
 
 class PackageProp(models.Model):
@@ -653,6 +680,9 @@ class MacroRef(models.Model):
                 "name": self.macro_name}
 
 
+# TODO: Has this been superceded by TownnewsSiteMetaData?
+# will at least be redundant info, as TownnewsSiteMetaData can reference
+# packages that are not (currently) in the database
 class CertifiedUsedBy(models.Model):
     """Implements many-to-many relationship between certified packages and sites.
 

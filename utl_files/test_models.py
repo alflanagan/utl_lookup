@@ -3,6 +3,7 @@
 """Module of tests for :py:mod:`utl_files.models`."""
 
 import sys
+import re
 from pathlib import Path
 from warnings import simplefilter
 
@@ -231,7 +232,7 @@ class PackageTestCase(TransactionTestCase):
             self.assertEqual(pkgdict["version"], pkg.version)
             self.assertEqual(pkgdict["is_certified"], 'y' if pkg.is_certified else 'n')
             self.assertEqual(pkgdict["downloaded"], pkg.last_download)
-            self.assertEqual(pkgdict["pkg_type"], pkg.pkg_type),
+            self.assertEqual(pkgdict["pkg_type"], pkg.pkg_type)
             self.assertEqual(pkgdict["location"], pkg.disk_directory)
 
     def test_load_from_certified(self):
@@ -306,6 +307,7 @@ class UTLFileTestCase(TestCase):
 
         cls.app = Application.objects.get(name='editorial')
         cls.app.save()
+        cls.site = TownnewsSite.objects.get(URL='http://richmond.com')
         cls.pkg = Package(name=cls.TEST_PKG,
                           version=cls.TEST_VERSION,
                           is_certified=True,
@@ -325,6 +327,8 @@ class UTLFileTestCase(TestCase):
                                     version='0.1',
                                     is_certified=False,
                                     app=cls.app,
+                                    site=cls.site,
+                                    last_download="2015-05-01 13:00:00Z",
                                     pkg_type=Package.BLOCK,
                                     disk_directory='omaha.com/blocks/custom-parsing-error')
         cls.parse_err_pkg.full_clean()
@@ -381,7 +385,9 @@ class UTLFileTestCase(TestCase):
             with (Path(settings.TNPACKAGE_FILES_ROOT) / self.PKG_DIRECTORY /
                   self.MACROS_FILE).open('r') as macin:
                 self.macro_file_text = macin.read()
-        self.assertEqual(macro_rcd.text, self.macro_file_text[start:end])
+        # replicate the processing we did when adding to db
+        ws_stripped = re.sub('\\s+\n', '\n', self.macro_file_text[start:end])
+        self.assertEqual(macro_rcd.text, ws_stripped)
 
     def test_get_macros_many(self):
         """:py:meth:`utl_file.models.UTLFile.get_macros` can successfully load macros."""
