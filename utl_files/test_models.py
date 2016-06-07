@@ -14,9 +14,9 @@ from django.conf import settings
 
 from testplus.mock_objects import MockStream
 
-from .models import (Application, MacroDefinition, MacroRef, Package, UTLFile, UTLFileImportError,
-                     PackageError, PackageProp, PackageDep)
-from papers.models import TownnewsSite, NewsPaper
+from utl_files.models import (Application, MacroDefinition, MacroRef, Package, UTLFile,
+                              UTLFileImportError, PackageError, PackageProp, PackageDep)
+from papers.models import TownnewsSite, NewsPaper, TownnewsSiteMetaData
 
 # pylint: disable=no-member,invalid-name
 
@@ -29,6 +29,7 @@ class ApplicationTestCase(TestCase):
 
     """
 
+    # pylint: disable=R0201
     def setUp(self):
         """Create a simple Application record for testing."""
         if sys.version_info.major < 3 or (sys.version_info.major == 3 and
@@ -101,12 +102,14 @@ class PackageTestCase(TransactionTestCase):
         return item
 
     def setUp(self):
-        """Create a package object for tests."""
+        """Create package objects for tests."""
+        self.global_app = self.find_record_or_create(Application, name="global")
         self.find_record_or_create(Application, name='editorial')
         # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
         # into errors by default.
         simplefilter('error')
         self.test_app = Application(name=self.TEST_APP)
+        self.test_app.full_clean()
         self.test_app.save()
 
         self.paper = self.find_record_or_create(NewsPaper, name='Richmond Times-Dispatch')
@@ -119,6 +122,28 @@ class PackageTestCase(TransactionTestCase):
                                                      URL='http://omaha.com',
                                                      name='omaha.com',
                                                      paper=self.paper2)
+
+        self.metadata = [TownnewsSiteMetaData(site=self.test_site,
+                                              pkg_name='some-totally-bogus-package',
+                                              zip_name="some_totally_bogus_package.zip",
+                                              version=self.TEST_VERSION,
+                                              is_certified=False,
+                                              last_download="2015-05-01 13:00:00Z"),
+                         TownnewsSiteMetaData(site=self.test_site,
+                                              pkg_name=self.TEST_NAME,
+                                              zip_name='pakcage_not_in_db.zip',
+                                              version=self.TEST_VERSION,
+                                              is_certified=False,
+                                              last_download="2015-05-01 13:00:00Z")]
+
+        for mdata in self.metadata:
+            mdata.full_clean()
+            mdata.save()
+
+        # load files from our test directory, not system directory
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
+
+        # certified, non-global
         pkg = Package(name=self.TEST_NAME,
                       version=self.TEST_VERSION,
                       is_certified=True,
@@ -130,9 +155,42 @@ class PackageTestCase(TransactionTestCase):
                       pkg_type=Package.SKIN)
         pkg.full_clean()
         pkg.save()
-
-        # load files from our test directory, not system directory
-        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
+        # certified, global
+        pkg2 = Package(name='another-totally-bogus-package',
+                       version='2.1.7',
+                       is_certified=True,
+                       app=self.global_app,
+                       last_download="2015-05-01 13:00:00Z",
+                       disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                       "some_totally_bogus_package"),
+                       site=self.test_site,
+                       pkg_type=Package.SKIN)
+        pkg2.full_clean()
+        pkg2.save()
+        # non-certified, non-global
+        pkg3 = Package(name='custom-not-global-pkg',
+                       version=self.TEST_VERSION,
+                       is_certified=False,
+                       app=self.test_app,
+                       last_download="2015-05-01 13:00:00Z",
+                       disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                       "some_totally_bogus_package"),
+                       site=self.test_site,
+                       pkg_type=Package.SKIN)
+        pkg3.full_clean()
+        pkg3.save()
+        # non-certified, global
+        pkg4 = Package(name='custom-and-global-pkg',
+                       version=self.TEST_VERSION,
+                       is_certified=False,
+                       app=self.global_app,
+                       last_download="2015-05-01 13:00:00Z",
+                       disk_directory=("/data/exported/richmond.com/skins/testing/"
+                                       "some_totally_bogus_package"),
+                       site=self.test_site,
+                       pkg_type=Package.SKIN)
+        pkg4.full_clean()
+        pkg4.save()
 
     def test_insert(self):
         """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
@@ -214,10 +272,25 @@ class PackageTestCase(TransactionTestCase):
     def test_str(self):
         """Unit test for :py:meth:`~utl_files.models.Package.__str__`."""
         for pkg in Package.objects.all():
-            isinstance(pkg, Package)
-            self.assertEqual(str(pkg), "{}{}::{}/{}".format(
-                "certified/" if pkg.is_certified else "",
-                pkg.app, pkg.name, pkg.version))
+            tstamp = ""
+            if pkg.last_download:
+                tstamp = pkg.last_download.strftime('%Y-%m-%d %H:%M')
+            if pkg.is_certified:
+                if pkg.app.name == 'global':
+                    self.assertEqual(str(pkg),
+                                     "certified/{}/{}".format(pkg.name, pkg.version))
+                else:
+                    self.assertEqual(str(pkg),
+                                     "certified/{}::{}/{}".format(pkg.app, pkg.name, pkg.version))
+            else:
+                if pkg.app.name == 'global':
+                    self.assertEqual(str(pkg),
+                                     "{}/{}({})".format(pkg.site, pkg.name,
+                                                        tstamp))
+                else:
+                    self.assertEqual(str(pkg),
+                                     "{}/{}::{}({})".format(pkg.site, pkg.app, pkg.name,
+                                                            tstamp))
 
     def test_to_dict(self):
         """Unit test for :py:meth:`~utl_files.models.Package.to_dict`."""
@@ -283,6 +356,15 @@ class PackageTestCase(TransactionTestCase):
         the_pkg.disk_directory = "no_such_dir"
         self.assertRaises(PackageError, the_pkg.get_utl_files)
 
+    def test_find_packages_for(self):
+        """Unit tests for :py:meth:`~utl_files.models.Pakage.find_packages_for`"""
+        pkgs = list(Package.find_packages_for(self.test_site, 'fred'))
+        self.assertListEqual(pkgs, [])
+        pkgs = list(Package.find_packages_for(self.test_site, self.TEST_NAME))
+        self.assertEqual(len(pkgs), 1)
+        pkgs = list(Package.find_packages_for(self.test_site.URL, self.TEST_NAME))
+        self.assertEqual(len(pkgs), 1)
+
 
 class UTLFileTestCase(TestCase):
     """Unit tests for :py:class:`models.UTLFile`."""
@@ -297,6 +379,7 @@ class UTLFileTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """Ensure required model instances are present."""
         # if I make PKG_DIRECTORY absolute, it won't work on other systems. But, if it's
         # relative, it won't work if we're in the wrong directory. So, as a non-solution:
         settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
@@ -595,6 +678,7 @@ class MacroDefinitionTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """Set up test :model:`utl_files.MacroDefinition` record(s)."""
         cls.app = Application.objects.get(name='editorial')
         cls.app.save()
         cls.pkg = Package(
@@ -645,6 +729,7 @@ class MacroRefTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        """Set up required :model:`utl_files.MacroRef` instances."""
         cls.app = Application.objects.get(name='editorial')
         cls.app.save()
         cls.pkg = Package(
