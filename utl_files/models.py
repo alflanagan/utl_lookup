@@ -230,6 +230,11 @@ class Package(models.Model):
                 # make it a timezone-aware string
                 last_download = time.strftime('%Y-%m-%d %H:%M:%SZ', last_download)
 
+        if last_download is None:
+            # well, site_meta was a bust. Try the old-fashioned way.
+            last_download = time.gmtime(directory.stat().st_mtime)
+            last_download = time.strftime('%Y-%m-%d %H:%M:%SZ', last_download)
+
         try:
             app = Application.objects.get(name=new_pkg.app)
         except Application.DoesNotExist:
