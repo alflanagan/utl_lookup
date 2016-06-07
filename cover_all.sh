@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 # -*- encoding: utf-8; -*-
 
-if [[ -n "${VIRTUAL_ENV}" ]]; then
+if [[ -n "${VIRTUAL_ENV}" && -f "${VIRTUAL_ENV}/.project" ]]; then
     cd $(< $VIRTUAL_ENV/.project)
 fi
 
-# don't just run coverage run manage.py test
-# because we want to see how each test file covers the associated module
-coverage run --source=utl_files.models --branch ./manage.py test utl_files.test_models
-coverage run --source=utl_files.views --branch --append ./manage.py test utl_files.test_views
-coverage run --source=papers.models --branch --append ./manage.py test papers.test_models
-coverage run --source=papers.views --branch --append ./manage.py test papers.test_views
+do_cover() {
+    # don't just run coverage run manage.py test
+    # because we want to see how each test file covers the associated module
+    coverage run --source="$1.$2" --branch --append ./manage.py test "$1.test_$2"
+}
+
+do_cover utl_files models
+do_cover utl_files views
+do_cover utl_files code_markup
+do_cover papers models
+do_cover papers views
+
 coverage report -m
