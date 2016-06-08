@@ -261,11 +261,14 @@ $(function () {
                     let lines = data.text.split("\n")
                     $("#defs-text span").detach()
                     $("#defs-text br").detach()
-                    lines.forEach((line) => {
-                      // second arg of htmlEncode == true ==> &amp; gets converted to &amp;amp;
-                      // will get converted back by browser
-                      $("#defs-text").append("<span>" + Encoder.htmlEncode(line, false) + "</span><br>")
-                    })
+                    lines = lines.join("<br>")
+                    $("#defs-text").html(lines)
+                    // lines.forEach((line) => {
+                    //   // second arg of htmlEncode == true ==> &amp; gets converted to &amp;amp;
+                    //   // will get converted back by browser
+                    //   //$("#defs-text").append("<span>" + Encoder.htmlEncode(line, false) + "</span><br>")
+                    //   $("#defs-text").append(line);
+                    // })
                   })
                 .fail(
                   (jqXHR, textStatus, errorThrown) => {
