@@ -110,15 +110,17 @@ class UTLWithMarkup():
         while pos < end:
             output += self._get_tags(pos)
             if pos in com_end_set:
-                output += '</span>'
+                output += self.markup_end("comment")
             if pos in self.docs:
-                output += '<span class="document">{}</span>'.format(escape(self.docs[pos]))
+                output += '{}{}{}'.format(self.markup_start("document"),
+                                          escape(self.docs[pos]),
+                                          self.markup_end("document"))
                 pos += len(self.docs[pos])
                 # if last item is document we're at end + 1
                 pos = pos if pos <= end else end
                 continue
             if pos in com_start_set:
-                output += '<span class="comment">'
+                output += self.markup_start("comment")
             output += self.source[pos]
             pos += 1
         assert pos == end
