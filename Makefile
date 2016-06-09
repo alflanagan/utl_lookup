@@ -13,7 +13,7 @@ SH_SOURCES = $(wildcard *.sh)
 %.css: %.less
 	lessc  --source-map --strict-math=on --strict-units=on $< $@
 
-all: utl_files/static/styles/site.css TAGS $(DOC_DIR)/index.html
+all: utl_files/static/styles/site.css TAGS $(DOC_DIR)/index.html $(PYDOC_MAIN)
 
 .PHONY: clean
 
