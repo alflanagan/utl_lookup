@@ -108,6 +108,7 @@ class PackageTestCase(TransactionTestCase):
         # there's an assertWarns(), but not assertDoesNotWarn(). work-around by making warnings
         # into errors by default.
         simplefilter('error')
+
         self.test_app = Application(name=self.TEST_APP)
         self.test_app.full_clean()
         self.test_app.save()
@@ -134,6 +135,12 @@ class PackageTestCase(TransactionTestCase):
                                               zip_name='pakcage_not_in_db.zip',
                                               version=self.TEST_VERSION,
                                               is_certified=False,
+                                              last_download="2015-05-01 13:00:00Z"),
+                         TownnewsSiteMetaData(site=self.test_site,
+                                              pkg_name='certified-not-in-db',
+                                              zip_name='core-asset-something.zip',
+                                              version='2.17',
+                                              is_certified=True,
                                               last_download="2015-05-01 13:00:00Z")]
 
         for mdata in self.metadata:
@@ -310,14 +317,8 @@ class PackageTestCase(TransactionTestCase):
 
     def test_load_from_certified(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""
-        # TODO: capture warning message and verify
-        simplefilter('ignore')
-        try:
-            full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
-
-            the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
-        finally:
-            simplefilter('error')
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.PKG_DIRECTORY)
+        the_pkg = Package.load_from(full_load_path, self.test_site, Package.SKIN)
         self.assertEqual(the_pkg.name, self.TEST_PKG)
         self.assertRaises(ValueError, Package.load_from, full_load_path, self.test_site,
                           'NoSuchType')
@@ -327,9 +328,6 @@ class PackageTestCase(TransactionTestCase):
         is non-certified, loads meta info.
 
         """
-        # TODO: capture warning message and verify
-        # simplefilter('ignore')
-
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.UNCERT_DIR)
         the_pkg = Package.load_from(full_load_path, self.test_site2, Package.SKIN)
         self.assertEqual(the_pkg.name, self.UNCERT_PKG)
@@ -364,6 +362,9 @@ class PackageTestCase(TransactionTestCase):
         self.assertEqual(len(pkgs), 1)
         pkgs = list(Package.find_packages_for(self.test_site.URL, self.TEST_NAME))
         self.assertEqual(len(pkgs), 1)
+        pkgs = list(Package.find_packages_for(self.test_site.URL,
+                                              'certified-not-in-db'))
+        self.assertListEqual(pkgs, [])
 
 
 class UTLFileTestCase(TestCase):
@@ -519,6 +520,9 @@ class PackagePropTestCase(TestCase):
         cls.test_pkg.full_clean()
         cls.test_pkg.save()
 
+        # load files from our test directory, not system directory
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
+
     def test_create(self):
         """Unit test for creation of :py:class:`utl_files.models.PackageProp` instance."""
         new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="wilma")
@@ -529,6 +533,14 @@ class PackagePropTestCase(TestCase):
         self.assertEqual(test_prop.pkg, self.test_pkg)
         self.assertEqual(test_prop.key, "fred")
         self.assertEqual(test_prop.value, "wilma")
+
+    def test_unique(self):
+        """Unit test to ensure that uniqueness constraint is enforced."""
+        new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="wilma")
+        new_prop.full_clean()
+        new_prop.save()
+        new_prop = PackageProp(pkg=self.test_pkg, key="fred", value="betty")
+        self.assertRaises(ValidationError, new_prop.full_clean)
 
     def test_str(self):
         """Unit tests for :py:meth:`utl_files.models.PackageProp.__str__`."""
@@ -545,6 +557,37 @@ class PackagePropTestCase(TestCase):
             self.assertIn("id", new_prop.to_dict())
         finally:
             new_prop.delete()  # clean up for other tests
+
+    def test_from_package_metadata(self):
+        """Unit tests for :py:meth:`~utl_files.models.PackageProp.from_package_metadata`.
+
+        """
+        antwort_pkg = Package(
+            name='custom-newsletter-antwort-columns',
+            version='0.15',
+            is_certified=False,
+            app=Application.objects.get(name='editorial'),
+            last_download="2015-05-01 13:00:00Z",
+            disk_directory="omaha.com/skins/custom-newsletter-antwort-columns_0.15",
+            site=TownnewsSite.objects.get(URL="http://omaha.com"),
+            pkg_type=Package.SKIN
+        )
+        antwort_pkg.full_clean()
+        antwort_pkg.save()
+        PackageProp.from_package_metadata(antwort_pkg)
+        prop_dict = {}
+        new_props = PackageProp.objects.filter(pkg=antwort_pkg)
+        new_props = PackageProp.objects.filter(pkg=antwort_pkg)
+        # 13 keys in file, don't put dependencies in PackageProp
+        self.assertEqual(new_props.count(), 12)
+        for new_prop in new_props:
+            the_prop = new_prop.to_dict()
+            prop_dict[the_prop['key']] = the_prop['value']
+
+        self.assertSetEqual(set(prop_dict.keys()),
+                            {'description', 'breakpoints', 'app', 'properties',
+                             'title', 'blockTypes', 'type', 'capabilities', 'name',
+                             'version', 'certified', 'propertyGroups'})
 
 
 class PackageDepTestCase(TestCase):

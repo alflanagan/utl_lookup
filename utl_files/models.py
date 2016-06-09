@@ -336,7 +336,7 @@ class PackageProp(models.Model):
             data = json.load(meta_in)
         for key in data:
             # key dependencies handled in PackageDep
-            if key != "dependencies" and data[key]:
+            if key != "dependencies":
                 new_prop = PackageProp(pkg=package, key=key, value=data[key])
                 try:
                     new_prop.full_clean()
