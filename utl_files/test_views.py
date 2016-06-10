@@ -18,11 +18,11 @@ from datetime import datetime
 
 import pytz
 from django.test import TestCase
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from django.core.handlers.wsgi import WSGIRequest
 
 from utl_files import views
-from utl_files.models import Application, Package, UTLFile
+from utl_files.models import Application, Package, UTLFile, MacroDefinition
 from papers.models import NewsPaper, TownnewsSite
 
 
@@ -115,7 +115,6 @@ class api_files_for_custom_pkgTestCase(TestCase):
          "pkg_type": "s", }
     ]
 
-    # TODO: Fix UTLFile.
     TEST_FILES = [
         "templates/front.html.utl",
         "templates/index.html.utl",
@@ -171,11 +170,10 @@ class api_files_for_custom_pkgTestCase(TestCase):
         for record in self.TEST_PACKAGES:
             site_name = record["site"].replace('http://', '')
             self.assertTrue(TownnewsSite.objects.filter(URL=record["site"]).exists())
-            site_obj = TownnewsSite.objects.get(URL=record["site"])
             self.assertTrue(Package.objects.filter())
             response = views.api_package_files_custom(
                 request,
-                record["site"].replace('http://', ''),
+                site_name,
                 record["name"])
         json_out = response.getvalue().decode('utf-8')
         file_list = json.loads(json_out)
@@ -283,78 +281,6 @@ class homeTestCase(TestCase):
                 self.assertNotIn(tnsite.domain, result)
 
 
-class searchTestCase(TestCase):
-    """Unit tests for :py:func:`utl_files.views.home`."""
-    TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
-
-    TEST_PACKAGES = [
-        {"name": "editorial-core-mobile",
-         "version": "1.54.0.0",
-         "is_certified": True,
-         "app": "editorial",
-         "last_download": "2016-02-27T13:12:11Z",
-         "disk_directory": "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
-         "site": "http://agnet.net",
-         "pkg_type": "s", }
-    ]
-
-    EXPECTED_RESULT = ['<!DOCTYPE html>',
-                       '<meta charset="utf-8">',
-                       '<meta http-equiv="X-UA-Compatible" content="IE=edge">',
-                       '<meta name="viewport" content="width=device-width, initial-scale=1">',
-                       '<div class="container">',
-                       '<div class="row">',
-                       '<h3 class="app-header text-center">Townnews Template Cross-Reference</h3>',
-                       '<div id="search-bar">',
-                       '<form class="form-inline" id="package-context-form" role="search">',
-                       '<div id="id_site_div"',
-                       '<button id="id_site_label"',
-                       '<ul id="id_site" class="dropdown-menu"',
-                       '<input type="hidden" id="selected_site">',
-                       '<div id="id_global_skin_div"',
-                       '<button id="id_global_skin_label"',
-                       '<ul id="id_global_skin"',
-                       '<div id="id_app_skin_div"',
-                       '<button id="id_app_skin_label"',
-                       '<ul id="id_app_skin"',
-                       '<div id="tree-panel"',
-                       '<h3 class="panel-title">',
-                       '<ul class="list-group">',
-                       '<li class="list-group-item">',
-                       '<div id="tab-panel"',
-                       '<div class="panel-body">', ]
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.papers = []
-        for record in cls.TEST_PAPERS:
-            try:
-                new_ppr = NewsPaper.objects.get(name=record["name"])
-            except NewsPaper.DoesNotExist:
-                new_ppr = NewsPaper(**record)
-                new_ppr.save()
-            cls.papers.append(new_ppr)
-
-        cls.pkgs = []
-        for record in cls.TEST_PACKAGES:
-            kwargs = deepcopy(record)
-            # replace foreign key strings with object referenced
-            kwargs["app"] = Application.objects.get(name=kwargs["app"])
-            kwargs["site"] = TownnewsSite.objects.get(URL=kwargs["site"])
-            # now I can just do this
-            new_pkg = Package(**kwargs)
-            new_pkg.save()
-            cls.pkgs.append(new_pkg)
-
-    def test_view(self):
-        """Basic rendering of page."""
-        # verify "active" sites are shown in drop-down, not others
-        request = make_wsgi_request('/search')
-        response = views.search(request, 'some-macro-name')
-        result = response.content.decode('utf-8')
-        # TODO: will probably get better results if we actually load some macros
-
-
 class api_packages_for_site_with_skinsTestCase(TestCase):
     """Unit tests for function :py:func:`~utl_files.views.api_packages_for_site_with_skins`."""
     GSKIN_NAME = "global-richmond-portal_temp"
@@ -422,8 +348,109 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
             expected = expected_all[pkg_dict["name"]]
             self.assertDictContainsSubset(expected, pkg_dict)
 
-        # Local Variables:
-        # python-indent-offset: 4
-        # fill-column: 100
-        # indent-tabs-mode: nil
-        # End:
+
+class api_macros_for_site_with_skinsTestCase(TestCase):
+    """Unit tests for :py:func:`~utl_files.views.api_macros_for_site_with_skins`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        """Load test packages, files, macro defs for testing."""
+        # nearly impossible to use fixtures when some data has been loaded
+        # with data migrations, due to PK conflicts
+        cls.the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+
+        pkg_data = [{"name": "base-kh-oct-2013-1-ads",
+                     "version": "1.14.2",
+                     "is_certified": False,
+                     "app": Application.objects.get(name="editorial"),
+                     "last_download": datetime(2016, 6, 8, 20, 15, 49, 0, pytz.UTC),
+                     "disk_directory": "kearneyhub.com/skins/editorial/base-kh-oct-2013-1-ads",
+                     "pkg_type": Package.SKIN},
+                    {"app": Application.objects.get(name="global"),
+                     "disk_directory": "kearneyhub.com/global_skins/global-kh-oct-2013-dev",
+                     "is_certified": False,
+                     "last_download": datetime(2016, 6, 8, 20, 15, 49, 0, pytz.UTC),
+                     "name": "global-kh-oct-2013-dev",
+                     "pkg_type": Package.GLOBAL_SKIN,
+                     "version": "0.1"}]
+
+        files_data = [{"file_path": "includes/macros.inc.utl",
+                       "pkg_name": "base-kh-oct-2013-1-ads", }]
+
+        for datum in pkg_data:
+            new_pkg = Package(site=cls.the_site,
+                              name=datum["name"],
+                              version=datum["version"],
+                              app=datum["app"],
+                              is_certified=datum["is_certified"],
+                              last_download=datum["last_download"],
+                              pkg_type=datum["pkg_type"])
+            new_pkg.full_clean()
+            new_pkg.save()
+
+        for datum in files_data:
+            new_file = UTLFile(pkg=Package.objects.get(name=datum["pkg_name"]),
+                               file_path=datum["file_path"])
+            new_file.full_clean()
+            new_file.save()
+
+        with open("utl_files/test_data/api_macros_for_site_with_skins_test.json", "r") as mdefin:
+            mdef_data = json.load(mdefin)
+            for ufile_datum in mdef_data:
+                the_pkg = Package.objects.get(site=cls.the_site,
+                                              name=ufile_datum["pkg_name"])
+                the_file = UTLFile.objects.get(pkg=the_pkg,
+                                               file_path=ufile_datum["file_path"])
+                for mdef_datum in ufile_datum["macro_defs"]:
+                    new_mdef = MacroDefinition(
+                        source=the_file,
+                        text=mdef_datum['text'],
+                        name=mdef_datum['name'],
+                        start=mdef_datum['start'],
+                        end=mdef_datum['end'],
+                        line=mdef_datum['line'])
+                    new_mdef.full_clean()
+                    new_mdef.save()
+
+    def test_success(self):
+        """Test a normal successful call to the view."""
+        site_name = 'kearneyhub.com'
+        global_name = 'global-kh-oct-2013-dev'
+        app_name = 'editorial'
+        skin_name = 'base-kh-oct-2013-1-ads'
+        request = make_wsgi_request("files/api/macros_for_site_with_skins/{}/{}/{}/{}/"
+                                    "".format(site_name, global_name, app_name, skin_name))
+        response = views.api_macros_for_site_with_skins(request, 'kearneyhub.com',
+                                                        'global-kh-oct-2013-dev',
+                                                        'editorial',
+                                                        'base-kh-oct-2013-1-ads')
+        isinstance(response, HttpResponse)
+        self.assertEqual(response.status_code, 200)
+        expected = {"archived_asset": {"line": 38, "end": 2070, "start": 1505, },
+                    "bloxSelect": {"line": 102, "end": 3941, "start": 3610, },
+                    "filterAssetByPosition": {"line": 205, "end": 7824, "start": 6898, },
+                    "filterAssetBySubtype": {"line": 175, "end": 6865, "start": 5945, },
+                    "filterAssetsBySection": {"line": 236, "end": 8574, "start": 7857, },
+                    "filterImagesByPresentation": {"line": 141, "end": 5912, "start": 4807, },
+                    "free_archive_period": {"line": 54, "end": 2742, "start": 2072, },
+                    "ifAnonymousUser": {"line": 322, "end": 11728, "start": 11094, },
+                    "thisSectionPath": {"line": 76, "end": 3092, "start": 2836, },
+                    "youtubePlayer": {"line": 258, "end": 11032, "start": 8608, }}
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(results), len(expected))
+        for mdef in results:
+            # some values should be same for all
+            self.assertDictContainsSubset({"file": "includes/macros.inc.utl",
+                                           "pkg": "base-kh-oct-2013-1-ads",
+                                           "pkg_version": "1.14.2"},
+                                          mdef)
+            # get the other expected values
+            self.assertIn(mdef["name"], expected)
+            exp_mdef = expected[mdef["name"]]
+            self.assertDictContainsSubset(exp_mdef, mdef)
+
+# Local Variables:
+# python-indent-offset: 4
+# fill-column: 100
+# indent-tabs-mode: nil
+# End:

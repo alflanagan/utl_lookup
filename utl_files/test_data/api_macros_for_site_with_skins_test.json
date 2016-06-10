@@ -1,0 +1,64 @@
+[{"pkg_name": "base-kh-oct-2013-1-ads",
+  "file_path": "includes/macros.inc.utl",
+ "macro_defs": [{
+      "start": 1505,
+      "line": 38,
+      "name": "archived_asset",
+      "end": 2070,
+      "text": "macro archived_asset ;\n    archived_asset = 'false';\n    /* *** comma separated list of sections to always archive *** */\n    cms_url_path = cms.url.path;\n    always_archive_list = cms.site.custom.always_archive_list;\n    always_archive_list = always_archive_list | splittrim(',');\n    foreach always_archive_list as archive_url;\n        if cms_url_path == archive_url;\n            archived_asset = 'true';\n        end;\n    end;\n    if this.asset.custom.subscription|strbool == true;\n        archived_asset = 'false';\n    end;\n    archived_asset;\nend"
+ }, {
+      "start": 2072,
+      "line": 54,
+      "name": "free_archive_period",
+      "end": 2742,
+      "text": "macro free_archive_period ;\n    free_archive_period = 'false';\n    if core_site_vars.search.archive.days;\n        subscribe_archive_days = (core_site_vars.search.archive.days * 86400);\n    else if cms.site.custom.subscribe_archive_days != 'false';\n        subscribe_archive_days = (cms.site.custom.subscribe_archive_days * 86400);\n    else;\n        subscribe_archive_days = 0;\n    end;\n    if cms.asset.starttime('U') >= (cms.system.time('U') - subscribe_archive_days);\n        free_archive_period = 'true';\n    end;\n    if this.asset.custom.subscription_bypass|strbool == true;\n        free_archive_period = 'true';\n    end;\n    free_archive_period;\nend"
+ }, {
+      "start": 2836,
+      "line": 76,
+      "name": "thisSectionPath",
+      "end": 3092,
+      "text": "macro thisSectionPath ;\n    thisSectionPath = cms.url.path | regex('/^\\//', '') | replace('/','-');\n    if (thisSectionPath == '/' || thisSectionPath == '') && cms.url.path != '';\n        thisSectionPath = 'front';\n    end;\n    thisSectionPath;\nend"
+ }, {
+      "start": 3610,
+      "line": 102,
+      "name": "bloxSelect",
+      "end": 3941,
+      "text": "macro bloxSelect( sName, sClass, kValues );\n\n  echo '<select name=\"' + sName + '\"';\n  if sClass != null;\n    echo ' class=\"' + sClass + '\"';\n  end;\n  echo '>';\n\n  foreach kValues as sDisplay, sValue;\n    echo '<option value=\"' + sValue + '\">' + sDisplay + '</option>';\n  end;\n\n  echo '</select>';\n\nend"
+ }, {
+      "start": 4807,
+      "line": 141,
+      "name": "filterImagesByPresentation",
+      "end": 5912,
+      "text": "macro filterImagesByPresentation(images,types,mode,limit = 0);\n/*\n    images - required: array of images\n    types - required: array of image presentation types\n    mode - optional: include or exclude images of the given types\n        by default this is \"include\", unless specifically defined as \"exclude\"\n    limit - optional: the maximum number of assets allowed in the result array\n*/\n\n    filteredImages = [];\n    if mode != \"exclude\"; mode = \"include\"; end;\n\n    foreach images as image;\n        if limit == 0 || limit > image|iterpos;\n            if mode == \"include\"; includeImage=false; else; includeImage=true; end;\n\n            foreach types as type;\n                if image.presentation == type;\n                    if mode == \"include\";\n                        includeImage=true;\n                    else;\n                        includeImage=false;\n                    end;\n                end;\n            end;\n\n            if includeImage;\n                filteredImages[filteredImages.length+1] = image;\n            end;\n        else; break; end;\n    end;\nreturn filteredImages; end"
+ }, {
+      "start": 5945,
+      "line": 175,
+      "name": "filterAssetBySubtype",
+      "end": 6865,
+      "text": "macro filterAssetBySubtype(cAsset,subtypes,mode);\n    if mode != \"exclude\";\n        mode = \"include\";\n    end;\n/*      cAsset:    [required] - array of child Assets\n    positions:    [required] - array of possible positions for Assets\n        mode:    [optional] - set filter to include or exclude    */\n    filteredAssets = [];\n    foreach cAsset as asset;\n        if mode == \"include\";\n            includeAsset = false;\n        else;\n            includeAsset = true;\n        end;\n        foreach subtypes as subtype;\n            if asset.custom.subtype == subtype;\n                if mode == \"include\";\n                    includeAsset=true;\n                else;\n                    includeAsset=false;\n                end;\n            end;\n        end;\n        if includeAsset;\n                filteredAssets[filteredAssets.length + 1] = asset;\n        end;\n    end;\n    return filteredAssets;\nend"
+ }, {
+      "start": 6898,
+      "line": 205,
+      "name": "filterAssetByPosition",
+      "end": 7824,
+      "text": "macro filterAssetByPosition(cAsset,positions,mode);\n    if mode != \"exclude\";\n        mode = \"include\";\n    end;\n/*      cAsset:    [required] - array of child Assets\n    positions:    [required] - array of possible positions for Assets\n        mode:    [optional] - set filter to include or exclude    */\n    filteredAssets = [];\n    foreach cAsset as asset;\n        if mode == \"include\";\n            includeAsset = false;\n        else;\n            includeAsset = true;\n        end;\n        foreach positions as position;\n            if asset.custom.position == position;\n                if mode == \"include\";\n                    includeAsset=true;\n                else;\n                    includeAsset=false;\n                end;\n            end;\n        end;\n        if includeAsset;\n                filteredAssets[filteredAssets.length + 1] = asset;\n        end;\n    end;\n    return filteredAssets;\nend"
+ }, {
+      "start": 7857,
+      "line": 236,
+      "name": "filterAssetsBySection",
+      "end": 8574,
+      "text": "macro filterAssetsBySection(cAssets,sections,mode);\n    if mode != \"exclude\"; mode = \"include\"; end;\n    filteredAssets = [];\n    foreach cAssets as asset;\n        if mode == \"include\"; includeAsset = false;    else; includeAsset = true; end;\n        foreach asset.tags('section') as aSection;\n            foreach sections as section;\n                if aSection == section;\n                    if mode == \"include\"; includeAsset=true;\n                    else; includeAsset=false;\n                    end;\n                end;\n            end;\n        end;\n        if includeAsset;\n                filteredAssets[filteredAssets.length + 1] = asset;\n        end;\n    end;\n    return filteredAssets;\nend"
+ }, {
+      "start": 8608,
+      "line": 258,
+      "name": "youtubePlayer",
+      "end": 11032,
+      "text": "macro youtubePlayer(ytAssets,width,height);\n    /* macro defaults */\n    if ytAssets == null; ytAssets = this.asset; end;\n    if width == null; width = '100%'; end;\n    if height == null; height = '460'; end;\n\n    foreach ytAssets as asset;\n    /* convert duration to hr:min:sec */\n    duration = asset.duration;\n    if duration != 0;\n        hours = (duration / 3600) | rounddown;\n            remaining_duration = (duration - (hours * 3600));\n        minutes = (remaining_duration / 60) | rounddown;\n        seconds = (remaining_duration - (minutes * 60));\n    else;\n        no_time = 'less than one second';\n    end; -%]\n\n    <div class=\"youtube-embed-holder\">\n        [%- if asset.subheadline -%]\n        <p class=\"sub-headline\">\n            [%- asset.subheadline | tidy -%]\n        </p>\n        [%- end -%]\n        <p class=\"byline\">\n            [%    if asset.user_name %]\n                    Posted by: <a href=\"http://www.youtube.com/user/[% asset.user_name %]\" rel=\"external\">[% asset.user_name %]</a> |\n            [%    end %]\n                Runtime: [%\n                if duration != 0;\n                    if hours != 0;\n                        hours; echo ':';\n                    end;\n                    if minutes != 0 || hours != 0;\n                        if hours != 0;\n                            minutes | padleft(2,'0');\n                        else; minutes;\n                        end;\n                        echo ':';\n                    end;\n                    seconds;\n                    if minutes == 0 && hours == 0;\n                        echo ' seconds';\n                    end;\n                else; no_time;\n                end; %]\n        </p>\n        <div class=\"youtube-embed\">\n            <object>\n            <param name=\"movie\" value=\"[% asset.embed_url | html %]\"></param>\n            <param name=\"allowFullScreen\" value=\"true\"></param>\n            <param name=\"egm\" value=\"true\"></param>\n            <param name=\"allowscriptaccess\" value=\"always\"></param>\n            <embed src=\"[% asset.embed_url | html %]\" type=\"application/x-shockwave-flash\" egm=\"true\" allowscriptaccess=\"always\" allowfullscreen=\"true\"  width=\"[% width %]\" height=\"[% height %]\"></embed>\n            </object>\n        </div>\n        <p id=\"blox-asset-description\">\n            [% asset.description | html | strip_tags | autolink %]\n        </p>\n    </div>\n[%-    end;\n     end"
+ }, {
+      "start": 11094,
+      "line": 322,
+      "name": "ifAnonymousUser",
+      "end": 11728,
+      "text": "macro ifAnonymousUser(pageElements,mode);\n/*     pageElement = an array of page elements affected\n    mode = show or hide */\n    if mode == 'show';\n        mode2 = 'hide';\n    else;\n        mode = 'hide'; mode2 = 'show';\n    end; %]\n<script type=\"text/javascript\">\n$(function() {\n    var sAuthToken = jQuery.cookie('tncms-authtoken');\n    if (sAuthToken == null){\n    [%    foreach pageElements as element %]\n        jQuery('[% element %]').[% mode %]();\n    [% end %]\n    } else{\n    [%    foreach pageElements as element %]\n        jQuery('[% element %]').[% mode2 %]();\n    [% end %]\n    }\n});\n</script>\n[%- end"
+ }
+]}]
