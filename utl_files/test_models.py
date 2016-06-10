@@ -378,6 +378,21 @@ class UTLFileTestCase(TestCase):
     MACROS_FILE = "includes/macros.inc.utl"
     macro_file_text = ""
 
+    test_scenarios = [{
+        "app": "editorial",
+        "site": "http://kearneyhub.com",
+        "pkg": "base-kh-oct-2013-1-ads_1.14.2",
+        "version": "1.14.2",
+        "macros": "includes/macros.inc.utl",
+        "type": Package.BLOCK,
+        "directory": 'kearneyhub.com/skins/editorial/base-kh-oct-2013-1-ads_1.14.2',
+        "expected_macros": set(['archived_asset', 'free_archive_period', 'thisSectionPath',
+                                'bloxSelect', 'filterImagesByPresentation',
+                                'filterAssetBySubtype', 'filterAssetByPosition',
+                                'filterAssetsBySection', 'youtubePlayer',
+                                'ifAnonymousUser']),
+    }]
+
     @classmethod
     def setUpTestData(cls):
         """Ensure required model instances are present."""
@@ -418,16 +433,34 @@ class UTLFileTestCase(TestCase):
         cls.parse_err_pkg.full_clean()
         cls.parse_err_pkg.save()
 
+        for scenario in cls.test_scenarios:
+            the_app = Application.objects.get(name=scenario["app"])
+            the_site = TownnewsSite.objects.get(URL=scenario["site"])
+            the_pkg = Package(name=scenario["pkg"],
+                              version=scenario["version"],
+                              is_certified=False,
+                              app=the_app,
+                              site=the_site,
+                              last_download="2015-05-01 13:00:00Z",
+                              pkg_type=scenario["type"],
+                              disk_directory=scenario["directory"])
+            the_pkg.full_clean()
+            the_pkg.save()
+            scenario["pkg_id"] = the_pkg.pk
+            the_file = UTLFile(pkg=the_pkg,
+                               file_path=scenario["macros"])
+            the_file.full_clean()
+            the_file.save()
+            scenario["file_id"] = the_file.pk
+
     def test_create(self):
         """Unit test for :py:meth:`~utl_files.models.UTLFile`."""
-        self.assertEqual(UTLFile.objects.count(), 2)
         thefile = UTLFile.objects.get(file_path=self.SIMPLE_UTL_FILE)
         self.assertEqual(thefile.file_path, self.SIMPLE_UTL_FILE)
         self.assertEqual(thefile.pkg, self.pkg)
 
     def test_base_filename(self):
         """Unit test for :py:meth:`~utl_files.models.UTLFile.base_filename`."""
-        self.assertEqual(UTLFile.objects.count(), 2)
         thefile = UTLFile.objects.get(file_path=self.SIMPLE_UTL_FILE)
         self.assertEqual(thefile.base_filename, Path(self.SIMPLE_UTL_FILE).name)
 
@@ -456,8 +489,8 @@ class UTLFileTestCase(TestCase):
         self.assertEqual(MacroRef.objects.count(), 0)
 
     def _verify_macro(self, macro_name, line, start, end):
-        """Helper method to compare :py:class:`~utl_files.models.MacroDefinition` object to
-        expected values.
+        """Helper method to compare :py:class:`~utl_files.models.MacroDefinition`
+        object to expected values.
 
         """
         macro_rcd = MacroDefinition.objects.get(name=macro_name)
@@ -482,8 +515,18 @@ class UTLFileTestCase(TestCase):
         self._verify_macro("free_archive_period", 54, 2071, 2741)
         self._verify_macro("ifAnonymousUser", 356, 12033, 12667)  # last one in file
 
+        for scenario in self.test_scenarios:
+            my_source = UTLFile.objects.get(id=scenario["file_id"])
+            my_source.get_macros()
+            macro_defs = MacroDefinition.objects.filter(source=my_source)
+            self.assertSetEqual(set([macro_def.name for macro_def in macro_defs]),
+                                scenario["expected_macros"])
+
     def test_parsing_error(self):
-        """Unit test for :py:meth:`utl_file.models.UTLFile.get_macros` parser error handling."""
+        """Unit test for :py:meth:`utl_file.models.UTLFile.get_macros` parser
+        error handling.
+
+        """
         with MockStream().capture_stderr() as fake_stderr:
             for utl_fname in (Path(settings.TNPACKAGE_FILES_ROOT) /
                               Path(self.parse_err_pkg.disk_directory)).glob('**/*.utl'):
