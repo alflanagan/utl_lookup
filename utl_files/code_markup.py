@@ -14,12 +14,125 @@ A module to provide syntax markup for UTL code.
 
 from html import escape
 from collections import defaultdict
-from typing import Union, Sequence, Mapping, Any, Iterable
+from typing import Union, Sequence, Mapping, Any, Iterable, Iterator, Tuple
 
 from utl_lib.ast_node import ASTNode, FrozenASTNode
 from utl_lib.handler_ast import UTLParseHandlerAST
 from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_lex_comments import UTLLexerComments
+
+
+class UTLTextParseIterator():
+    """A data structure to hold information needed to process a UTL text
+    source into marked-up output. This is a sufficently hard problem to
+    deserve its own class (implementated as a source code iterator).
+
+    The fundamental problem is this: the parser operates on the raw source
+    code (naturally). To do markup and display, we need to html-escape the
+    source code, which changes its length. This causes the text to no longer
+    match the start and end positions in the parse tree. So we need to set up
+    the parse info and source in such a way that the source can be
+    html-escaped without breaking the parse data.
+
+    The iterator will successively return each substring of the source code
+    which is the longest subinterval which does not require insertion of
+    markup into the text, along with all the information needed to add
+    whatever markup we desire.
+
+    :param str source_text: Valid UTF source code.
+
+    """
+
+    # class-level objects that only need to be created once
+    HANDLERS = [UTLParseHandlerAST()]
+
+    PARSER = UTLParser(HANDLERS)
+
+    def __init__(self, source_text):
+        self.source = source_text
+        self.parse_tree = FrozenASTNode(self.PARSER.parse(self.source))
+        self.start_pos = defaultdict(list)
+        """Mapping from source text position to the production node(s) that
+        start there.
+
+        """
+        self.end_pos = defaultdict(list)
+        """Mapping from source text position to the production node(s) that
+        end there.
+
+        """
+        self.documents = {}
+        """Mapping from source text position to the text of a document that
+        starts there.
+
+        """
+        self.find_boundaries()
+
+    def find_boundaries(self):
+        """Creates dictionaries to map source text character positions to the
+        productions that start or end there, or to the text of documents that
+        start there.
+
+        """
+        isinstance(self.parse_tree, ASTNode)
+        for ast_node in self.parse_tree.walk():
+            isinstance(ast_node, ASTNode)
+            if ast_node.symbol == 'document':
+                assert not ast_node.children
+                self.documents[ast_node.attributes["start"]] = ast_node.attributes["text"]
+            else:
+                # omit productions that didn't match any text
+                if not ast_node.attributes["start"] == ast_node.attributes["end"]:
+                    self.start_pos[ast_node.attributes["start"]].append(ast_node)
+                    self.end_pos[ast_node.attributes["end"]].append(ast_node)
+
+        # basic sanity check: # starts == # ends
+        start_ct = sum([len(self.start_pos[key]) for key in self.start_pos])
+        end_ct = sum([len(self.end_pos[key]) for key in self.end_pos])
+        assert start_ct == end_ct
+
+    @property
+    def parts(self) -> Iterator[Tuple[str, Sequence[ASTNode], Sequence[ASTNode], bool]]:
+        """Returns an iterator which returns a tuple for each substring of
+        the source text which does not require markup within it.
+
+        """
+        anchor = 0
+        # The start position of the current substring.
+        i = 0
+        # The current position in the source text.
+        while i <= len(self.source):
+            # current position is a) part of substring
+            # b) start of new production
+            # c) end of production
+            # d) start of document
+            if i in self.start_pos or i in self.end_pos or i in self.documents:
+                if i in self.documents:
+                    if anchor != i:
+                        yield (self.source[anchor:i],
+                               set(self.start_pos[anchor]),
+                               set(self.end_pos[i]),
+                               False, )
+                        anchor = i
+                    else:
+                        yield (self.documents[i],
+                               set(self.start_pos[i]),
+                               set(self.end_pos[i+len(self.documents[i])]),
+                               True, )
+                        i += len(self.documents[i])
+                        anchor = i
+                else:
+                    if anchor != i:
+                        yield (self.source[anchor:i],
+                               set(self.start_pos[anchor]),
+                               set(self.end_pos[i]),
+                               False, )
+                        anchor = i
+                    i += 1
+            else:
+                i += 1
+        if anchor < len(self.source):
+            yield(self.source[anchor:], set(), set(), False)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -37,6 +150,21 @@ class UTLWithMarkup():
     def __init__(self, source_text: str, markup_start: str='<span class="{}">',
                  markup_end: str='</span><!-- {} -->'):
         self.source = source_text
+        # PROBLEM: source_text may have embedded HTML, which must be escaped
+        # after the markup, while the markup itself is not escaped:
+        # source_text = '<p>this is a UTL document</p>'
+        # UTLWithMarkup(source_text).text ==
+        # '<span class="document">&lt;p&gt;this is a UTL document&lt;/p&gt;'
+        # '</span><!-- document -->'
+
+        # self.source = html.escape(self.source, quote=False)
+        # can't do that because
+        # [% if a > b; %] !=> [% if a &gt; b; %]
+
+        # so we call escape() only for "documents". Why is that not working...
+        # must do it for literal strings to... Damn
+        # [% echo "<span>"; %] ==> [% echo "&lt;span&gt;"; %]
+        # to display correctly in browser
         self._markup_start = markup_start
         self._markup_end = markup_end
         self.top_node = FrozenASTNode(self.PARSER.parse(self.source))
@@ -101,6 +229,8 @@ class UTLWithMarkup():
         """Returns the contents of `self.source`, with additional tags
         for semantic markup.
         """
+        # TODO: Must redo this. we need to build list of parts between added
+        # tags so that those parts can be html-escaped
         output = ''
         pos = 0
         end = len(self.source)

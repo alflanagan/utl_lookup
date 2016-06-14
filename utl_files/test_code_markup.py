@@ -11,12 +11,11 @@
 # pylint: disable=too-few-public-methods
 
 import unittest
-from django.test import TestCase
 
-from utl_files.code_markup import UTLWithMarkup
+from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator
 
 
-class UTLWithMarkupTestCase(TestCase):
+class UTLWithMarkupTestCase(unittest.TestCase):
     """Unit tests for class :py:class:`~code_markup.UTLWithMarkup`."""
 
     def test_create(self):
@@ -74,6 +73,139 @@ class UTLWithMarkupTestCase(TestCase):
                               markup_end='[{}]')
         self.assertIn('[comment]/* this is a comment */[comment]',
                       item2.text)
+
+
+class UTLTextParseIteratorTestCase(unittest.TestCase):
+    """Unit tests for :py:class:`~utl_lib.code_markup.UTLTextParseIterator`."""
+
+    def test_create(self):
+        """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
+        item1 = UTLTextParseIterator('[% if fred==wilma then echo "barney"; %]')
+        self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]')
+        self.assertSetEqual(set(item1.start_pos.keys()),
+                            set([3, 6, 12, 23, 28]))
+        self.assertSetEqual(set(item1.end_pos.keys()),
+                            set([10, 17, 36, 41]))
+        # should be able to do this with dict comprehension, haven't figured out
+        # how **hangs head in shame**
+        test_dict = {}
+        for key in item1.end_pos:
+            test_dict[key] = set([node.symbol for node in item1.end_pos[key]])
+        self.assertDictEqual(test_dict,
+                             {41: set(['statement_list']),
+                              10: set(['id']),
+                              36: set(['if', 'statement_list', 'echo', 'literal']),
+                              17: set(['expr', 'id'])})
+
+        test_dict = {}
+        for key in item1.start_pos:
+            test_dict[key] = set([node.symbol for node in item1.start_pos[key]])
+        self.assertDictEqual(test_dict,
+                             {28: set(['literal']),
+                              3: set(['statement_list', 'if']),
+                              12: set(['id']),
+                              6: set(['expr', 'id']),
+                              23: set(['statement_list', 'echo'])})
+
+    def test_iterate(self):
+        """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
+        # added single-letter ID to catch edge cases :)
+        item1 = UTLTextParseIterator('[% if fred==wilma then echo i + "barney"; %]')
+
+        substrs = []
+        start_nodes = []
+        end_nodes = []
+        for part in item1.parts:
+            self.assertIsInstance(part[0], str)
+            substrs.append(part[0])
+            start_nodes.append(set([node.symbol for node in part[1]]))
+            end_nodes.append(set([node.symbol for node in part[2]]))
+
+        expected_strs = ['[% ', 'if ', 'fred', '==', 'wilma', ' then ',
+                         'echo ', 'i', ' + ', '"barney"', '; %]']
+        self.assertSequenceEqual(expected_strs, substrs)
+
+        expected_start_nodes = [set(),  # '[% '
+                                {'if', 'statement_list'},  # 'if '
+                                {'expr', 'id'},  # 'fred'
+                                set(),  # '=='
+                                {'id'},  # 'wilma'
+                                set(),  # ' then '
+                                {'echo', 'statement_list'},  # 'echo '
+                                {'expr', 'id'},  # 'i'
+                                set(),  # ' + '
+                                {'literal'},  # '"barney"'
+                                set()]  # '; %]'
+        self.assertSequenceEqual(expected_start_nodes, start_nodes)
+
+        # so start nodes are nodes that start immediately before substr, end
+        # nodes are nodes that end immediately after substr. so if substr
+        # matches a production by itself the node will appear in both sets
+        expected_end_nodes = [set(),  # '[% '
+                              set(),  # 'if '
+                              {'id'},  # 'fred'
+                              set(),  # '=='
+                              {'id', 'expr'},  # 'wilma'
+                              set(),  # ' then '
+                              set(),  # 'echo '
+                              {'id'},  # 'i'
+                              set(),  # ' + '
+                              {'literal', 'echo', 'statement_list', 'if', 'expr'},  # '"barney"'
+                              set()]  # '; %]'
+        self.assertSequenceEqual(expected_end_nodes, end_nodes)
+
+    def test_w_docs(self):
+        """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
+        # added single-letter ID to catch edge cases :)
+        item1 = UTLTextParseIterator('[% if fred==wilma %] <p>first para<p> [% else %] <span>'
+                                     ' second doc </span> [% end %]')
+
+        substrs = []
+        start_nodes = []
+        end_nodes = []
+        is_document = []
+        for part in item1.parts:
+            substrs.append(part[0])
+            start_nodes.append(set([node.symbol for node in part[1]]))
+            end_nodes.append(set([node.symbol for node in part[2]]))
+            is_document.append(part[3])
+
+        # note problem with our parser: it doesn't break out keywords from  %], [%
+        expected = ['[% ', 'if ', 'fred', '==', 'wilma', ' %] ', '<p>first para<p> ', '[% ',
+                    'else %] ', '<span> second doc </span> ', '[% end', ' %]']
+        self.assertSequenceEqual(expected, substrs)
+
+        expected_docs = [False, False, False, False, False, False, True, False,
+                         False, True, False, False]
+        self.assertSequenceEqual(expected_docs, is_document)
+
+        expected_start_nodes = [set(),  # '[% '
+                                {'if', 'statement_list'},  # 'if '
+                                {'expr', 'id'},  # 'fred'
+                                set(),  # '=='
+                                {'id'},  # 'wilma'
+                                set(),  # ' %] '
+                                {'statement_list'},  # '<p>first para<p> '
+                                set(),  # '[% '
+                                {'else'},  # 'else %] '
+                                {'statement_list'},  # '<span> second doc </span> '
+                                set(),  # '[% end'
+                                set()]  # '; %]'
+        self.assertSequenceEqual(expected_start_nodes, start_nodes)
+
+        # TODO: update this for this test!!
+        expected_end_nodes = [set(),  # '[% '
+                              set(),  # 'if '
+                              {'id'},  # 'fred'
+                              set(),  # '=='
+                              {'id', 'expr'},  # 'wilma'
+                              set(),  # ' then '
+                              set(),  # 'echo '
+                              {'id'},  # 'i'
+                              set(),  # ' + '
+                              {'literal', 'echo', 'statement_list', 'if', 'expr'},  # '"barney"'
+                              set()]  # '; %]'
+        self.assertSequenceEqual(expected_end_nodes, end_nodes)
 
 
 if __name__ == '__main__':
