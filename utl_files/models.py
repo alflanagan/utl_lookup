@@ -148,9 +148,11 @@ class Package(models.Model):
             else:
                 if not set(["site", "last_download", "name"]).intersection(set(exclude)):
                     if self.last_download is None:
-                        error_list.append("Package '{}' is not certified but has no downloaded time.".format(self.name))
+                        error_list.append("Package '{}' is not certified but has no downloaded"
+                                          " time.".format(self.name))
                     if self.site is None:
-                        error_list.append("Package '{}' is not certified but site not specified.".format(self.name))
+                        error_list.append("Package '{}' is not certified but site not specified."
+                                          "".format(self.name))
                     if Package.objects.filter(name=self.name,
                                               site=self.site,
                                               last_download=self.last_download).exists():
@@ -255,6 +257,7 @@ class Package(models.Model):
         my_pkg.save()
         my_pkg.get_utl_files()
         try:
+            # TODO: suppress dup. warning from called procs re: .meta.json not found
             PackageProp.from_package_metadata(my_pkg)
             PackageDep.from_package_metadata(my_pkg)
         except FileNotFoundError:
@@ -335,8 +338,8 @@ class PackageProp(models.Model):
         with meta_file.open('r') as meta_in:
             data = json.load(meta_in)
         for key in data:
-            # key dependencies handled in PackageDep
-            if key != "dependencies":
+            # key "dependencies" is handled in PackageDep
+            if key != "dependencies" and data[key] is not None:
                 new_prop = PackageProp(pkg=package, key=key, value=data[key])
                 try:
                     new_prop.full_clean()
@@ -642,7 +645,14 @@ class MacroDefinition(models.Model):
     @property
     def text_with_markup(self):
         """Returns the text of the macro definition, with syntax markup."""
-        twmu = UTLWithMarkup(self.text)
+        # macro def always starts, ends in UTL mode, but when we pulled text
+        # we may have dropped enclosing [% %]
+        working = self.text.strip()
+        if not working.startswith('[%'):
+            working = '[% ' + working
+        if not working.endswith('%]'):
+            working += ' %]'
+        twmu = UTLWithMarkup(working)
         return twmu.text
 
 
