@@ -12,7 +12,7 @@ backports.shutil-get-terminal-size==1.0.0  # via ipython
 click==6.6                # via pip-tools
 colorama==0.3.7           # via pylint
 coverage==4.1
-decorator==4.0.9          # via ipython, traitlets
+decorator==4.0.10         # via ipython, traitlets
 docutils==0.12            # via sphinx
 first==2.0.1              # via pip-tools
 imagesize==0.7.1          # via sphinx
@@ -33,10 +33,10 @@ pytz==2016.4              # via babel
 simplegeneric==0.8.1      # via ipython
 six==1.10.0               # via astroid, pip-tools, pylint, sphinx
 snowballstemmer==1.2.1    # via sphinx
-Sphinx==1.4.3
+Sphinx==1.4.4
 traitlets==4.2.1          # via ipython
 wrapt==1.10.8             # via astroid
-yapf==0.9.0
+yapf==0.10.0
 
 # The following packages are commented out because they are
 # considered to be unsafe in a requirements file:
