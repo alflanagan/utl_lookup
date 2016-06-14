@@ -15,6 +15,7 @@ import json
 from io import StringIO
 from wsgiref.util import FileWrapper
 from datetime import datetime
+from pathlib import Path
 
 import pytz
 from django.test import TestCase
@@ -359,6 +360,7 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
         # with data migrations, due to PK conflicts
         cls.the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
 
+        # TODO: Need a lot more data, incl. comps and blocks, other skins, etc.
         pkg_data = [{"name": "base-kh-oct-2013-1-ads",
                      "version": "1.14.2",
                      "is_certified": False,
@@ -372,7 +374,21 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
                      "last_download": datetime(2016, 6, 8, 20, 15, 49, 0, pytz.UTC),
                      "name": "global-kh-oct-2013-dev",
                      "pkg_type": Package.GLOBAL_SKIN,
-                     "version": "0.1"}]
+                     "version": "0.1"},
+                    {"app": Application.objects.get(name="global"),
+                     "disk_directory": "kearneyhub.com/global_skins/global-dev",
+                     "is_certified": False,
+                     "last_download": datetime(2015, 12, 8, 20, 15, 49, 0, pytz.UTC),
+                     "name": "global-dev",
+                     "pkg_type": Package.GLOBAL_SKIN,
+                     "version": "0.1"},
+                    {"name": "base-core-kh-editorial",
+                     "version": "1.2",
+                     "is_certified": False,
+                     "app": Application.objects.get(name="editorial"),
+                     "last_download": datetime(2013, 6, 8, 20, 15, 49, 0, pytz.UTC),
+                     "disk_directory": "kearneyhub.com/skins/editorial/base-core-kh-editorial",
+                     "pkg_type": Package.SKIN}]
 
         files_data = [{"file_path": "includes/macros.inc.utl",
                        "pkg_name": "base-kh-oct-2013-1-ads", }]
@@ -448,6 +464,117 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(exp_mdef, mdef)
+
+
+class macroTestCase(TestCase):
+    """Parent class for macro-related API call test cases that need similar
+    data setup.
+
+    """
+
+    TEST_DIR = Path('utl_files/test_data/api_macro_text')
+    TEST_DATA = ['macrodefs.json', 'packages.json', 'utlfiles.json']
+
+    @classmethod
+    def setUpTestData(cls):
+        """Load macro definitions to retrieve."""
+        cls.the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+        cls.the_app = Application.objects.get(name="global")
+        with (cls.TEST_DIR / 'packages.json').open("r") as pkgin:
+            pkg_data = json.load(pkgin)
+        for pkg in pkg_data:
+            datum = pkg["fields"]
+            new_pkg = Package(site=cls.the_site,
+                              app=cls.the_app,
+                              name=datum['name'],
+                              version=datum['version'],
+                              last_download=datum['last_download'],
+                              is_certified=datum['is_certified'],
+                              pkg_type=datum['pkg_type'])
+            new_pkg.full_clean()
+            new_pkg.save()
+
+        with (cls.TEST_DIR / 'utlfiles.json').open('r') as ufilein:
+            ufile_data = json.load(ufilein)
+        for uf in ufile_data:
+            uf_datum = uf["fields"]
+            the_pkg = Package.objects.get(name=uf_datum["pkg"])
+            new_uf = UTLFile(pkg=the_pkg, file_path=uf_datum["file_path"])
+            new_uf.full_clean()
+            new_uf.save()
+
+        with (cls.TEST_DIR / 'macrodefs.json').open('r') as mdefin:
+            mdef_data = json.load(mdefin)
+        cls.test_ids = []
+        for mdef in mdef_data:
+            mdef_datum = mdef["fields"]
+            the_pkg = Package.objects.get(name=mdef_datum["source"].split('/')[0])
+            the_file = UTLFile.objects.get(pkg=the_pkg, file_path=mdef_datum["source"].split('/')[1])
+            new_mdef = MacroDefinition(source=the_file,
+                                       text=mdef_datum["text"],
+                                       name=mdef_datum["name"],
+                                       start=mdef_datum["start"],
+                                       end=mdef_datum["end"],
+                                       line=mdef_datum["line"])
+            new_mdef.full_clean()
+            new_mdef.save()
+            cls.test_ids.append(new_mdef.pk)
+
+
+class api_macro_textTestCase(macroTestCase):
+    """Unit tests for :py:func:`~utl_files.views.api_macro_text`."""
+
+    def test_basic_call(self):
+        """Unit test of basic call to API."""
+        for mdef_id in self.test_ids:
+            mdef = MacroDefinition.objects.get(pk=mdef_id)
+            request = make_wsgi_request("files/api/macro_text/{}/"
+                                    "".format(mdef_id))
+
+            results = views.api_macro_text(request, mdef_id)
+            self.assertEqual(results.status_code, 200)
+            from_json = json.loads(results.content.decode('utf-8'))
+            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
+                                           'line': mdef.line,
+                                           'source': mdef.source.file_path,
+                                           'name': mdef.name}, from_json)
+            self.assertEqual(mdef.text, from_json['text'])
+
+
+class api_macro_w_syntaxTestCase(macroTestCase):
+    """Unit tests for :py:func:`~utl_files.`"""
+
+    EXPECTED = ['''[% <span class="statement_list"><span class="macro_defn"><span class="macro_decl">macro photo_text</span><!-- macro_decl --> %]<span class="statement_list"><span class="document">\n    </span><!-- document -->[%  <span class="if">if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!-- id --> == <span class="literal">'true'</span><!-- expr --></span><!-- literal --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- expr --> %]
+<span class="statement_list">        <span class="document">&lt;div class="photo-byline"&gt;</span><!-- document -->
+        [%  <span class="id">photo_credit_text</span><!-- id -->;
+            <span class="expr"><span class="id">credit</span><!-- id --> | <span class="id">html</span><!-- id --></span><!-- expr -->; <span class="id">credit</span><!-- id --> %]
+<span class="document">        &lt;/div&gt;
+</span><!-- document --></span><!-- statement_list -->    [%  end</span><!-- if -->; /* photo_credit */
+<span class="if">        if <span class="expr"><span class="expr"><span class="id">photo_caption</span><!-- id --> == <span class="literal">&'true'</span><!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span><!-- id --></span><!-- expr --> %]<span class="statement_list"><span class="document">
+        &lt;div class="photo-cutline"&gt;
+</span><!-- document -->            [% <span class="expr"><span class="id">caption</span><!-- id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;  <span class="id">caption</span><!-- id --> %]<span class="document">
+        &lt;/div&gt;
+</span><!-- document --></span><!-- statement_list -->    [%  end</span><!-- if --></span><!-- statement_list -->; /* photo caption */
+end</span><!-- macro_defn --> %]</span><!-- statement_list -->
+''']
+
+    def test_basic_call(self):
+        """Unit test of basic call to API."""
+        for mdef_id in self.test_ids:
+            mdef = MacroDefinition.objects.get(pk=mdef_id)
+            request = make_wsgi_request("files/api/macro_text/{}/"
+                                    "".format(mdef_id))
+
+            results = views.api_macro_w_syntax(request, mdef_id)
+            self.assertEqual(results.status_code, 200)
+            from_json = json.loads(results.content.decode('utf-8'))
+            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
+                                           'line': mdef.line,
+                                           'source': mdef.source.file_path,
+                                           'name': mdef.name}, from_json)
+            if mdef.name == 'photo_text':
+                self.assertEqual(from_json['text'], self.EXPECTED[0])
+
 
 # Local Variables:
 # python-indent-offset: 4

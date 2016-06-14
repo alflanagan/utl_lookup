@@ -1,0 +1,44 @@
+[
+  {
+    "model": "utl_files.package",
+    "pk": 2062,
+    "fields": {
+      "version": "1.23.1",
+      "app": 51,
+      "name": "core-asset-index-lead_presentation",
+      "pkg_type": "b",
+      "site": 326,
+      "disk_directory": "agnet.net/blocks/core-asset-index-lead_presentation_1.23.1",
+      "last_download": "2016-03-09T22:41:50Z",
+      "is_certified": false
+    }
+  },
+  {
+    "model": "utl_files.package",
+    "pk": 2063,
+    "fields": {
+      "version": "1.21.1",
+      "app": 51,
+      "name": "core-asset-index-map",
+      "pkg_type": "b",
+      "site": 326,
+      "disk_directory": "agnet.net/blocks/core-asset-index-map_1.21.1",
+      "last_download": "2016-03-09T22:41:50Z",
+      "is_certified": false
+    }
+  },
+  {
+    "model": "utl_files.package",
+    "pk": 2077,
+    "fields": {
+      "version": "0.1",
+      "app": 51,
+      "name": "core-slideshow-presentation-1-15-1-test_block",
+      "pkg_type": "b",
+      "site": 326,
+      "disk_directory": "agnet.net/blocks/core-slideshow-presentation-1-15-1-test_block_0.1",
+      "last_download": "2016-03-09T22:43:01Z",
+      "is_certified": false
+    }
+  }
+]
