@@ -22,15 +22,12 @@ class UTLWithMarkupTestCase(unittest.TestCase):
         """Unit test for :py:meth:`code_markup.UTLWithMarkup`."""
         item1 = UTLWithMarkup('[% if fred==wilma then echo "barney"; %]')
         self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]')
-        expected = ('[% <span class="statement_list"><span class="if">if '
-                    '<span class="expr"><span class="id">fred</span><!-- id '
-                    '-->==<span class="id">wilma</span><!-- expr --></span><!-- '
-                    'id --> then <span class="statement_list"><span class="echo">'
-                    'echo <span class="literal">"barney"</span><!-- if --></span>'
-                    '<!-- statement_list --></span><!-- echo --></span><!-- literal'
-                    ' -->; %]</span><!-- statement_list -->')
-        # TODO: Need a better way to specify expected markup
-        self.assertEqual(item1.text, expected)
+        expected = (r'\[% (<span class="(statement_list|if)">){2}if (<span class="(expr|id'
+                    r')">){2}fred</span><!-- id -->==<span class="id">wilma(</span><!-- (e'
+                    r'xpr|id) -->){2} then (<span class="(statement_list|echo)">){2}echo '
+                    r'<span class="literal">&quot;barney&quot;(</span><!-- (if|statement_l'
+                    r'ist|echo|literal) -->){4}; %]</span><!-- statement_list -->$')
+        self.assertRegex(item1.text, expected)
 
     def test_document(self):
         """Unit test for :py:meth:`~utl_files.code_markup.UTLWithMarkup.text`
@@ -40,27 +37,27 @@ class UTLWithMarkupTestCase(unittest.TestCase):
         item1 = UTLWithMarkup('<div class="fred"><p>a paragraph<p></div>')
         self.assertEqual(item1.source, '<div class="fred"><p>a paragraph<p></div>')
 
-        expected = ('<span class="statement_list"><span class="document">&lt;div '
-                    'class=&quot;fred&quot;&gt;&lt;p&gt;a paragraph&lt;p&gt;&lt;'
-                    '/div&gt;</span><!-- document --></span><!-- statement_list -->')
+        expected = ('<span class="statement_list"><span class="document">&lt;div class=&qu'
+                    'ot;fred&quot;&gt;&lt;p&gt;a paragraph&lt;p&gt;&lt;/div&gt;</span><!--'
+                    ' document --></span><!-- statement_list -->')
 
         self.assertEqual(item1.text, expected)
 
     def test_begin_tag(self):
-        """Unit tests of """
+        """Unit tests of :py:meth:`~utl_files.UTLWithMarkup.text` with a
+        non-default start tag template specified.
+
+        """
         source_text = '[% if fred==wilma then echo "barney"; %]'
         item1 = UTLWithMarkup(source_text, markup_start='<start {}>',
                               markup_end='<end {}>')
-        # note below how the <end expr> comes before the <end id>, violating
-        # the expectation that id will be nested inside the expr. I'm going
-        # to wait to see this cause an actual problem before trying to fix it.
-        # note 2: is order always same?
-        expected = ('[% <start statement_list><start if>if <start expr>'
-                    '<start id>fred<end id>==<start id>wilma<end expr><end id>'
-                    ' then <start statement_list><start echo>echo '
-                    '<start literal>"barney"<end if><end statement_list>'
-                    '<end echo><end literal>; %]<end statement_list>')
-        self.assertEqual(item1.text, expected)
+        expected = (r'^\[% (<start statement_list><start if>|<start if><start statement_li'
+                    r'st>)if (<start expr><start id>|<start id><start expr>)fred<end id>=='
+                    r'<start id>wilma(<end expr><end id>|<end id><end expr>) then (<start '
+                    r'statement_list><start echo>|<start echo><start statement_list>)echo '
+                    r'<start literal>&quot;barney&quot;(<end (if|statement_list|echo|liter'
+                    r'al)>){4}; %]<end statement_list>$')
+        self.assertRegex(item1.text, expected)
 
     def test_comment_markup(self):
         """Test markup for comments in source."""
@@ -85,14 +82,14 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
         self.assertSetEqual(set(item1.start_pos.keys()),
                             set([3, 6, 12, 23, 28]))
         self.assertSetEqual(set(item1.end_pos.keys()),
-                            set([10, 17, 36, 41]))
+                            set([10, 17, 36, 40]))
         # should be able to do this with dict comprehension, haven't figured out
         # how **hangs head in shame**
         test_dict = {}
         for key in item1.end_pos:
             test_dict[key] = set([node.symbol for node in item1.end_pos[key]])
         self.assertDictEqual(test_dict,
-                             {41: set(['statement_list']),
+                             {40: set(['statement_list']),
                               10: set(['id']),
                               36: set(['if', 'statement_list', 'echo', 'literal']),
                               17: set(['expr', 'id'])})
@@ -151,7 +148,7 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
                               {'id'},  # 'i'
                               set(),  # ' + '
                               {'literal', 'echo', 'statement_list', 'if', 'expr'},  # '"barney"'
-                              set()]  # '; %]'
+                              {'statement_list'}]  # '; %]'
         self.assertSequenceEqual(expected_end_nodes, end_nodes)
 
     def test_w_docs(self):
@@ -205,7 +202,7 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
                               set(),  # 'else %] '
                               {'statement_list', 'else'},  # '<span> second doc </span> '
                               {'if'},  # '[% end'
-                              set()]  # '; %]'
+                              {'statement_list'}]  # '; %]'
         self.assertSequenceEqual(expected_end_nodes, end_nodes)
 
         expected_docs = [False, False, False, False, False, False, True,
@@ -232,7 +229,7 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
                                   {'statement_list', 'id'}, set()])
         self.assertSequenceEqual([set([node.symbol for node in part.ends]) for part in parts],
                                  [set(), set(), {'id'}, set(),
-                                  {'statement_list', 'id', 'if'}, set()])
+                                  {'statement_list', 'id', 'if'}, {'statement_list'}])
         self.assertSequenceEqual([part.is_doc for part in parts], [False] * 6)
 
 
