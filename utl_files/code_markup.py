@@ -22,7 +22,7 @@ from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_lex_comments import UTLLexerComments
 
 
-class UTLTextParseIterator():
+class UTLTextParseIterator():  # pylint: disable=R0903
     """A data structure to hold information needed to process a UTL text
     source into marked-up output. This is a sufficently hard problem to
     deserve its own class (implementated as a source code iterator).
@@ -43,14 +43,10 @@ class UTLTextParseIterator():
 
     """
 
-    # class-level objects that only need to be created once
-    HANDLERS = [UTLParseHandlerAST()]
-
-    PARSER = UTLParser(HANDLERS)
-
     def __init__(self, source_text):
+        self.parser = UTLParser([UTLParseHandlerAST()])
         self.source = source_text
-        self.parse_tree = FrozenASTNode(self.PARSER.parse(self.source))
+        self.parse_tree = FrozenASTNode(self.parser.parse(self.source))
         self.start_pos = defaultdict(list)
         """Mapping from source text position to the production node(s) that
         start there.
@@ -66,9 +62,9 @@ class UTLTextParseIterator():
         starts there.
 
         """
-        self.find_boundaries()
+        self._find_boundaries()
 
-    def find_boundaries(self):
+    def _find_boundaries(self):
         """Creates dictionaries to map source text character positions to the
         productions that start or end there, or to the text of documents that
         start there.
@@ -117,7 +113,7 @@ class UTLTextParseIterator():
                     else:
                         yield (self.documents[i],
                                set(self.start_pos[i]),
-                               set(self.end_pos[i+len(self.documents[i])]),
+                               set(self.end_pos[i + len(self.documents[i])]),
                                True, )
                         i += len(self.documents[i])
                         anchor = i
@@ -145,7 +141,6 @@ class UTLWithMarkup():
     HANDLERS = [UTLParseHandlerAST()]
 
     PARSER = UTLParser(HANDLERS)
-
 
     def __init__(self, source_text: str, markup_start: str='<span class="{}">',
                  markup_end: str='</span><!-- {} -->'):

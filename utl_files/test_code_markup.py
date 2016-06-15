@@ -193,19 +193,46 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
                                 set()]  # '; %]'
         self.assertSequenceEqual(expected_start_nodes, start_nodes)
 
-        # TODO: update this for this test!!
         expected_end_nodes = [set(),  # '[% '
                               set(),  # 'if '
                               {'id'},  # 'fred'
                               set(),  # '=='
                               {'id', 'expr'},  # 'wilma'
-                              set(),  # ' then '
-                              set(),  # 'echo '
-                              {'id'},  # 'i'
-                              set(),  # ' + '
-                              {'literal', 'echo', 'statement_list', 'if', 'expr'},  # '"barney"'
+                              set(),  # ' %] '
+                              {'statement_list'},  # '<p>first para<p> '
+                              set(),  # '[% '
+                              set(),  # 'else %] '
+                              {'statement_list', 'else'},  # '<span> second doc </span> '
+                              {'if'},  # '[% end'
                               set()]  # '; %]'
         self.assertSequenceEqual(expected_end_nodes, end_nodes)
+
+        expected_docs = [False, False, False, False, False, False, True,
+                         False, False, True, False, False]
+        self.assertSequenceEqual(expected_docs, is_document)
+
+    def test_missing_close_bracket(self):
+        """Test expected output from
+        :py:meth:`~utl_files.code_markup.UTLTextParseIterator.parts` when
+        source text lacks a closing '%]'.
+
+        """
+        item1 = UTLTextParseIterator('if a then b end')
+        parts = list(item1.parts)
+        self.assertEqual(len(parts), 1)
+        self.assertTrue(parts[0][3])  # document
+        item1 = UTLTextParseIterator('[% if a then b%]')
+        parts = list(item1.parts)
+        self.assertEqual(len(parts), 6)
+        self.assertSequenceEqual([part[0] for part in parts],
+                                 ['[% ', 'if ', 'a', ' then ', 'b', '%]' ])
+        self.assertSequenceEqual([set([node.symbol for node in part[1]]) for part in parts],
+                                 [set(), {'statement_list', 'if'}, {'id'}, set(),
+                                  {'statement_list', 'id'}, set()])
+        self.assertSequenceEqual([set([node.symbol for node in part[2]]) for part in parts],
+                                 [set(), set(), {'id'}, set(),
+                                  {'statement_list', 'id', 'if'}, set()])
+        self.assertSequenceEqual([part[3] for part in parts], [False] * 6)
 
 
 if __name__ == '__main__':
