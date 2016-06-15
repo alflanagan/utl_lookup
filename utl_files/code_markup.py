@@ -22,6 +22,19 @@ from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_lex_comments import UTLLexerComments
 
 
+class ParsedSegment(object):
+    """A not-smart holder for info about a piece of UTL source code which
+    will not require further splitting for syntax markup.
+
+    """
+    def __init__(self, text:str, starts:Sequence[ASTNode],
+                 ends:Sequence[ASTNode], is_document:bool):
+        self.text = text
+        self.starts = starts
+        self.ends = ends
+        self.is_doc = is_document
+
+
 class UTLTextParseIterator():  # pylint: disable=R0903
     """A data structure to hold information needed to process a UTL text
     source into marked-up output. This is a sufficently hard problem to
@@ -88,9 +101,10 @@ class UTLTextParseIterator():  # pylint: disable=R0903
         assert start_ct == end_ct
 
     @property
-    def parts(self) -> Iterator[Tuple[str, Sequence[ASTNode], Sequence[ASTNode], bool]]:
-        """Returns an iterator which returns a tuple for each substring of
-        the source text which does not require markup within it.
+    def parts(self) -> Iterator[ParsedSegment]:
+        """Returns an iterator which returns a
+        :py:class:`~utl_files.code_markup.ParsedSegment` for each substring
+        of the source text which does not require markup within it.
 
         """
         anchor = 0
@@ -105,30 +119,30 @@ class UTLTextParseIterator():  # pylint: disable=R0903
             if i in self.start_pos or i in self.end_pos or i in self.documents:
                 if i in self.documents:
                     if anchor != i:
-                        yield (self.source[anchor:i],
-                               set(self.start_pos[anchor]),
-                               set(self.end_pos[i]),
-                               False, )
+                        yield ParsedSegment(self.source[anchor:i],
+                                            set(self.start_pos[anchor]),
+                                            set(self.end_pos[i]),
+                                            False)
                         anchor = i
                     else:
-                        yield (self.documents[i],
-                               set(self.start_pos[i]),
-                               set(self.end_pos[i + len(self.documents[i])]),
-                               True, )
+                        yield ParsedSegment(self.documents[i],
+                                            set(self.start_pos[i]),
+                                            set(self.end_pos[i + len(self.documents[i])]),
+                                            True)
                         i += len(self.documents[i])
                         anchor = i
                 else:
                     if anchor != i:
-                        yield (self.source[anchor:i],
-                               set(self.start_pos[anchor]),
-                               set(self.end_pos[i]),
-                               False, )
+                        yield ParsedSegment(self.source[anchor:i],
+                                            set(self.start_pos[anchor]),
+                                            set(self.end_pos[i]),
+                                            False)
                         anchor = i
                     i += 1
             else:
                 i += 1
         if anchor < len(self.source):
-            yield(self.source[anchor:], set(), set(), False)
+            yield ParsedSegment(self.source[anchor:], set(), set(), False)
 
 
 # pylint: disable=too-many-instance-attributes

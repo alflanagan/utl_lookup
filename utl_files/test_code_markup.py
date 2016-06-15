@@ -12,7 +12,7 @@
 
 import unittest
 
-from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator
+from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator, ParsedSegment
 
 
 class UTLWithMarkupTestCase(unittest.TestCase):
@@ -115,11 +115,11 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
         substrs = []
         start_nodes = []
         end_nodes = []
-        for part in item1.parts:
-            self.assertIsInstance(part[0], str)
-            substrs.append(part[0])
-            start_nodes.append(set([node.symbol for node in part[1]]))
-            end_nodes.append(set([node.symbol for node in part[2]]))
+        for parsed_seg in item1.parts:
+            self.assertIsInstance(parsed_seg.text, str)
+            substrs.append(parsed_seg.text)
+            start_nodes.append(set([node.symbol for node in parsed_seg.starts]))
+            end_nodes.append(set([node.symbol for node in parsed_seg.ends]))
 
         expected_strs = ['[% ', 'if ', 'fred', '==', 'wilma', ' then ',
                          'echo ', 'i', ' + ', '"barney"', '; %]']
@@ -164,11 +164,12 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
         start_nodes = []
         end_nodes = []
         is_document = []
-        for part in item1.parts:
-            substrs.append(part[0])
-            start_nodes.append(set([node.symbol for node in part[1]]))
-            end_nodes.append(set([node.symbol for node in part[2]]))
-            is_document.append(part[3])
+        for segment in item1.parts:
+            isinstance(segment, ParsedSegment)
+            substrs.append(segment.text)
+            start_nodes.append(set([node.symbol for node in segment.starts]))
+            end_nodes.append(set([node.symbol for node in segment.ends]))
+            is_document.append(segment.is_doc)
 
         # note problem with our parser: it doesn't break out keywords from  %], [%
         expected = ['[% ', 'if ', 'fred', '==', 'wilma', ' %] ', '<p>first para<p> ', '[% ',
@@ -220,19 +221,19 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
         item1 = UTLTextParseIterator('if a then b end')
         parts = list(item1.parts)
         self.assertEqual(len(parts), 1)
-        self.assertTrue(parts[0][3])  # document
+        self.assertTrue(parts[0].is_doc)  # document
         item1 = UTLTextParseIterator('[% if a then b%]')
         parts = list(item1.parts)
         self.assertEqual(len(parts), 6)
-        self.assertSequenceEqual([part[0] for part in parts],
-                                 ['[% ', 'if ', 'a', ' then ', 'b', '%]' ])
-        self.assertSequenceEqual([set([node.symbol for node in part[1]]) for part in parts],
+        self.assertSequenceEqual([part.text for part in parts],
+                                 ['[% ', 'if ', 'a', ' then ', 'b', '%]'])
+        self.assertSequenceEqual([set([node.symbol for node in part.starts]) for part in parts],
                                  [set(), {'statement_list', 'if'}, {'id'}, set(),
                                   {'statement_list', 'id'}, set()])
-        self.assertSequenceEqual([set([node.symbol for node in part[2]]) for part in parts],
+        self.assertSequenceEqual([set([node.symbol for node in part.ends]) for part in parts],
                                  [set(), set(), {'id'}, set(),
                                   {'statement_list', 'id', 'if'}, set()])
-        self.assertSequenceEqual([part[3] for part in parts], [False] * 6)
+        self.assertSequenceEqual([part.is_doc for part in parts], [False] * 6)
 
 
 if __name__ == '__main__':
