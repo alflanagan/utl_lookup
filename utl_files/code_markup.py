@@ -99,6 +99,11 @@ class UTLTextParseIterator():
                     end_position = min(ast_node.attributes["end"], limit)  # bit of a hack
                     self.end_pos[end_position].append(ast_node)
 
+        for comm_start, comm_end in self._get_comments():
+            comment_node = FrozenASTNode(ASTNode("comment", {}, []))
+            self.start_pos[comm_start].append(comment_node)
+            self.end_pos[comm_end].append(comment_node)
+
         # basic sanity check: # starts == # ends
         start_ct = sum([len(self.start_pos[key]) for key in self.start_pos])
         end_ct = sum([len(self.end_pos[key]) for key in self.end_pos])

@@ -10,12 +10,12 @@
 """
 # pylint: disable=too-few-public-methods
 
-import unittest
+from django.test import TestCase
 
 from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator, ParsedSegment
 
 
-class UTLWithMarkupTestCase(unittest.TestCase):
+class UTLWithMarkupTestCase(TestCase):
     """Unit tests for class :py:class:`~code_markup.UTLWithMarkup`."""
 
     def test_create(self):
@@ -71,8 +71,19 @@ class UTLWithMarkupTestCase(unittest.TestCase):
         self.assertIn('[comment]/* this is a comment */[comment]',
                       item2.text)
 
+        source_text = ('[% if fred/* Flintstone */==wilma/* wife */ then echo "barney" '
+                       '/* friend */; %]')
+        item1 = UTLWithMarkup(source_text, markup_end='</span>')
+        expected = (r'^\[% (<span class="(statement_list|if)">){2}if (<span class="(expr|'
+                    r'id)">){2}fred</span><span class="comment">/\* Flintstone \*/</span>'
+                    r'==<span class="id">wilma(</span>){2}<span class="comment">/\* wife '
+                    r'\*/</span> then (<span class="(statement_list|echo)">){2}echo <span '
+                    r'class="literal">&quot;barney&quot;(</span>){4} <span class="comment">'
+                    r'/\* friend \*/</span>; %]</span>$')
+        self.assertRegex(item1.text, expected)
 
-class UTLTextParseIteratorTestCase(unittest.TestCase):
+
+class UTLTextParseIteratorTestCase(TestCase):
     """Unit tests for :py:class:`~utl_lib.code_markup.UTLTextParseIterator`."""
 
     def test_create(self):
@@ -232,9 +243,6 @@ class UTLTextParseIteratorTestCase(unittest.TestCase):
                                   {'statement_list', 'id', 'if'}, {'statement_list'}])
         self.assertSequenceEqual([part.is_doc for part in parts], [False] * 6)
 
-
-if __name__ == '__main__':
-    unittest.main()
 
 # Local Variables:
 # python-indent-offset: 4
