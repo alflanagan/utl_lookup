@@ -17,9 +17,14 @@
   padding-left: 0;
 }
 
-#tree-view li.jstree-node {
-  overflow: hidden;
-  font-size: .9em;
+#tree-view {
+    li.jstree-node {
+      overflow: hidden;
+      font-size: .9em;
+    }
+    overflow-y: scroll;
+    max-height: 900px;
+    overflow-x: hidden;
 }
 
 #macros-list {
@@ -70,27 +75,52 @@
     }
 }
 
-span.id {
-    color: magenta;
-}
+/********************************/
+/* syntax highlighting          */
+/********************************/
 
-span.macro_defn {
-    color: green;
-}
+/* colors shared by multiple elements */
+@id_color: slateblue;
+@literal_color: blue;
+@keyword_color: blueviolet; /* indigo, lightcoral, maroon, mediumaquamarine, slateblue */
+@intermediategrey: #BCBCBC;
 
-span.macro_decl {
-    color: pink;
-}
+span.abbrev_if_stmt {color: @keyword_color; }
+span.arg {color: darkolivegreen;}
+span.array_literal {color: @literal_color; font-weight: bold;}
+span.array_elem {color: goldenrod; }
+span.as_clause {color: @keyword_color; }
+span.call_stmt {color: @keyword_color; }
+span.comment {color: @intermediategrey; font-style: italic; }
+span.document {color: lightcoral; }
+span.dotted_id {color: @id_color;}
+span.echo_stmt {color: @keyword_color; }
+span.else_stmt {color: @keyword_color; }
+span.elseif_stmt {color: @keyword_color; }
+/* alas, we sometimes end up with IDs tagged as "id"
+   and sometimes with "expr". Good idea to use same
+   color for both.
+*/
+span.expr {color: @id_color;}
+span.for_stmt {color: @keyword_color; }
+span.id {color: @id_color !important; }
+span.if_stmt  {color: @keyword_color; }
+span.include_stmt {color: black; font-style: italic;}
+span.literal {color: @literal_color; font-weight: bold;}
+span.macro_call {color: @keyword_color; }
+span.macro_decl {color: @keyword_color;}
+span.macro_defn {color: green;}
+span.param_decl {color: plum; }
+span.paren_expr {color: pink;}
+span.return_stmt {color: @keyword_color; }
+span.while_stmt  {color: @keyword_color; }
 
-span.arg {
-    color: orange;
-}
+/* Remaining syntax styles
 
-span.literal {
-    color: red;
-    font-weight: bold;
-}
-
-span.expr {
-    color: blue;
-}
+arg_list
+array_elems
+array_ref
+default_assignment
+statement
+statement_list
+ */

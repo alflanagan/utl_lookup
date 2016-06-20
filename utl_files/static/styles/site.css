@@ -53,23 +53,101 @@
   font-variant: small-caps;
   background-color: lightgrey;
 }
+/********************************/
+/* syntax highlighting          */
+/********************************/
+/* colors shared by multiple elements */
+/* indigo, lightcoral, maroon, mediumaquamarine, slateblue */
+span.abbrev_if_stmt {
+  color: blueviolet;
+}
+span.arg {
+  color: darkolivegreen;
+}
+span.array_literal {
+  color: blue;
+  font-weight: bold;
+}
+span.array_elem {
+  color: goldenrod;
+}
+span.as_clause {
+  color: blueviolet;
+}
+span.call_stmt {
+  color: blueviolet;
+}
+span.comment {
+  color: #BCBCBC;
+  font-style: italic;
+}
+span.document {
+  color: lightcoral;
+}
+span.dotted_id {
+  color: slateblue;
+}
+span.echo_stmt {
+  color: blueviolet;
+}
+span.else_stmt {
+  color: blueviolet;
+}
+span.elseif_stmt {
+  color: blueviolet;
+}
+/* alas, we sometimes end up with IDs tagged as "id"
+   and sometimes with "expr". Good idea to use same
+   color for both.
+*/
+span.expr {
+  color: slateblue;
+}
+span.for_stmt {
+  color: blueviolet;
+}
 span.id {
-  color: magenta;
+  color: slateblue !important;
+}
+span.if_stmt {
+  color: blueviolet;
+}
+span.include_stmt {
+  color: black;
+  font-style: italic;
+}
+span.literal {
+  color: blue;
+  font-weight: bold;
+}
+span.macro_call {
+  color: blueviolet;
+}
+span.macro_decl {
+  color: blueviolet;
 }
 span.macro_defn {
   color: green;
 }
-span.macro_decl {
+span.param_decl {
+  color: plum;
+}
+span.paren_expr {
   color: pink;
 }
-span.arg {
-  color: orange;
+span.return_stmt {
+  color: blueviolet;
 }
-span.literal {
-  color: red;
-  font-weight: bold;
+span.while_stmt {
+  color: blueviolet;
 }
-span.expr {
-  color: blue;
-}
+/* Remaining syntax styles 
+
+arg_list
+array_elems
+array_ref
+default_assignment
+statement
+statement_list
+ */
 /*# sourceMappingURL=site.css.map */
