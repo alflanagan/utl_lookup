@@ -305,7 +305,7 @@ class PackageTestCase(TransactionTestCase):
             pkgdict = pkg.to_dict()
             self.assertSetEqual(
                 set(pkgdict.keys()), set(["id", "app", "name", "version", "is_certified",
-                                          "downloaded", "pkg_type", "location"]))
+                                          "downloaded", "pkg_type", "location", "site"]))
             self.assertEqual(pkgdict["id"], pkg.id)
             self.assertEqual(pkgdict["app"], pkg.app.name)
             self.assertEqual(pkgdict["name"], pkg.name)
@@ -314,6 +314,7 @@ class PackageTestCase(TransactionTestCase):
             self.assertEqual(pkgdict["downloaded"], pkg.last_download)
             self.assertEqual(pkgdict["pkg_type"], pkg.pkg_type)
             self.assertEqual(pkgdict["location"], pkg.disk_directory)
+            self.assertIn(pkg.site.URL, [self.test_site.URL, self.test_site2.URL])
 
     def test_load_from_certified(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)`."""
@@ -853,11 +854,19 @@ class MacroRefTestCase(TestCase):
 
     def test_to_dict(self):
         """Unit test of :py:meth:`utl_files.models.MacroRef.to_dict`."""
-        self.assertDictContainsSubset(
-            {"pkg": self.test_ref.source.pkg.name,
-             "pkg_version": self.test_ref.source.pkg.version,
-             "file": self.test_ref.source.file_path,
-             "line": self.test_ref.line,
-             "text": self.test_ref.text,
-             "name": self.test_ref.macro_name}, self.test_ref.to_dict())
-        self.assertIn('id', self.test_ref.to_dict())
+        ref = self.test_ref
+        pkg = ref.source.pkg
+        expected = {"pkg": pkg.name,
+                    "pkg_version": pkg.version,
+                    "file": ref.source.file_path,
+                    "line": ref.line,
+                    "text": ref.text,
+                    "name": ref.macro_name,
+                    'pkg_download': pkg.last_download,
+                    'start': ref.start,
+                    'pkg_site': pkg.site.URL if pkg.site else None,}
+
+        self.assertDictContainsSubset(expected, self.test_ref.to_dict())
+        # make sure id is the only non-checked field in return dictionary
+        self.assertSetEqual(set(['id', ]),
+                            set(self.test_ref.to_dict().keys()) - set(expected.keys()))

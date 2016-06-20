@@ -178,14 +178,19 @@ class Package(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
+        # need to be sure we have natural keys for each foreign key
         return {"id": self.pk,
+                # app: key name
                 "app": self.app.name,
+                # site: key URL
+                "site": self.site.URL,
                 "name": self.name,
                 "version": self.version,
                 "is_certified": "y" if self.is_certified else "n",
                 "downloaded": self.last_download,
                 "pkg_type": self.pkg_type,
                 "location": self.disk_directory, }
+
 
     # for now we're not using package/config.ini, but leaving this as I'm not sure we don't need
     # it
@@ -686,10 +691,17 @@ class MacroRef(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
+        # need to make sure we have natural keys for each foreign key
         return {"id": self.pk,
+                # source: UTLFile (pkg, file_path)
+                "file": self.source.file_path,
+                # source.pkg: Package (name, version) OR (name, site, last_download)
                 "pkg": self.source.pkg.name,
                 "pkg_version": self.source.pkg.version,
-                "file": self.source.file_path,
+                "pkg_site": self.source.pkg.site.URL if self.source.pkg.site else None,
+                "pkg_download": self.source.pkg.last_download,
+                # non-foreign-keys
+                "start": self.start,
                 "line": self.line,
                 "text": self.text,
                 "name": self.macro_name}
