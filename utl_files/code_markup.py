@@ -29,13 +29,27 @@ class ParsedSegment(object):
     will not require further splitting for syntax markup.
 
     """
+    @staticmethod
+    def _ast_node_sort_key(a_node):
+        try:
+            return a_node.attributes["end"] - a_node.attributes["start"]
+        except KeyError:
+            return 0
+
     # TODO: Add comments
     def __init__(self, text: str, starts: Sequence[ASTNode],
                  ends: Sequence[ASTNode], is_document: bool):
         self.text = text
-        self.starts = starts
-        self.ends = ends
+        self.starts = list(starts)
+        self.ends = list(ends)
         self.is_doc = is_document
+
+        #For retrieval of starts, we want the outer nodes first
+        #For retrieval of ends, we want the inner nodes first
+        #so we need to sort by size
+        self.starts.sort(key=self._ast_node_sort_key, reverse=True)
+        self.ends.sort(key=self._ast_node_sort_key)
+
 
 
 class UTLTextParseIterator():
@@ -86,8 +100,9 @@ class UTLTextParseIterator():
         start there.
 
         """
-        # here we cheat. Parser can report an end position one past len(source)
-        # but we don't want that, so we'll limit it to a max of limit
+        # TODO: need to get correct order of start, end tags when multiple
+        # tags are present at the same position -- otherwise tags that share
+        # same end tag, such as <span>, end up covering the wrong substring.
         limit = len(self.source)
         for ast_node in self.parse_tree.walk():
             if ast_node.symbol == 'document':
@@ -96,7 +111,9 @@ class UTLTextParseIterator():
                 # omit productions that didn't match any text
                 if not ast_node.attributes["start"] == ast_node.attributes["end"]:
                     self.start_pos[ast_node.attributes["start"]].append(ast_node)
-                    end_position = min(ast_node.attributes["end"], limit)  # bit of a hack
+                    # parser may report end one past len(source), but we
+                    # don't need to check that far
+                    end_position = min(ast_node.attributes["end"], limit)
                     self.end_pos[end_position].append(ast_node)
 
         for comm_start, comm_end in self._get_comments():

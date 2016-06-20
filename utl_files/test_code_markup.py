@@ -22,12 +22,14 @@ class UTLWithMarkupTestCase(TestCase):
         """Unit test for :py:meth:`code_markup.UTLWithMarkup`."""
         item1 = UTLWithMarkup('[% if fred==wilma then echo "barney"; %]')
         self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]')
-        expected = (r'\[% (<span class="(statement_list|if)">){2}if (<span class="(expr|id'
-                    r')">){2}fred</span><!-- id -->==<span class="id">wilma(</span><!-- (e'
-                    r'xpr|id) -->){2} then (<span class="(statement_list|echo)">){2}echo '
-                    r'<span class="literal">&quot;barney&quot;(</span><!-- (if|statement_l'
-                    r'ist|echo|literal) -->){4}; %]</span><!-- statement_list -->$')
-        self.assertRegex(item1.text, expected)
+        expected = (r'^\[% <span class="statement_list"><span class="if">if <span class='
+                    r'"expr"><span class="id">fred</span><!-- id -->==<span class="id">'
+                    r'wilma</span><!-- id --></span><!-- expr --> then (<span class="'
+                    r'(statement_list|echo)">){2}echo <span class="literal">&quot;barney'
+                    r'&quot;</span><!-- literal -->(</span><!-- (echo|statement_list) -->)'
+                    r'{2}</span><!-- if -->; %]</span><!-- statement_list -->$')
+        actual = item1.text
+        self.assertRegex(actual, expected)
 
     def test_document(self):
         """Unit test for :py:meth:`~utl_files.code_markup.UTLWithMarkup.text`
@@ -51,13 +53,15 @@ class UTLWithMarkupTestCase(TestCase):
         source_text = '[% if fred==wilma then echo "barney"; %]'
         item1 = UTLWithMarkup(source_text, markup_start='<start {}>',
                               markup_end='<end {}>')
-        expected = (r'^\[% (<start statement_list><start if>|<start if><start statement_li'
-                    r'st>)if (<start expr><start id>|<start id><start expr>)fred<end id>=='
-                    r'<start id>wilma(<end expr><end id>|<end id><end expr>) then (<start '
-                    r'statement_list><start echo>|<start echo><start statement_list>)echo '
-                    r'<start literal>&quot;barney&quot;(<end (if|statement_list|echo|liter'
-                    r'al)>){4}; %]<end statement_list>$')
-        self.assertRegex(item1.text, expected)
+        # note: order doesn't matter for statement_list and echo after then,
+        # because both spans are same length
+        expected = (r'^\[% <start statement_list><start if>if <start expr><start id>fred'
+                    r'<end id>==<start id>wilma<end id><end expr> then (<start '
+                    '(statement_list|echo)>){2}echo <start literal>&quot;barney&quot;<end'
+                    ' literal>(<end (echo|statement_list)>){2}<end if>; %]<end '
+                    'statement_list>$')
+        actual = item1.text
+        self.assertRegex(actual, expected)
 
     def test_comment_markup(self):
         """Test markup for comments in source."""
@@ -74,12 +78,13 @@ class UTLWithMarkupTestCase(TestCase):
         source_text = ('[% if fred/* Flintstone */==wilma/* wife */ then echo "barney" '
                        '/* friend */; %]')
         item1 = UTLWithMarkup(source_text, markup_end='</span>')
-        expected = (r'^\[% (<span class="(statement_list|if)">){2}if (<span class="(expr|'
-                    r'id)">){2}fred</span><span class="comment">/\* Flintstone \*/</span>'
-                    r'==<span class="id">wilma(</span>){2}<span class="comment">/\* wife '
-                    r'\*/</span> then (<span class="(statement_list|echo)">){2}echo <span '
-                    r'class="literal">&quot;barney&quot;(</span>){4} <span class="comment">'
-                    r'/\* friend \*/</span>; %]</span>$')
+        expected = (r'\[% <span class="statement_list"><span class="if">if <span class='
+                    r'"expr"><span class="id">fred</span><span class="comment">/\* '
+                    r'Flintstone \*/</span>==<span class="id">wilma</span></span><span class'
+                    r'="comment">/\* wife \*/</span> then (<span class="(statement_list|'
+                    r'echo)">){2}echo <span class="literal">&quot;barney&quot;(</span>){4}'
+                    r' <span class="comment">/\* friend \*/</span>; %]</span>$')
+
         self.assertRegex(item1.text, expected)
 
 
