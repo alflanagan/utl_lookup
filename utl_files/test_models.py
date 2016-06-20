@@ -6,7 +6,9 @@ import sys
 import re
 from pathlib import Path
 from warnings import simplefilter
+from datetime import datetime
 
+from django.utils import timezone
 from django.test import TestCase, TransactionTestCase
 from django.db.utils import DataError
 from django.core.exceptions import ValidationError
@@ -472,10 +474,15 @@ class UTLFileTestCase(TestCase):
 
     def test_to_dict(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`dict`."""
-        self.assertDictEqual(
-            {'path': 'includes/footer-spotless.inc.utl',
-             'id': self.simple_utl.id,
-             'package': self.pkg.id, }, self.simple_utl.to_dict())
+        expected = {'path': 'includes/footer-spotless.inc.utl',
+                    'id': self.simple_utl.id,
+                    'pkg_certified': True,
+                    'pkg_download': None,
+                    'pkg_name': 'skin-editorial-core-base',
+                    'pkg_site': None,
+                    'pkg_version': '1.45.1.0'}
+        actual = self.simple_utl.to_dict()
+        self.assertDictEqual(expected, actual)
 
     def test_str(self):
         """:py:meth:`utl_file.models.UTLFile instance can convert to :py:class:`str`."""
@@ -706,11 +713,19 @@ class PackageDepTestCase(TestCase):
                              dep_version='3.15')
         new_dep.full_clean()
         new_dep.save()
-        self.assertDictContainsSubset(
-            {"name": self.test_pkg.name,
-             "version": self.test_pkg.version,
-             "dep_name": self.test_dep.name,
-             "dep_version": self.test_dep.version, }, new_dep.to_dict())
+        expected = {"pkg_name": self.test_pkg.name,
+                    "pkg_version": self.test_pkg.version,
+                    "pkg_certified": self.test_pkg.is_certified,
+                    "pkg_site": None,
+                    "pkg_download": datetime(2015, 5, 1, 13, 0, tzinfo=timezone.utc),
+                    "dep_name": self.test_dep.name,
+                    "dep_version": self.test_dep.version, }
+
+        actual = new_dep.to_dict()
+        self.assertDictContainsSubset(expected, actual)
+        self.assertSetEqual(set(['id', ]),
+                            set(actual.keys()) - set(expected.keys()))
+
         self.assertIn("id", new_dep.to_dict())
 
     def test_str(self):
@@ -800,15 +815,22 @@ class MacroDefinitionTestCase(TestCase):
     def test_to_dict(self):
         """Unit test for :py:meth:`utl_files.models.MacroDefinition.to_dict`."""
         self.test_def.line = 57
-        self.assertDictContainsSubset(
-            {'end': 0,
-             'file': 'includes/header.inc.utl',
-             'line': 57,
-             'name': 'my-bogus-macro',
-             'pkg': 'skin-editorial-core-base',
-             'pkg_version': '1.45.1.0',
-             'start': 0}, self.test_def.to_dict())
-        self.assertIn('id', self.test_def.to_dict())
+        expected = {'end': 0,
+                    'file': 'includes/header.inc.utl',
+                    'line': 57,
+                    'name': 'my-bogus-macro',
+                    'start': 0,
+                    'pkg_name': 'skin-editorial-core-base',
+                    'pkg_version': '1.45.1.0',
+                    'pkg_certified': True,
+                    'pkg_download': None,
+                    'pkg_site': None, }
+        actual = self.test_def.to_dict()
+        self.assertDictContainsSubset(expected, actual)
+        # check for unexpected keys
+        self.assertSetEqual({'id', },
+                            set(actual.keys()) - set(expected.keys()))
+
 
 
 class MacroRefTestCase(TestCase):
@@ -856,15 +878,16 @@ class MacroRefTestCase(TestCase):
         """Unit test of :py:meth:`utl_files.models.MacroRef.to_dict`."""
         ref = self.test_ref
         pkg = ref.source.pkg
-        expected = {"pkg": pkg.name,
+        expected = {"pkg_name": pkg.name,
                     "pkg_version": pkg.version,
                     "file": ref.source.file_path,
                     "line": ref.line,
                     "text": ref.text,
                     "name": ref.macro_name,
-                    'pkg_download': pkg.last_download,
-                    'start': ref.start,
-                    'pkg_site': pkg.site.URL if pkg.site else None,}
+                    "pkg_download": pkg.last_download,
+                    "pkg_certified": True,
+                    "start": ref.start,
+                    "pkg_site": pkg.site.URL if pkg.site else None,}
 
         self.assertDictContainsSubset(expected, self.test_ref.to_dict())
         # make sure id is the only non-checked field in return dictionary

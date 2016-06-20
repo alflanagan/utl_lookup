@@ -180,9 +180,9 @@ class Package(models.Model):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
         # need to be sure we have natural keys for each foreign key
         return {"id": self.pk,
-                # app: key name
+                # Application (name)
                 "app": self.app.name,
-                # site: key URL
+                # TownnewsSite: (URL)
                 "site": self.site.URL,
                 "name": self.name,
                 "version": self.version,
@@ -191,28 +191,23 @@ class Package(models.Model):
                 "pkg_type": self.pkg_type,
                 "location": self.disk_directory, }
 
+    def add_keys_to_dict(self, fields):
+        """Adds a set of keys which allow caller to retrieve this record to a
+        dictionary `fields`.
 
-    # for now we're not using package/config.ini, but leaving this as I'm not sure we don't need
-    # it
-    # @classmethod
-    # def _get_props(cls, directory):
-    #     """Helper method; load package properties from `directory`, return as :py:class:`dict`."""
-    #     # would be better to do this in PackageProp, but I need property values before creating
-    #     # Package object, and I can't create PackageProp objects until after
-    #     if not isinstance(directory, Path):
-    #         directory = Path(directory)
-    #     props = {}
-    #     # known config properties are:
-    #     # apparently required: block_types capabilities name title type version
-    #     # optional: app
-    #     with (directory / 'package/config.ini').open() as propin:
-    #         for line in propin:
-    #             key, value = line[:-1].split('=')
-    #             props[key] = value[1:-1]
+        Classes that have a Package foreign key can call this method to add
+        all the fields that may make up the key.
 
-    #     if "app" not in props:
-    #         props["app"] = "Global"
-    #     return props
+        """
+        fields.update({
+            # Package: (name, version) OR (name, site, last_download)
+            "pkg_name": self.name,
+            "pkg_version": self.version,
+            "pkg_site": self.site.URL if self.site else None,
+            "pkg_download": self.last_download,
+            # not part of foreign key but tells caller which fields to use
+            "pkg_certified": self.is_certified})
+        return fields
 
     @classmethod
     def load_from(cls, directory: Path, site: TownnewsSite, pkg_type: str) -> "Package":
@@ -327,7 +322,10 @@ class PackageProp(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk, "key": self.key, "value": self.value}
+        my_fields = {"id": self.pk, "key": self.key, "value": self.value}
+        # get foreign key fields from pkg
+        self.pkg.add_keys_to_dict(my_fields)
+        return my_fields
 
     @classmethod
     def from_package_metadata(cls, package: Package):
@@ -383,11 +381,10 @@ class PackageDep(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk,
-                "name": self.pkg.name,
-                "version": self.pkg.version,
-                "dep_name": self.dep_name,
-                "dep_version": self.dep_version}
+        my_fields = {"id": self.pk,
+                     "dep_name": self.dep_name,
+                     "dep_version": self.dep_version}
+        return self.pkg.add_keys_to_dict(my_fields)
 
     def __str__(self):
         str_fmt = "{} depends on {} ({})"
@@ -493,7 +490,8 @@ class UTLFile(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        return {"id": self.pk, "path": self.file_path, "package": self.pkg.id, }
+        my_fields = {"id": self.pk, "path": self.file_path}
+        return self.pkg.add_keys_to_dict(my_fields)
 
     @property
     def base_filename(self):
@@ -597,14 +595,14 @@ class MacroDefinition(models.Model):
 
     def to_dict(self):
         """Return a dictionary from values of model attributes, suitable for serialization."""
-        return {"id": self.pk,
-                "pkg": self.source.pkg.name,
-                "pkg_version": self.source.pkg.version,
-                "file": self.source.file_path,
-                "name": self.name,
-                "start": self.start,
-                "end": self.end,
-                "line": self.line}
+        my_fields = {"id": self.pk,
+                     "file": self.source.file_path,
+                     "name": self.name,
+                     "start": self.start,
+                     "end": self.end,
+                     "line": self.line}
+        the_pkg = self.source.pkg
+        return the_pkg.add_keys_to_dict(my_fields)
 
     def clean(self):
         """Cleans up macro text."""
@@ -691,20 +689,14 @@ class MacroRef(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        # need to make sure we have natural keys for each foreign key
-        return {"id": self.pk,
-                # source: UTLFile (pkg, file_path)
-                "file": self.source.file_path,
-                # source.pkg: Package (name, version) OR (name, site, last_download)
-                "pkg": self.source.pkg.name,
-                "pkg_version": self.source.pkg.version,
-                "pkg_site": self.source.pkg.site.URL if self.source.pkg.site else None,
-                "pkg_download": self.source.pkg.last_download,
-                # non-foreign-keys
-                "start": self.start,
-                "line": self.line,
-                "text": self.text,
-                "name": self.macro_name}
+        the_pkg = self.source.pkg
+        my_fields = {"id": self.pk,
+                     "file": self.source.file_path,
+                     "start": self.start,
+                     "line": self.line,
+                     "text": self.text,
+                     "name": self.macro_name}
+        return the_pkg.add_keys_to_dict(my_fields)
 
 
 # TODO: Has this been superceded by TownnewsSiteMetaData?
