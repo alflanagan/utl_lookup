@@ -287,9 +287,11 @@ class MacroTestCase(TestCase):
         cls.test_ids = []
         for mdef in mdef_data:
             mdef_datum = mdef["fields"]
-            the_pkg = Package.objects.get(name=mdef_datum["source"].split('/')[0])
+            parts = mdef_datum["source"].split('/')
+            the_pkg = Package.objects.get(name=parts[0])
+            fpath = "/".join(parts[1:])
             the_file = UTLFile.objects.get(pkg=the_pkg,
-                                           file_path=mdef_datum["source"].split('/')[1])
+                                           file_path=fpath)
             new_mdef = MacroDefinition(source=the_file,
                                        text=mdef_datum["text"],
                                        name=mdef_datum["name"],
@@ -390,7 +392,7 @@ class api_macro_refsTestCase(MacroTestCase):
                     'pkg_name': 'core-asset-index-lead_presentation',
                     'pkg_version': '1.23.1',
                     'name': 'photo_text',
-                    'file': 'block.utl',
+                    'file': 'includes/block.utl',
                     'text': 'fred = photo_text(asset.photo)',
                     'start': 1230,
                     'pkg_certified': False,
@@ -407,6 +409,124 @@ class api_macro_refsTestCase(MacroTestCase):
                                                site=the_site,
                                                last_download=expected['pkg_download'])
         self.assertEqual(matching_pkgs.count(), 1)
+
+
+class api_macro_defsTestCase(MacroTestCase):
+    """Unit tests for :py:func:`utl_files.views.api_macro_defs`."""
+
+    def test_one_arg(self):
+        """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with a single argument."""
+        request = make_wsgi_request('/files/api/macro_defs/photo_text/')
+        response = views.api_macro_defs(request, 'photo_text')
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), 2)
+        expected_results = {7951: {'end': 8359,
+                                   'file': 'includes/block.utl',
+                                   'line': 177,
+                                   'name': 'photo_text',
+                                   'pkg_certified': False,
+                                   'pkg_download': '2016-03-09T22:41:50Z',
+                                   'pkg_name': 'core-asset-index-lead_presentation',
+                                   'pkg_site': 'http://kearneyhub.com',
+                                   'pkg_version': '1.23.1',
+                                   'start': 7951},
+                            7359: {'end': 7694,
+                                   'file': 'block.utl',
+                                   'line': 206,
+                                   'name': 'photo_text',
+                                   'pkg_certified': False,
+                                   'pkg_download': '2016-03-09T22:41:50Z',
+                                   'pkg_name': 'core-asset-index-map',
+                                   'pkg_site': 'http://kearneyhub.com',
+                                   'pkg_version': '1.21.1',
+                                   'start': 7359}}
+
+        for record in results:
+            expected = expected_results[record['start']]
+            self.assertDictContainsSubset(expected, record)
+            self.assertSetEqual(set(['id']),
+                                set(record.keys()) - set(expected.keys()))
+
+    def test_two_args(self):
+        """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with two arguments."""
+        request = make_wsgi_request('/files/api/macro_defs/photo_text/core-asset-index-lead_presentation/')
+        response = views.api_macro_defs(request, 'photo_text', 'core-asset-index-lead_presentation')
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), 1)
+        expected = {'end': 8359,
+                    'file': 'includes/block.utl',
+                    'line': 177,
+                    'name': 'photo_text',
+                    'pkg_certified': False,
+                    'pkg_download': '2016-03-09T22:41:50Z',
+                    'pkg_name': 'core-asset-index-lead_presentation',
+                    'pkg_site': 'http://kearneyhub.com',
+                    'pkg_version': '1.23.1',
+                    'start': 7951}
+
+        self.assertDictContainsSubset(expected, results[0])
+        self.assertSetEqual(set(['id']),
+                            set(results[0].keys()) - set(expected.keys()))
+
+    def test_multi_args(self):
+        """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with all arguments."""
+        params = ['photo_text', 'core-asset-index-lead_presentation', '1.23.1', 'includes%2Fblock.utl']
+        url = '/files/api/macro_defs/{}/'.format("/".join(params))
+        request = make_wsgi_request(url)
+        response = views.api_macro_defs(request, *params)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), 1)
+        expected = {'end': 8359,
+                    'file': 'includes/block.utl',
+                    'line': 177,
+                    'name': 'photo_text',
+                    'pkg_certified': False,
+                    'pkg_download': '2016-03-09T22:41:50Z',
+                    'pkg_name': 'core-asset-index-lead_presentation',
+                    'pkg_site': 'http://kearneyhub.com',
+                    'pkg_version': '1.23.1',
+                    'start': 7951}
+
+        self.assertDictContainsSubset(expected, results[0])
+        self.assertSetEqual(set(['id']),
+                            set(results[0].keys()) - set(expected.keys()))
+
+    def test_no_macro_found(self):
+        """Unit tests for call to :py:func:`utl_files.views.api_macro_defs`
+        with macro criteria that don't find anything.
+
+        """
+        request1 = make_wsgi_request('/files/api/macro_defs/no_such_macro')
+        response1 = views.api_macro_defs(request1, 'no_such_macro')
+        results1 = json.loads(response1.content.decode('utf-8'))
+        self.assertEqual(response1.status_code, 404)
+        self.assertIn('error', results1)
+
+        params = ['photo_text', 'core-asset-index-lead_presentation', '1.23.1', 'no_such_file.utl']
+        url = '/files/api/macro_defs/{}/'.format("/".join(params))
+        request2 = make_wsgi_request(url)
+        response2 = views.api_macro_defs(request2, *params)
+        results2 = json.loads(response2.content.decode('utf-8'))
+        self.assertEqual(response2.status_code, 404)
+        self.assertIn('error', results2)
+
+
+class api_applicationsTestCase(TestCase):
+    """Unit test for :py:func:`utl_files.views.api_applications`."""
+
+    def test_call(self):
+        """Call takes no params, so test single case."""
+        request = make_wsgi_request('/files/api/applications')
+        response = views.api_applications(request)
+        self.assertEqual(response.status_code, 200)
+        apps = json.loads(response.content.decode('utf-8'))
+        expected = []
+        for app_record in Application.objects.all():
+            expected.append(app_record.name)
+        self.assertSetEqual(set(apps), set(expected))
 
 
 class api_global_skins_for_siteTestCase(TestCase):

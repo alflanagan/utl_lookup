@@ -62,30 +62,41 @@ def api_macro_refs(_, macro_name):
 @json_view
 def api_macro_defs(_, macro_name, pkg_name=None, pkg_version=None, file_path=None):
     """API call to find the definition(s) of a macro."""
-    utl_file = None
-    source_pkg = None
-    if file_path is not None and '/' in file_path:
-        file_path = quote_plus(file_path)
-    if pkg_name is not None and pkg_version is not None:
-        source_pkg = get_object_or_404(Package, name=pkg_name, version=pkg_version)
-    if source_pkg is not None and file_path is not None:
-        utl_file = get_object_or_404(UTLFile, file_path=file_path)
-    if utl_file is not None:
-        defs = MacroDefinition.objects.filter(name=macro_name, source=utl_file)
-    elif source_pkg is not None:
-        utl_files = UTLFile.objects.filter(pkg=source_pkg)
-        defs = []
-        for utl_file in utl_files:
-            some_defs = MacroDefinition.objects.filter(name=macro_name, source=utl_file)
-            defs += some_defs
-    else:
-        # take advantage of fact you can't name a macro with just a number
-        try:
-            defs = MacroDefinition.objects.filter(pk=int(macro_name))
-        except ValueError:
-            defs = MacroDefinition.objects.filter(name=macro_name)
+    utl_files = None
+    pkgs = []
+    defs = []
 
-    return [mdef.to_dict() for mdef in defs]
+    mdefs = MacroDefinition.objects.filter(name=macro_name)
+    if not mdefs.exists():
+        # we check this again below, but this avoids unnecessary work
+        raise Http404("No macro named '{}' was found.".format(macro_name))
+
+    # build lists for filters based on other criteria
+    if pkg_name is not None:
+        if pkg_version is not None:
+            pkgs = list(Package.objects.filter(name=pkg_name, version=pkg_version))
+        else:
+            pkgs = list(Package.objects.filter(name=pkg_name))
+
+    # if file_path is not None and '/' in file_path:
+        # file_path = quote_plus(file_path)
+
+    if file_path is not None:
+        file_path = file_path.replace('%2F', '/').replace('%2f', '/')
+        utl_files = []
+        for pkg in pkgs:
+            ufiles = UTLFile.objects.filter(pkg=pkg, file_path=file_path)
+            utl_files += list(ufiles)
+    elif pkgs:
+        utl_files = list(UTLFile.objects.filter(pkg__in=pkgs))
+
+    if utl_files is not None:
+        mdefs = mdefs.filter(source__in=utl_files)
+
+    if not mdefs.exists():
+        raise Http404("No macro named '{}' was found.".format(macro_name))
+
+    return [mdef.to_dict() for mdef in mdefs]
 
 
 @json_view
