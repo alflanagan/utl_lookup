@@ -117,7 +117,7 @@ def api_packages(_, name=None, version=None):
         pkgs = Package.objects.filter(name=name)
     else:
         pkgs = [get_object_or_404(Package, name=name, version=version)]
-    return [{"name": pkg.name, "version": pkg.version} for pkg in pkgs]
+    return [pkg.to_dict() for pkg in pkgs]
 
 
 @json_view

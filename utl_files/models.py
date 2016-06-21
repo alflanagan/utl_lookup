@@ -183,7 +183,7 @@ class Package(models.Model):
                 # Application (name)
                 "app": self.app.name,
                 # TownnewsSite: (URL)
-                "site": self.site.URL,
+                "site": self.site.URL if self.site else None,
                 "name": self.name,
                 "version": self.version,
                 "is_certified": "y" if self.is_certified else "n",

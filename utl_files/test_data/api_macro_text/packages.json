@@ -7,7 +7,7 @@
       "app": 51,
       "name": "core-asset-index-lead_presentation",
       "pkg_type": "b",
-      "site": 326,
+      "site": 17,
       "disk_directory": "agnet.net/blocks/core-asset-index-lead_presentation_1.23.1",
       "last_download": "2016-03-09T22:41:50Z",
       "is_certified": false
@@ -21,7 +21,7 @@
       "app": 51,
       "name": "core-asset-index-map",
       "pkg_type": "b",
-      "site": 326,
+      "site": 17,
       "disk_directory": "agnet.net/blocks/core-asset-index-map_1.21.1",
       "last_download": "2016-03-09T22:41:50Z",
       "is_certified": false
@@ -35,10 +35,24 @@
       "app": 51,
       "name": "core-slideshow-presentation-1-15-1-test_block",
       "pkg_type": "b",
-      "site": 326,
+      "site": 17,
       "disk_directory": "agnet.net/blocks/core-slideshow-presentation-1-15-1-test_block_0.1",
       "last_download": "2016-03-09T22:43:01Z",
       "is_certified": false
+    }
+  },
+  {
+    "model": "utl_files.package",
+    "pk": 2094,
+    "fields": {
+      "version": "1.41.0.1",
+      "app": 51,
+      "name": "core-alert-breaking_news_fader",
+      "pkg_type": "b",
+      "site": null,
+      "disk_directory": "certified/blocks/core-alert-breaking_news_fader_1.41.0.1",
+      "last_download": "2016-03-22T17:57:48Z",
+      "is_certified": true
     }
   }
 ]

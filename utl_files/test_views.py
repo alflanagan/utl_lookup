@@ -255,12 +255,17 @@ class MacroTestCase(TestCase):
             pkg_data = json.load(pkgin)
         for pkg in pkg_data:
             datum = pkg["fields"]
-            new_pkg = Package(site=cls.the_site,
+            the_site = None
+            if datum['site'] is not None:
+                # slimy hack around having to rely on site PK being the same in the future
+                the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+            new_pkg = Package(site=the_site,
                               app=cls.the_app,
                               name=datum['name'],
                               version=datum['version'],
                               last_download=datum['last_download'],
                               is_certified=datum['is_certified'],
+                              disk_directory=datum['disk_directory'],
                               pkg_type=datum['pkg_type'])
             new_pkg.full_clean()
             new_pkg.save()
@@ -529,26 +534,129 @@ class api_applicationsTestCase(TestCase):
         self.assertSetEqual(set(apps), set(expected))
 
 
-class api_global_skins_for_siteTestCase(TestCase):
+class api_packagesTestCase(MacroTestCase):
+    """Unit tests for :py:func:`utl_files.views.api_packages`."""
+
+    expected = [{'app': 'global',
+                 'downloaded': '2016-03-09T22:41:50Z',
+                 'is_certified': 'n',
+                 'location': 'agnet.net/blocks/core-asset-index-lead_presentation_1.23.1',
+                 'name': 'core-asset-index-lead_presentation',
+                 'pkg_type': 'b',
+                 'site': 'http://kearneyhub.com',
+                 'version': '1.23.1'},
+                {'app': 'global',
+                 'downloaded': '2016-03-09T22:41:50Z',
+                 'is_certified': 'n',
+                 'location': 'agnet.net/blocks/core-asset-index-map_1.21.1',
+                 'name': 'core-asset-index-map',
+                 'pkg_type': 'b',
+                 'site': 'http://kearneyhub.com',
+                 'version': '1.21.1'},
+                {'app': 'global',
+                 'downloaded': '2016-03-09T22:43:01Z',
+                 'is_certified': 'n',
+                 'location': 'agnet.net/blocks/core-slideshow-presentation-1-15-1-test_block_0.1',
+                 'name': 'core-slideshow-presentation-1-15-1-test_block',
+                 'pkg_type': 'b',
+                 'site': 'http://kearneyhub.com',
+                 'version': '0.1'},
+                {"version": "1.41.0.1",
+                 "app": 'global',
+                 "name": "core-alert-breaking_news_fader",
+                 "pkg_type": "b",
+                 "site": None,
+                 "location": "certified/blocks/core-alert-breaking_news_fader_1.41.0.1",
+                 "downloaded": "2016-03-22T17:57:48Z",
+                 "is_certified": "y", } ]
+
+    def test_get_all(self):
+        """Unit test for :py:func:`utl_files.views.api_packages` with no arguments."""
+        request = make_wsgi_request('/files/api/packages/')
+        response = views.api_packages(request)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), Package.objects.count())
+        match_count = 0  # failsafe
+        for data in self.expected:
+            for result in results:
+                if data['name'] == result['name']:
+                    self.assertDictContainsSubset(data, result)
+                    match_count += 1
+        self.assertEqual(match_count, len(results),
+                         "Failed to match a package by name.")
+
+    def test_one_arg(self):
+        """Unit test for :py:func:`utl_files.views.api_packages` with one argument."""
+        pkg_name = "core-asset-index-lead_presentation"
+        request = make_wsgi_request('/files/api/packages/{}/'.format(pkg_name))
+        response = views.api_packages(request, pkg_name)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), 1)
+        match_count = 0  # failsafe
+        for data in self.expected:
+            for result in results:
+                if data['name'] == result['name']:
+                    self.assertDictContainsSubset(data, result)
+                    match_count += 1
+        self.assertEqual(match_count, len(results),
+                         "Failed to match a package by name.")
+
+    def test_two_args(self):
+        """Unit test for :py:func:`utl_files.views.api_packages` with two arguments."""
+        pkg_name = 'core-asset-index-map'
+        pkg_version = '1.21.1'
+        request = make_wsgi_request('/files/api/packages/{}/{}/'.format(pkg_name, pkg_version))
+        response = views.api_packages(request, pkg_name, pkg_version)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(results), 1)
+        match_count = 0  # failsafe
+        for data in self.expected:
+            for result in results:
+                if data['name'] == result['name']:
+                    self.assertDictContainsSubset(data, result)
+                    match_count += 1
+        self.assertEqual(match_count, len(results),
+                         "Failed to match a package by name.")
+
+
+class api_macro_textTestCase(MacroTestCase):
+    """Unit tests for :py:func:`~utl_files.views.api_macro_text`."""
+
+    def test_basic_call(self):
+        """Unit test of basic call to API."""
+        for mdef_id in self.test_ids:
+            mdef = MacroDefinition.objects.get(pk=mdef_id)
+            request = make_wsgi_request("files/api/macro_text/{}/"
+                                        "".format(mdef_id))
+
+            results = views.api_macro_text(request, mdef_id)
+            self.assertEqual(results.status_code, 200)
+            actual = json.loads(results.content.decode('utf-8'))
+            expected = {'package': mdef.source.pkg.name,
+                        'line': mdef.line,
+                        'source': mdef.source.file_path,
+                        'name': mdef.name}
+            self.assertDictContainsSubset(expected, actual)
+            self.assertSetEqual(set(['text']),
+                                set(actual.keys()) - set(expected.keys()))
+            self.assertEqual(mdef.text, actual['text'])
+
+
+class api_global_skins_for_siteTestCase(MacroTestCase):
     """Unit tests for function :py:func:`~utl_files.views.api_global_skins_for_site`."""
 
-    @classmethod
-    def setUpTestData(cls):
-        try:
-            cls.paper = NewsPaper.objects.get(name='The Richmond Times-Dispatch')
-        except NewsPaper.DoesNotExist:
-            cls.paper = NewsPaper(name='The Richmond Times-Dispatch')
-            cls.paper.save()
-
-        try:
-            cls.tn_site = TownnewsSite(name='RTD')
-        except TownnewsSite.DoesNotExist:
-            cls.tn_site = TownnewsSite(URL='http://richmond.com', name='RTD', paper=cls.paper)
-            cls.tn_site.save()
-
-    def test_create(self):
+    def test_call_with_site(self):
         """Unit test for :py:meth:`utl_files.views.api_global_skins_for_site`."""
-        response = views.api_global_skins_for_site(None, "richmond.com")
+        request = make_wsgi_request('/files/api/global_skins_for_site/kearneyhub.com')
+        response = views.api_global_skins_for_site(request, "kearneyhub.com")
+        self.assertEqual(response.getvalue(), b'[]')
+
+    def test_call_with_certified(self):
+        """Unit test for :py:meth:`utl_files.views.api_global_skins_for_site`."""
+        response = views.api_global_skins_for_site(None, "certified")
         self.assertEqual(response.getvalue(), b'[]')
 
 
@@ -828,26 +936,6 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(exp_mdef, mdef)
-
-
-class api_macro_textTestCase(MacroTestCase):
-    """Unit tests for :py:func:`~utl_files.views.api_macro_text`."""
-
-    def test_basic_call(self):
-        """Unit test of basic call to API."""
-        for mdef_id in self.test_ids:
-            mdef = MacroDefinition.objects.get(pk=mdef_id)
-            request = make_wsgi_request("files/api/macro_text/{}/"
-                                        "".format(mdef_id))
-
-            results = views.api_macro_text(request, mdef_id)
-            self.assertEqual(results.status_code, 200)
-            from_json = json.loads(results.content.decode('utf-8'))
-            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
-                                           'line': mdef.line,
-                                           'source': mdef.source.file_path,
-                                           'name': mdef.name}, from_json)
-            self.assertEqual(mdef.text, from_json['text'])
 
 
 class api_macro_w_syntaxTestCase(MacroTestCase):
