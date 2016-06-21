@@ -55,7 +55,8 @@ def search(request, macro_name):
 def api_macro_refs(_, macro_name):
     """API call to find references to a specific macro."""
     refs = MacroRef.objects.filter(macro_name=macro_name)
-    return list(refs) if refs else []
+    refs = [ref.to_dict() for ref in refs]
+    return refs
 
 
 @json_view
@@ -113,14 +114,16 @@ def api_macro_text(_, macro_id):
     """Return the text of a macro definition, identified by integer ID `macro_id`."""
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
     return {"text": macro.text, "line": macro.line, "name": macro.name,
-            "source": macro.source.file_path, "package": macro.source.pkg.name,}
+            "source": macro.source.file_path, "package": macro.source.pkg.name, }
+
 
 @json_view
 def api_macro_w_syntax(_, macro_id):
     """Return the text of a macro with ID `macro_id`, with highlighting markup."""
     macro = get_object_or_404(MacroDefinition, pk=macro_id)
     return {"text": macro.text_with_markup, "line": macro.line, "name": macro.name,
-            "source": macro.source.file_path, "package": macro.source.pkg.name,}
+            "source": macro.source.file_path, "package": macro.source.pkg.name, }
+
 
 @json_view
 def api_global_skins_for_site(_, site_url):
@@ -155,6 +158,7 @@ def api_app_skins_for_site(_, site_url):
         else:
             skin_list.append(skin.name)
     return skin_list
+
 
 # RTD/core_site_richmond(2016-03-03 18:32)
 # api/package_files/richmond.com/core_site_richmond/

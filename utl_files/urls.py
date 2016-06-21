@@ -23,6 +23,10 @@ urlpatterns = [
     url(r'^demo/$', views.demo, name='demo'),
 
     url(r'^macros/$', views.macros, name='macros'),
+    # TODO: should implement
+    # url(r'^macros/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/')
+    # macros/site/global_skin/app/skin/macro_name/ as URL to display specific
+    # macro. Add button to lookup to allow user to get "permanent" URL
 
     # search(request, macro_name)
     url(r'^macro/(.+)/', views.search, name='search'),

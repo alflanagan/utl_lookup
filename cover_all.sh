@@ -11,6 +11,8 @@ do_cover() {
     coverage run --source="$1.$2" --branch --append ./manage.py test "$1.test_$2"
 }
 
+coverage erase # since we're using run --append
+
 do_cover utl_files models
 do_cover utl_files views
 do_cover utl_files code_markup

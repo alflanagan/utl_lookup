@@ -23,7 +23,7 @@ from django.http import HttpRequest, HttpResponse
 from django.core.handlers.wsgi import WSGIRequest
 
 from utl_files import views
-from utl_files.models import Application, Package, UTLFile, MacroDefinition
+from utl_files.models import Application, Package, UTLFile, MacroDefinition, MacroRef
 from papers.models import NewsPaper, TownnewsSite
 
 
@@ -75,6 +75,338 @@ def make_wsgi_request(request_text):
     the_input.write(request_text)
     my_request = WSGIRequest(environ)
     return my_request
+
+
+class homeTestCase(TestCase):
+    """Unit tests for :py:func:`utl_files.views.home`."""
+    TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
+
+    TEST_PACKAGES = [
+        {"name": "editorial-core-mobile",
+         "version": "1.54.0.0",
+         "is_certified": True,
+         "app": "editorial",
+         "last_download": "2016-02-27T13:12:11Z",
+         "disk_directory": "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
+         "site": "http://agnet.net",
+         "pkg_type": "s", }
+    ]
+
+    EXPECTED_RESULT = ['<!DOCTYPE html>',
+                       '<meta charset="utf-8">',
+                       '<title></title>',
+                       '<div class="container">',
+                       '<div class="row">',
+                       'Townnews Template Cross-Reference',
+                       '<div id="search-bar">',
+                       'id="package-context-form"',
+                       '<div id="id_site_div"',
+                       '<button id="id_site_label"',
+                       '<ul id="id_site"',
+                       'id="selected_site"',
+                       '<div id="id_global_skin_div"',
+                       '<button id="id_global_skin_label"',
+                       '<ul id="id_global_skin"',
+                       '<div id="id_app_skin_div"',
+                       '<button id="id_app_skin_label"',
+                       '<ul id="id_app_skin"',
+                       '<div id="tree-panel"',
+                       '<li class="list-group-item"',
+                       'id="pkgs_global_list"',
+                       'id="pkgs_skin_list"',
+                       'id="pkgs_blocks_list"',
+                       'id="pkgs_components_list"',
+                       '<div id="tab-panel"',
+                       '<li id="files-tab"',
+                       '<li id="defs-tab"',
+                       '<li id="refs-tab"',
+                       '<div id="files-panel"',
+                       'id="files-tree"',
+                       'id="files-tree-root"',
+                       '<div id="defs-panel"',
+                       '<div id="refs-panel"']
+    """List of significant parts of generated page (significant mostly in the
+    sense that other code expects them to be present).
+
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.papers = []
+        for record in cls.TEST_PAPERS:
+            try:
+                new_ppr = NewsPaper.objects.get(name=record["name"])
+            except NewsPaper.DoesNotExist:
+                new_ppr = NewsPaper(**record)
+                new_ppr.save()
+            cls.papers.append(new_ppr)
+
+        cls.pkgs = []
+        for record in cls.TEST_PACKAGES:
+            kwargs = deepcopy(record)
+            # replace foreign key strings with object referenced
+            kwargs["app"] = Application.objects.get(name=kwargs["app"])
+            kwargs["site"] = TownnewsSite.objects.get(URL=kwargs["site"])
+            # now I can just do this
+            new_pkg = Package(**kwargs)
+            new_pkg.save()
+            cls.pkgs.append(new_pkg)
+        # Use our custom error messages in place of, rather than in addition
+        # to, the standard error message
+        cls.longMessage = False
+
+    def test_view(self):
+        """Basic rendering of page."""
+        # verify "active" sites are shown in drop-down, not others
+        request = make_wsgi_request('/files')
+        response = views.home(request)
+        result = response.content.decode('utf-8')
+        for fragment in self.EXPECTED_RESULT:
+            self.assertIn(fragment, result,
+                          "'{}' not found in output page for /files.".format(fragment))
+        active_sites = set()
+        for pkg in Package.objects.all():
+            active_sites.add(pkg.site.domain)
+        for tnsite in TownnewsSite.objects.all():
+            if tnsite.domain in active_sites:
+                expected_tag = '<li value="{0}">{0}</li>'.format(tnsite.domain)
+                self.assertIn(expected_tag, result,
+                              "Missing expected '{}' in /files page.".format(expected_tag))
+            else:
+                self.assertNotIn(tnsite.domain, result)
+
+
+class macrosTestCase(TestCase):
+    "Unit tests for view :py:func:`utl_files.views.macros`."
+
+    EXPECTED = [b'<button id="id_site_label" type="button" data-toggle="dropdown"',
+                b'<ul id="id_site"',
+                b'<li value="agnet.net">agnet.net',
+                b'<button id="id_global_skin_label" type="button" data-toggle="dropdown"',
+                b'<ul id="id_global_skin"',
+                b'<button id="id_app_skin_label" type="button" data-toggle="dropdown"',
+                b'<ul id="id_app_skin"',
+                b'<div id="tree-panel"',
+                b'<div id="tree-view"',
+                b'<ul class="list-group" id="macros-list">',
+                b'<div id="tab-panel"',
+                b'<div id="macro-name"',
+                b'<div id="macro-package-name"',
+                b'<div id="macro-file-name"',
+                b'<li id="defs-tab"',
+                b'<li id="refs-tab"',
+                b'<div id="defs-panel"',
+                b'<div id="defs-text"',
+                b'<div id="refs-panel"', ]
+
+    TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
+
+    TEST_PACKAGES = [
+        {"name": "editorial-core-mobile",
+         "version": "1.54.0.0",
+         "is_certified": True,
+         "app": "editorial",
+         "last_download": "2016-02-27T13:12:11Z",
+         "disk_directory": "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
+         "site": "http://agnet.net",
+         "pkg_type": "s", }
+    ]
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.request = make_wsgi_request('/files/macros')
+        cls.papers = []
+        for ppr in cls.TEST_PAPERS:
+            new_ppr = NewsPaper.objects.get_or_create(name=ppr['name'])
+            cls.papers.append(new_ppr)
+
+        cls.pkgs = []
+        for record in cls.TEST_PACKAGES:
+            kwargs = deepcopy(record)
+            # replace foreign key strings with object referenced
+            kwargs["app"] = Application.objects.get(name=kwargs["app"])
+            kwargs["site"] = TownnewsSite.objects.get(URL=kwargs["site"])
+            # now I can just do this
+            new_pkg = Package(**kwargs)
+            new_pkg.save()
+            cls.pkgs.append(new_pkg)
+
+    def test_view(self):
+        """Unit test for :py:func:`utl_files.views.macros`."""
+        response = views.macros(self.request)
+        self.assertEqual(response.status_code, 200)
+        for substring in self.EXPECTED:
+            self.assertIn(substring, response.content)
+
+
+class MacroTestCase(TestCase):
+    """Parent class for macro-related API call test cases that need similar
+    data setup.
+
+    """
+
+    TEST_DIR = Path('utl_files/test_data/api_macro_text')
+    TEST_DATA = ['macrodefs.json', 'packages.json', 'utlfiles.json']
+
+    @classmethod
+    def _load_test_pkgs(cls):
+        """Read fields for test packages from external file."""
+        with (cls.TEST_DIR / 'packages.json').open("r") as pkgin:
+            pkg_data = json.load(pkgin)
+        for pkg in pkg_data:
+            datum = pkg["fields"]
+            new_pkg = Package(site=cls.the_site,
+                              app=cls.the_app,
+                              name=datum['name'],
+                              version=datum['version'],
+                              last_download=datum['last_download'],
+                              is_certified=datum['is_certified'],
+                              pkg_type=datum['pkg_type'])
+            new_pkg.full_clean()
+            new_pkg.save()
+
+    @classmethod
+    def _load_test_files(cls):
+        """Load test UTLFile data from an external file."""
+        cls.test_files = []
+        with (cls.TEST_DIR / 'utlfiles.json').open('r') as ufilein:
+            ufile_data = json.load(ufilein)
+        for uf in ufile_data:
+            uf_datum = uf["fields"]
+            the_pkg = Package.objects.get(name=uf_datum["pkg"])
+            new_uf = UTLFile(pkg=the_pkg, file_path=uf_datum["file_path"])
+            new_uf.full_clean()
+            new_uf.save()
+            cls.test_files.append(new_uf)
+
+    @classmethod
+    def _load_macro_defs(cls):
+        """Load test macro definitions from external file."""
+        with (cls.TEST_DIR / 'macrodefs.json').open('r') as mdefin:
+            mdef_data = json.load(mdefin)
+        cls.test_ids = []
+        for mdef in mdef_data:
+            mdef_datum = mdef["fields"]
+            the_pkg = Package.objects.get(name=mdef_datum["source"].split('/')[0])
+            the_file = UTLFile.objects.get(pkg=the_pkg,
+                                           file_path=mdef_datum["source"].split('/')[1])
+            new_mdef = MacroDefinition(source=the_file,
+                                       text=mdef_datum["text"],
+                                       name=mdef_datum["name"],
+                                       start=mdef_datum["start"],
+                                       end=mdef_datum["end"],
+                                       line=mdef_datum["line"])
+            new_mdef.full_clean()
+            new_mdef.save()
+            cls.test_ids.append(new_mdef.pk)
+
+    @classmethod
+    def setUpTestData(cls):
+        """Load macro definitions to retrieve."""
+        cls.the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+        cls.the_app = Application.objects.get(name="global")
+
+        cls._load_test_pkgs()
+
+        cls._load_test_files()
+
+        cls._load_macro_defs()
+
+
+class searchTestCase(MacroTestCase):
+    """Unit tests for view :py:func:`utl_files.views.search`."""
+
+    EXPECTED = {
+        'photo_text': [
+            b'<div id="pkg-file-list"',
+            b'<button type="button"',
+            b'core-asset-index-lead_presentation [1.23.1]',
+            b'block.utl',
+            b'<button type="button"',
+            b'core-asset-index-map [1.21.1]',
+            b'block.utl',
+            b'<div id="macro-defn"',
+            b'<div id="macro-code-display"',
+            b'<div id="macro-ref-display"', ],
+        'time_updated': [
+            b'<div id="pkg-file-list"',
+            b'<button type="button"',
+            b'core-asset-index-map [1.21.1]',
+            b'block.utl',
+            b'<div id="macro-defn"',
+            b'<div id="macro-code-display"',
+            b'<div id="macro-ref-display"', ],
+        'build_slideshow_presentation_nav_items': [
+            b'<div id="pkg-file-list"',
+            b'<button type="button"',
+            b'core-slideshow-presentation-1-15-1-test_block [0.1]',
+            b'block.utl',
+            b'<div id="macro-defn"',
+            b'<div id="macro-code-display"',
+            b'<div id="macro-ref-display"', ], }
+
+    def test_basic(self):
+        """Simple unit test for :py:func:`utl_files.views.search`."""
+        self.assertGreater(MacroDefinition.objects.count(), 3)
+        for macro in MacroDefinition.objects.all():
+            request = make_wsgi_request('/files/macro/{}'.format(macro.name))
+            response = views.search(request, macro.name)
+            self.assertEqual(response.status_code, 200)
+            for substring in self.EXPECTED[macro.name]:
+                self.assertIn(substring, response.content)
+
+
+class api_macro_refsTestCase(MacroTestCase):
+    """Unit tests for :py:func:`utl_files.views.api_macro_refs`."""
+
+    REFERENCES = [{
+        'start': 1230,
+        'line': 53,
+        'text': 'fred = photo_text(asset.photo)',
+        'macro_name': 'photo_text', }]
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        utl_file = cls.test_files[0]
+        cls.macro_refs = []
+        for record in cls.REFERENCES:
+            new_ref = MacroRef(source=utl_file,
+                               start=record['start'],
+                               line=record['line'],
+                               text=record['text'],
+                               macro_name=record['macro_name'])
+            new_ref.full_clean()
+            new_ref.save()
+            cls.macro_refs.append(new_ref)
+
+    def test_basic(self):
+        """Simple unit test for :py:func:`utl_files.views.api_macro_refs`."""
+        request = make_wsgi_request('/files/api/macro_refs/photo_text')
+        response = views.api_macro_refs(request, 'photo_text')
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(data), 1)
+        expected = {'line': 53,
+                    'pkg_name': 'core-asset-index-lead_presentation',
+                    'pkg_version': '1.23.1',
+                    'name': 'photo_text',
+                    'file': 'block.utl',
+                    'text': 'fred = photo_text(asset.photo)',
+                    'start': 1230,
+                    'pkg_certified': False,
+                    'pkg_download': '2016-03-09T22:41:50Z',
+                    'pkg_site': 'http://kearneyhub.com', }
+        self.assertDictContainsSubset(expected, data[0])
+
+        self.assertSetEqual(set(['id']), set(data[0].keys()) - set(expected.keys()))
+        # verify we can use data to retrieve related records
+        the_site = TownnewsSite.objects.get(URL=expected['pkg_site'])
+        matching_pkgs = Package.objects.filter(name=expected['pkg_name'],
+                                               version=expected['pkg_version'],
+                                               is_certified=expected['pkg_certified'],
+                                               site=the_site,
+                                               last_download=expected['pkg_download'])
+        self.assertEqual(matching_pkgs.count(), 1)
 
 
 class api_global_skins_for_siteTestCase(TestCase):
@@ -181,105 +513,6 @@ class api_files_for_custom_pkgTestCase(TestCase):
         self.assertNotIn('error', file_list)
         path_list = [finfo["path"] for finfo in file_list]
         self.assertSetEqual(set(self.TEST_FILES), set(path_list))
-
-
-class homeTestCase(TestCase):
-    """Unit tests for :py:func:`utl_files.views.home`."""
-    TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
-
-    TEST_PACKAGES = [
-        {"name": "editorial-core-mobile",
-         "version": "1.54.0.0",
-         "is_certified": True,
-         "app": "editorial",
-         "last_download": "2016-02-27T13:12:11Z",
-         "disk_directory": "certified/skins/editorial/editorial-core-mobile_1.54.0.0",
-         "site": "http://agnet.net",
-         "pkg_type": "s", }
-    ]
-
-    EXPECTED_RESULT = ['<!DOCTYPE html>',
-                       '<meta charset="utf-8">',
-                       '<title></title>',
-                       '<div class="container">',
-                       '<div class="row">',
-                       'Townnews Template Cross-Reference',
-                       '<div id="search-bar">',
-                       'id="package-context-form"',
-                       '<div id="id_site_div"',
-                       '<button id="id_site_label"',
-                       '<ul id="id_site"',
-                       'id="selected_site"',
-                       '<div id="id_global_skin_div"',
-                       '<button id="id_global_skin_label"',
-                       '<ul id="id_global_skin"',
-                       '<div id="id_app_skin_div"',
-                       '<button id="id_app_skin_label"',
-                       '<ul id="id_app_skin"',
-                       '<div id="tree-panel"',
-                       '<li class="list-group-item"',
-                       'id="pkgs_global_list"',
-                       'id="pkgs_skin_list"',
-                       'id="pkgs_blocks_list"',
-                       'id="pkgs_components_list"',
-                       '<div id="tab-panel"',
-                       '<li id="files-tab"',
-                       '<li id="defs-tab"',
-                       '<li id="refs-tab"',
-                       '<div id="files-panel"',
-                       'id="files-tree"',
-                       'id="files-tree-root"',
-                       '<div id="defs-panel"',
-                       '<div id="refs-panel"']
-    """List of significant parts of generated page (significant mostly in the
-    sense that other code expects them to be present).
-
-    """
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.papers = []
-        for record in cls.TEST_PAPERS:
-            try:
-                new_ppr = NewsPaper.objects.get(name=record["name"])
-            except NewsPaper.DoesNotExist:
-                new_ppr = NewsPaper(**record)
-                new_ppr.save()
-            cls.papers.append(new_ppr)
-
-        cls.pkgs = []
-        for record in cls.TEST_PACKAGES:
-            kwargs = deepcopy(record)
-            # replace foreign key strings with object referenced
-            kwargs["app"] = Application.objects.get(name=kwargs["app"])
-            kwargs["site"] = TownnewsSite.objects.get(URL=kwargs["site"])
-            # now I can just do this
-            new_pkg = Package(**kwargs)
-            new_pkg.save()
-            cls.pkgs.append(new_pkg)
-        # Use our custom error messages in place of, rather than in addition
-        # to, the standard error message
-        cls.longMessage = False
-
-    def test_view(self):
-        """Basic rendering of page."""
-        # verify "active" sites are shown in drop-down, not others
-        request = make_wsgi_request('/files')
-        response = views.home(request)
-        result = response.content.decode('utf-8')
-        for fragment in self.EXPECTED_RESULT:
-            self.assertIn(fragment, result,
-                          "'{}' not found in output page for /files.".format(fragment))
-        active_sites = set()
-        for pkg in Package.objects.all():
-            active_sites.add(pkg.site.domain)
-        for tnsite in TownnewsSite.objects.all():
-            if tnsite.domain in active_sites:
-                expected_tag = '<li value="{0}">{0}</li>'.format(tnsite.domain)
-                self.assertIn(expected_tag, result,
-                              "Missing expected '{}' in /files page.".format(expected_tag))
-            else:
-                self.assertNotIn(tnsite.domain, result)
 
 
 class api_packages_for_site_with_skinsTestCase(TestCase):
@@ -456,72 +689,28 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
         self.assertEqual(len(results), len(expected))
         for mdef in results:
             # some values should be same for all
-            self.assertDictContainsSubset({"file": "includes/macros.inc.utl",
-                                           "pkg": "base-kh-oct-2013-1-ads",
-                                           "pkg_version": "1.14.2"},
+            return_expected = {"file": "includes/macros.inc.utl",
+                               "pkg_name": "base-kh-oct-2013-1-ads",
+                               "pkg_version": "1.14.2",
+                               'pkg_certified': False,
+                               'pkg_download': '2016-06-08T20:15:49Z',
+                               'pkg_site': 'http://kearneyhub.com'}
+
+            self.assertDictContainsSubset(return_expected,
                                           mdef)
+
+            # check for unexpected keys
+            self.assertSetEqual(set(['id', 'name', 'start', 'end', 'line']),
+                                # ^ expected, not same for different macros
+                                # v actual results - fields that are same
+                                set(mdef.keys()) - set(return_expected.keys()))
             # get the other expected values
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(exp_mdef, mdef)
 
 
-class macroTestCase(TestCase):
-    """Parent class for macro-related API call test cases that need similar
-    data setup.
-
-    """
-
-    TEST_DIR = Path('utl_files/test_data/api_macro_text')
-    TEST_DATA = ['macrodefs.json', 'packages.json', 'utlfiles.json']
-
-    @classmethod
-    def setUpTestData(cls):
-        """Load macro definitions to retrieve."""
-        cls.the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
-        cls.the_app = Application.objects.get(name="global")
-        with (cls.TEST_DIR / 'packages.json').open("r") as pkgin:
-            pkg_data = json.load(pkgin)
-        for pkg in pkg_data:
-            datum = pkg["fields"]
-            new_pkg = Package(site=cls.the_site,
-                              app=cls.the_app,
-                              name=datum['name'],
-                              version=datum['version'],
-                              last_download=datum['last_download'],
-                              is_certified=datum['is_certified'],
-                              pkg_type=datum['pkg_type'])
-            new_pkg.full_clean()
-            new_pkg.save()
-
-        with (cls.TEST_DIR / 'utlfiles.json').open('r') as ufilein:
-            ufile_data = json.load(ufilein)
-        for uf in ufile_data:
-            uf_datum = uf["fields"]
-            the_pkg = Package.objects.get(name=uf_datum["pkg"])
-            new_uf = UTLFile(pkg=the_pkg, file_path=uf_datum["file_path"])
-            new_uf.full_clean()
-            new_uf.save()
-
-        with (cls.TEST_DIR / 'macrodefs.json').open('r') as mdefin:
-            mdef_data = json.load(mdefin)
-        cls.test_ids = []
-        for mdef in mdef_data:
-            mdef_datum = mdef["fields"]
-            the_pkg = Package.objects.get(name=mdef_datum["source"].split('/')[0])
-            the_file = UTLFile.objects.get(pkg=the_pkg, file_path=mdef_datum["source"].split('/')[1])
-            new_mdef = MacroDefinition(source=the_file,
-                                       text=mdef_datum["text"],
-                                       name=mdef_datum["name"],
-                                       start=mdef_datum["start"],
-                                       end=mdef_datum["end"],
-                                       line=mdef_datum["line"])
-            new_mdef.full_clean()
-            new_mdef.save()
-            cls.test_ids.append(new_mdef.pk)
-
-
-class api_macro_textTestCase(macroTestCase):
+class api_macro_textTestCase(MacroTestCase):
     """Unit tests for :py:func:`~utl_files.views.api_macro_text`."""
 
     def test_basic_call(self):
@@ -529,7 +718,7 @@ class api_macro_textTestCase(macroTestCase):
         for mdef_id in self.test_ids:
             mdef = MacroDefinition.objects.get(pk=mdef_id)
             request = make_wsgi_request("files/api/macro_text/{}/"
-                                    "".format(mdef_id))
+                                        "".format(mdef_id))
 
             results = views.api_macro_text(request, mdef_id)
             self.assertEqual(results.status_code, 200)
@@ -541,29 +730,40 @@ class api_macro_textTestCase(macroTestCase):
             self.assertEqual(mdef.text, from_json['text'])
 
 
-class api_macro_w_syntaxTestCase(macroTestCase):
+class api_macro_w_syntaxTestCase(MacroTestCase):
     """Unit tests for :py:func:`~utl_files.`"""
 
-    EXPECTED = ['''[% <span class="statement_list"><span class="macro_defn"><span class="macro_decl">macro photo_text</span><!-- macro_decl --> %]<span class="statement_list"><span class="document">\n    </span><!-- document -->[%  <span class="if">if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!-- id --> == <span class="literal">'true'</span><!-- expr --></span><!-- literal --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- expr --> %]
-<span class="statement_list">        <span class="document">&lt;div class="photo-byline"&gt;</span><!-- document -->
-        [%  <span class="id">photo_credit_text</span><!-- id -->;
-            <span class="expr"><span class="id">credit</span><!-- id --> | <span class="id">html</span><!-- id --></span><!-- expr -->; <span class="id">credit</span><!-- id --> %]
-<span class="document">        &lt;/div&gt;
-</span><!-- document --></span><!-- statement_list -->    [%  end</span><!-- if -->; /* photo_credit */
-<span class="if">        if <span class="expr"><span class="expr"><span class="id">photo_caption</span><!-- id --> == <span class="literal">&'true'</span><!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span><!-- id --></span><!-- expr --> %]<span class="statement_list"><span class="document">
-        &lt;div class="photo-cutline"&gt;
-</span><!-- document -->            [% <span class="expr"><span class="id">caption</span><!-- id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;  <span class="id">caption</span><!-- id --> %]<span class="document">
-        &lt;/div&gt;
-</span><!-- document --></span><!-- statement_list -->    [%  end</span><!-- if --></span><!-- statement_list -->; /* photo caption */
-end</span><!-- macro_defn --> %]</span><!-- statement_list -->
-''']
+    EXPECTED = [r'\[%\s*<span class="statement_list"><span class="macro_defn"><span class='
+                r'"macro_decl">macro photo_text</span><!-- macro_decl --> %\]<span class="statement'
+                r'_list"><span class="document">\s*</span><!-- document -->\[%\s*<span class="if">'
+                r'if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!--'
+                r' id --> == <span class="literal">&#x27;true&#x27;</span><!-- literal --></span>'
+                r'<!-- expr --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- '
+                r'expr --> %\]<span class="statement_list"><span class="document">&lt;div class='
+                r'"photo-byline"&gt;</span><!-- document -->\s*\[%\s*<span class="id">photo_credit'
+                r'_text</span><!-- id -->;\s*<span class="expr"><span class="id">credit</span><!--'
+                r' id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;\s*<span '
+                r'class="id">credit</span><!-- id --> %\]\s*<span class="document">\s*&lt;/div&gt;'
+                r'\s*</span><!-- document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- '
+                r'if -->;\s* <span class="comment">/\* photo_credit \*/\s*</span><!-- comment -->'
+                r'\s*<span class="if">\s*if <span class="expr"><span class="expr"><span class="id">'
+                r'photo_caption</span><!-- id --> == <span class="literal">&#x27;true&#x27;</span>'
+                r'<!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span>'
+                r'<!-- id --></span><!-- expr --> %\]<span class="statement_list"><span class='
+                r'"document">\s*&lt;div class=&quot;photo-cutline&quot;&gt;\s*</span><!-- document'
+                r' -->\s*\[% <span class="expr"><span class="id">caption</span><!-- id --> | <span'
+                r' class="id">html</span><!-- id --></span><!-- expr -->;\s*<span class="id">'
+                r'caption</span><!-- id --> %\]<span class="document">\s*&lt;/div&gt;\s*</span><!--'
+                r' document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- if --></span>'
+                r'<!-- statement_list -->; /* photo caption */\nend</span><!-- macro_defn --> %\]'
+                r'</span><!-- statement_list -->', ]
 
     def test_basic_call(self):
         """Unit test of basic call to API."""
         for mdef_id in self.test_ids:
             mdef = MacroDefinition.objects.get(pk=mdef_id)
             request = make_wsgi_request("files/api/macro_text/{}/"
-                                    "".format(mdef_id))
+                                        "".format(mdef_id))
 
             results = views.api_macro_w_syntax(request, mdef_id)
             self.assertEqual(results.status_code, 200)
@@ -573,8 +773,7 @@ end</span><!-- macro_defn --> %]</span><!-- statement_list -->
                                            'source': mdef.source.file_path,
                                            'name': mdef.name}, from_json)
             if mdef.name == 'photo_text':
-                self.assertEqual(from_json['text'], self.EXPECTED[0])
-
+                self.assertRegex(from_json['text'], self.EXPECTED[0])
 
 # Local Variables:
 # python-indent-offset: 4
