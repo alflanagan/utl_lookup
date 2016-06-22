@@ -8,7 +8,10 @@
 .. codeauthor:: A. Lloyd Flanagan <aflanagan@bhmginc.com>
 
 """
-# pylint: disable=too-few-public-methods,no-member,invalid-name
+# pylint: disable=too-few-public-methods,no-member,invalid-name,too-many-lines
+
+#    yes, the module's too long, but we're following the Django standard and
+#    keeping everything in one file (why?)
 import sys
 from copy import deepcopy
 import json
@@ -21,6 +24,7 @@ import pytz
 from django.test import TestCase
 from django.http import HttpRequest, HttpResponse
 from django.core.handlers.wsgi import WSGIRequest
+from django.utils import timezone
 
 from utl_files import views
 from utl_files.models import Application, Package, UTLFile, MacroDefinition, MacroRef
@@ -248,6 +252,8 @@ class MacroTestCase(TestCase):
     TEST_DIR = Path('utl_files/test_data/api_macro_text')
     TEST_DATA = ['macrodefs.json', 'packages.json', 'utlfiles.json']
 
+    app_keys = {51: "global", 47: "editorial",}
+
     @classmethod
     def _load_test_pkgs(cls):
         """Read fields for test packages from external file."""
@@ -259,8 +265,9 @@ class MacroTestCase(TestCase):
             if datum['site'] is not None:
                 # slimy hack around having to rely on site PK being the same in the future
                 the_site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+            the_app = Application.objects.get(name=cls.app_keys[datum['app']])
             new_pkg = Package(site=the_site,
-                              app=cls.the_app,
+                              app=the_app,
                               name=datum['name'],
                               version=datum['version'],
                               last_download=datum['last_download'],
@@ -420,7 +427,10 @@ class api_macro_defsTestCase(MacroTestCase):
     """Unit tests for :py:func:`utl_files.views.api_macro_defs`."""
 
     def test_one_arg(self):
-        """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with a single argument."""
+        """Unit test for call to :py:func:`utl_files.views.api_macro_defs`
+        with a single argument.
+
+        """
         request = make_wsgi_request('/files/api/macro_defs/photo_text/')
         response = views.api_macro_defs(request, 'photo_text')
         results = json.loads(response.content.decode('utf-8'))
@@ -455,7 +465,8 @@ class api_macro_defsTestCase(MacroTestCase):
 
     def test_two_args(self):
         """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with two arguments."""
-        request = make_wsgi_request('/files/api/macro_defs/photo_text/core-asset-index-lead_presentation/')
+        request = make_wsgi_request('/files/api/macro_defs/photo_text/'
+                                    'core-asset-index-lead_presentation/')
         response = views.api_macro_defs(request, 'photo_text', 'core-asset-index-lead_presentation')
         results = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
@@ -477,7 +488,8 @@ class api_macro_defsTestCase(MacroTestCase):
 
     def test_multi_args(self):
         """Unit test for call to :py:func:`utl_files.views.api_macro_defs` with all arguments."""
-        params = ['photo_text', 'core-asset-index-lead_presentation', '1.23.1', 'includes%2Fblock.utl']
+        params = ['photo_text', 'core-asset-index-lead_presentation', '1.23.1',
+                  'includes%2Fblock.utl']
         url = '/files/api/macro_defs/{}/'.format("/".join(params))
         request = make_wsgi_request(url)
         response = views.api_macro_defs(request, *params)
@@ -568,7 +580,25 @@ class api_packagesTestCase(MacroTestCase):
                  "site": None,
                  "location": "certified/blocks/core-alert-breaking_news_fader_1.41.0.1",
                  "downloaded": "2016-03-22T17:57:48Z",
-                 "is_certified": "y", } ]
+                 "is_certified": "y", },
+                {"version": "1.0",
+                 "app": "editorial",
+                 "name": "kh-base",
+                 "pkg_type": "s",
+                 "site": "http://kearneyhub.com",
+                 "location": "kearneyhub.com/skins/editorial/kh-base_1.0",
+                 "downloaded": "2016-06-08T20:15:49Z",
+                 "is_certified": "n",
+                 },
+                {"version": "1.30.1",
+                 "app": "editorial",
+                 "name": "editorial-core-base",
+                 "pkg_type": "s",
+                 "site": None,
+                 "location": "certified/skins/editorial/editorial-core-base_1.30.1",
+                 "downloaded": "2015-02-20T21:55:40Z",
+                 "is_certified": "y"
+                }]
 
     def test_get_all(self):
         """Unit test for :py:func:`utl_files.views.api_packages` with no arguments."""
@@ -644,24 +674,152 @@ class api_macro_textTestCase(MacroTestCase):
                                 set(actual.keys()) - set(expected.keys()))
             self.assertEqual(mdef.text, actual['text'])
 
+    def test_no_such_macro(self):
+        """Unit test of call to api_macro_text with a nonexistent macro name."""
+        mdef_id = 1000
+        self.assertFalse(MacroDefinition.objects.filter(pk=mdef_id).exists())
+        request = make_wsgi_request("files/api/macro_text/{}/"
+                                    "".format(mdef_id))
+        results = views.api_macro_text(request, mdef_id)
+        self.assertEqual(results.status_code, 404)
+        actual = json.loads(results.content.decode('utf-8'))
+        self.assertIn('error', actual)
+
+
+class api_macro_w_syntaxTestCase(MacroTestCase):
+    """Unit tests for :py:func:`~utl_files.`"""
+
+    EXPECTED = [r'\[%\s*<span class="statement_list"><span class="macro_defn"><span class='
+                r'"macro_decl">macro photo_text</span><!-- macro_decl --> %\]<span class="statement'
+                r'_list"><span class="document">\s*</span><!-- document -->\[%\s*<span class="if">'
+                r'if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!--'
+                r' id --> == <span class="literal">&#x27;true&#x27;</span><!-- literal --></span>'
+                r'<!-- expr --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- '
+                r'expr --> %\]<span class="statement_list"><span class="document">&lt;div class='
+                r'"photo-byline"&gt;</span><!-- document -->\s*\[%\s*<span class="id">photo_credit'
+                r'_text</span><!-- id -->;\s*<span class="expr"><span class="id">credit</span><!--'
+                r' id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;\s*<span '
+                r'class="id">credit</span><!-- id --> %\]\s*<span class="document">\s*&lt;/div&gt;'
+                r'\s*</span><!-- document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- '
+                r'if -->;\s* <span class="comment">/\* photo_credit \*/\s*</span><!-- comment -->'
+                r'\s*<span class="if">\s*if <span class="expr"><span class="expr"><span class="id">'
+                r'photo_caption</span><!-- id --> == <span class="literal">&#x27;true&#x27;</span>'
+                r'<!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span>'
+                r'<!-- id --></span><!-- expr --> %\]<span class="statement_list"><span class='
+                r'"document">\s*&lt;div class=&quot;photo-cutline&quot;&gt;\s*</span><!-- document'
+                r' -->\s*\[% <span class="expr"><span class="id">caption</span><!-- id --> | <span'
+                r' class="id">html</span><!-- id --></span><!-- expr -->;\s*<span class="id">'
+                r'caption</span><!-- id --> %\]<span class="document">\s*&lt;/div&gt;\s*</span><!--'
+                r' document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- if --></span>'
+                r'<!-- statement_list -->; /* photo caption */\nend</span><!-- macro_defn --> %\]'
+                r'</span><!-- statement_list -->', ]
+
+    def test_basic_call(self):
+        """Unit test of basic call to API."""
+        for mdef_id in self.test_ids:
+            mdef = MacroDefinition.objects.get(pk=mdef_id)
+            request = make_wsgi_request("files/api/macro_text/{}/"
+                                        "".format(mdef_id))
+
+            results = views.api_macro_w_syntax(request, mdef_id)
+            self.assertEqual(results.status_code, 200)
+            from_json = json.loads(results.content.decode('utf-8'))
+            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
+                                           'line': mdef.line,
+                                           'source': mdef.source.file_path,
+                                           'name': mdef.name}, from_json)
+            if mdef.name == 'photo_text':
+                self.assertRegex(from_json['text'], self.EXPECTED[0])
+
 
 class api_global_skins_for_siteTestCase(MacroTestCase):
     """Unit tests for function :py:func:`~utl_files.views.api_global_skins_for_site`."""
 
-    def test_call_with_site(self):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.site = TownnewsSite.objects.get(URL='http://kearneyhub.com')
+        cls.app = Application.objects.get(name='global')
+        new_global_skin = Package(site=cls.site,
+                                  app=cls.the_app,
+                                  last_download=datetime(2016, 6, 8, 20, 15, 49,
+                                                         tzinfo=timezone.utc),
+                                  is_certified=False,
+                                  disk_directory=('kearneyhub.com/global_skins/'
+                                                  'global-kh-oct-2013-dev'),
+                                  name='global-kh-oct-2013-dev',
+                                  version='0.1',
+                                  pkg_type='g')
+        new_global_skin.full_clean()
+        new_global_skin.save()
+
+    def test_call_success(self):
         """Unit test for :py:meth:`utl_files.views.api_global_skins_for_site`."""
         request = make_wsgi_request('/files/api/global_skins_for_site/kearneyhub.com')
         response = views.api_global_skins_for_site(request, "kearneyhub.com")
-        self.assertEqual(response.getvalue(), b'[]')
+        self.assertEqual(response.status_code, 200)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertSequenceEqual(results, ['global-kh-oct-2013-dev'])
 
-    def test_call_with_certified(self):
-        """Unit test for :py:meth:`utl_files.views.api_global_skins_for_site`."""
-        response = views.api_global_skins_for_site(None, "certified")
-        self.assertEqual(response.getvalue(), b'[]')
+    def test_call_not_found(self):
+        """Unit test for :py:meth:`utl_files.views.api_global_skins_for_site`
+        where no skin is found.
+
+        We return empty list for the case where a site exists but has no
+        global skins, but raise a 404 error if the site does not exist.
+
+        """
+        request = make_wsgi_request('/files/api/global_skins_for_site/richmond.com')
+        response = views.api_global_skins_for_site(request, "richmond.com")
+        self.assertEqual(response.status_code, 200)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertSequenceEqual(results, [])
+
+        # try it with pseudo-site "certified"
+        request = make_wsgi_request('/files/api/global_skins_for_site/certified')
+        response = views.api_global_skins_for_site(request, "certified")
+        self.assertEqual(response.status_code, 200)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertSequenceEqual(results, [])
+
+        # try it with a site that is just not there
+        request = make_wsgi_request('/files/api/global_skins_for_site/foobar.com')
+        response = views.api_global_skins_for_site(request, "foobar.com")
+        self.assertEqual(response.status_code, 404)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertIn('error', results)
 
 
-class api_files_for_custom_pkgTestCase(TestCase):
-    """Unit tests for function :py:func:`~utl_files.views.api_files_for_custom_pkg`."""
+class api_app_skins_for_siteTestCase(MacroTestCase):
+
+    def test_call(self):
+        """Unit test for successful call of
+        :py:func:`utl_files.views.api_app_skins_for_site`.
+
+        """
+        sitename = 'kearneyhub.com'
+        request = make_wsgi_request('/files/api/app_skins_for_site/{}/'.format(sitename))
+        response = views.api_app_skins_for_site(request, sitename)
+        self.assertEqual(response.status_code, 200)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertSequenceEqual(results, ['editorial::kh-base'])
+
+    def test_certified_call(self):
+        """Unit test for call of
+        :py:func:`utl_files.views.api_app_skins_for_site` for certified
+        packages.
+
+        """
+        sitename = 'certified'
+        request = make_wsgi_request('/files/api/app_skins_for_site/{}/'.format(sitename))
+        response = views.api_app_skins_for_site(request, sitename)
+        self.assertEqual(response.status_code, 200)
+        results = json.loads(response.content.decode('utf-8'))
+        self.assertSequenceEqual(results, ['editorial::editorial-core-base'])
+
+
+class api_package_files_customTestCase(TestCase):
+    """Unit tests for function :py:func:`~utl_files.views.api_package_files_custom`."""
 
     TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
 
@@ -811,6 +969,10 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
             self.assertDictContainsSubset(expected, pkg_dict)
 
 
+class api_package_files_certifiedTestCase(TestCase):
+    pass
+
+
 class api_macros_for_site_with_skinsTestCase(TestCase):
     """Unit tests for :py:func:`~utl_files.views.api_macros_for_site_with_skins`."""
 
@@ -936,52 +1098,6 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(exp_mdef, mdef)
-
-
-class api_macro_w_syntaxTestCase(MacroTestCase):
-    """Unit tests for :py:func:`~utl_files.`"""
-
-    EXPECTED = [r'\[%\s*<span class="statement_list"><span class="macro_defn"><span class='
-                r'"macro_decl">macro photo_text</span><!-- macro_decl --> %\]<span class="statement'
-                r'_list"><span class="document">\s*</span><!-- document -->\[%\s*<span class="if">'
-                r'if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!--'
-                r' id --> == <span class="literal">&#x27;true&#x27;</span><!-- literal --></span>'
-                r'<!-- expr --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- '
-                r'expr --> %\]<span class="statement_list"><span class="document">&lt;div class='
-                r'"photo-byline"&gt;</span><!-- document -->\s*\[%\s*<span class="id">photo_credit'
-                r'_text</span><!-- id -->;\s*<span class="expr"><span class="id">credit</span><!--'
-                r' id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;\s*<span '
-                r'class="id">credit</span><!-- id --> %\]\s*<span class="document">\s*&lt;/div&gt;'
-                r'\s*</span><!-- document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- '
-                r'if -->;\s* <span class="comment">/\* photo_credit \*/\s*</span><!-- comment -->'
-                r'\s*<span class="if">\s*if <span class="expr"><span class="expr"><span class="id">'
-                r'photo_caption</span><!-- id --> == <span class="literal">&#x27;true&#x27;</span>'
-                r'<!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span>'
-                r'<!-- id --></span><!-- expr --> %\]<span class="statement_list"><span class='
-                r'"document">\s*&lt;div class=&quot;photo-cutline&quot;&gt;\s*</span><!-- document'
-                r' -->\s*\[% <span class="expr"><span class="id">caption</span><!-- id --> | <span'
-                r' class="id">html</span><!-- id --></span><!-- expr -->;\s*<span class="id">'
-                r'caption</span><!-- id --> %\]<span class="document">\s*&lt;/div&gt;\s*</span><!--'
-                r' document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- if --></span>'
-                r'<!-- statement_list -->; /* photo caption */\nend</span><!-- macro_defn --> %\]'
-                r'</span><!-- statement_list -->', ]
-
-    def test_basic_call(self):
-        """Unit test of basic call to API."""
-        for mdef_id in self.test_ids:
-            mdef = MacroDefinition.objects.get(pk=mdef_id)
-            request = make_wsgi_request("files/api/macro_text/{}/"
-                                        "".format(mdef_id))
-
-            results = views.api_macro_w_syntax(request, mdef_id)
-            self.assertEqual(results.status_code, 200)
-            from_json = json.loads(results.content.decode('utf-8'))
-            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
-                                           'line': mdef.line,
-                                           'source': mdef.source.file_path,
-                                           'name': mdef.name}, from_json)
-            if mdef.name == 'photo_text':
-                self.assertRegex(from_json['text'], self.EXPECTED[0])
 
 # Local Variables:
 # python-indent-offset: 4

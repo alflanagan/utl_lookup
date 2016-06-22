@@ -143,8 +143,9 @@ def api_global_skins_for_site(_, site_url):
 
     """
     # "certified" will return 0 skins -- but don't trigger Site Not Found error
+    # as it's supposed to act like a site
     if site_url == "certified":
-        site = get_object_or_404(TownnewsSite, URL="http://townnews.com")
+        return []
     else:
         site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
     skins = Package.objects.filter(site=site, pkg_type=Package.GLOBAL_SKIN)
@@ -158,13 +159,13 @@ def api_app_skins_for_site(_, site_url):
 
     """
     if site_url == "certified":
-        site = get_object_or_404(TownnewsSite, URL='http://townnews.com')
+        skins = Package.objects.filter(is_certified=True, pkg_type=Package.SKIN)
     else:
         site = get_object_or_404(TownnewsSite, URL='http://' + site_url)
-    skins = Package.objects.filter(site=site, pkg_type=Package.SKIN)
+        skins = Package.objects.filter(site=site, pkg_type=Package.SKIN)
     skin_list = []
     for skin in skins:
-        if skin.app:
+        if skin.app and skin.app.name != 'global':
             skin_list.append("{}::{}".format(skin.app.name, skin.name))
         else:
             skin_list.append(skin.name)
