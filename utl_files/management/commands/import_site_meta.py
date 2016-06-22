@@ -12,14 +12,12 @@ Currently this is just a list of the certified pacakges used by the site.
 
 
 """
-from sys import stderr, exit
 from pathlib import Path
+import sys
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models.query import QuerySet
 
-from utl_files.models import Package, PackageError, TownnewsSite, CertifiedUsedBy
-from utl_lib.tn_package import TNPackage
+from utl_files.models import Package, TownnewsSite, CertifiedUsedBy
 from utl_lib.tn_site import TNSiteMeta
 
 # pylint: disable=no-member
@@ -36,11 +34,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         site_name = options["site_name"]
         try:
-            the_site = TownnewsSite.objects.get(URL='http://'+site_name)
+            the_site = TownnewsSite.objects.get(URL='http://' + site_name)
         except TownnewsSite.DoesNotExist:
-            stderr.write("Site '{}' is not in the database. Quitting in disgust.\n"
-                         "".format('http://' + site_name))
-            exit(1)
+            raise CommandError("Site '{}' is not in the database."
+                               "".format('http://' + site_name))
         site_path = Path(options['directory'])
         if not site_path.is_dir():
             raise CommandError("Not a directory: {}".format(site_path))
@@ -55,11 +52,10 @@ class Command(BaseCommand):
                                                   version=pkg_data["version"],
                                                   is_certified=True)
                 except Package.DoesNotExist:
-                    stderr.write("Warning: Package {}/{} not found."
-                                 "".format(pkg_name, pkg_data["version"]))
-                obj, was_created = CertifiedUsedBy.objects.get_or_create(site=the_site,
-                                                                         package=the_pkg)
-                if was_created:
-                    print("Created used_by for package {}".format(the_pkg.name))
-
-
+                    sys.stderr.write("Warning: Package {}/{} not found.\n"
+                                     "".format(pkg_name, pkg_data["version"]))
+                else:
+                    _, was_created = CertifiedUsedBy.objects.get_or_create(site=the_site,
+                                                                           package=the_pkg)
+                    if was_created:
+                        print("Created used_by for package {}".format(the_pkg.name))
