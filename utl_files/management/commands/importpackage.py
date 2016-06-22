@@ -11,9 +11,11 @@ Command to import a set of package files into the database.
 
 """
 import sys
-
 from pathlib import Path
+
 from django.core.management.base import BaseCommand, CommandError
+from django.core.exceptions import ValidationError
+
 from utl_files.models import Package, PackageError, TownnewsSite
 from utl_lib.tn_package import TNPackage
 
@@ -24,11 +26,13 @@ class Command(BaseCommand):
     """Command to import a package from the filesystem."""
     help = 'Imports the given directory as a Townnews package.'
 
+    # TODO: --replace flag replaces package if it's already in database.
     def add_arguments(self, parser):
         parser.add_argument('directory', help='parent directory of the Townnews package')
 
     def handle(self, *args, **options):
         pkg_path = Path(options['directory'])
+        error_flag = False  # hack
         if not pkg_path.is_dir():
             raise CommandError("Not a directory: {}".format(pkg_path))
         try:
@@ -52,11 +56,26 @@ class Command(BaseCommand):
                 try:
                     site = TownnewsSite.objects.get(URL="http://{}".format(site_name))
                 except TownnewsSite.DoesNotExist:
-                    sys.stderr.write("I can't find a site record for http://{}. Create one and try again.".format(site_name))
+                    sys.stderr.write("I can't find a site record for http://{}. Create "
+                                     "one and try again.".format(site_name))
                     sys.exit(2)
 
             # print("site is " + site_name)
-            Package.load_from(pkg_path, site, pkg_type)
+            try:
+                Package.load_from(pkg_path, site, pkg_type)
+            except ValidationError as verr:
+                if "__all__" in verr.message_dict and verr.message_dict['__all__']:
+                    msg = verr.message_dict['__all__'][0]
+                    if msg.startswith('Unique constraint violation:'):
+                        sys.stderr.write(msg.replace('Unique constraint violation: ',
+                                                     'Not loaded:') + '\n')
+                        error_flag = True
+                    else:
+                        raise
+                else:
+                    raise
+
         except PackageError as perr:
             raise CommandError(str(perr))
-        self.stdout.write("Load from {} complete.".format(pkg_path))
+        if not error_flag:
+            self.stdout.write("Load from {} complete.".format(pkg_path))
