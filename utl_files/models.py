@@ -92,6 +92,7 @@ class Package(models.Model):
                             help_text="The application to which this package belongs",
                             blank=True,
                             null=True)
+    # TODO: get download date from .certification for certified files
     last_download = models.DateTimeField(help_text="When this package's ZIP file was downloaded.",
                                          null=True,
                                          blank=True)
@@ -342,7 +343,7 @@ class PackageProp(models.Model):
             data = json.load(meta_in)
         for key in data:
             # key "dependencies" is handled in PackageDep
-            if key != "dependencies" and data[key] is not None:
+            if key != "dependencies" and data[key] is not None and data[key] != '':
                 new_prop = PackageProp(pkg=package, key=key, value=data[key])
                 try:
                     new_prop.full_clean()
