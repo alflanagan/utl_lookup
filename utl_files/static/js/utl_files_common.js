@@ -403,7 +403,39 @@ $(function () {
                   console.log("status is " + textStatus + ", error is " + errorThrown)
                 }
               })
-        } // get_macros_for()
+        }, // get_macros_for()
+
+      get_macrorefs_for: function (domainname, global_skin, app_skin, handler) {
+          let parts = app_skin.split("::"),
+            app_name, skin_name
+
+          if (parts.length === 2) {
+            app_name = parts[0]
+            skin_name = parts[1]
+          } else {
+            throw new Error("Name of app skin must be in form app::skin. Got '" + app_skin + "' instead.")
+          }
+
+        throw "this function not actually implemented yet!"
+
+          let api_call = "/files/api/macros_for_site_with_skins/" + domainname +
+            "/" + global_skin + "/" + app_name + "/" + skin_name + "/"
+
+          $.getJSON(api_call)
+            .done(
+              data => {
+                handler(data)
+              })
+            .fail(
+              (jqXHR, textStatus, errorThrown) => {
+                if (textStatus === "error") {
+                  //don't report textStatus, it's useless
+                  console.log("Error is: " + errorThrown)
+                } else {
+                  console.log("status is " + textStatus + ", error is " + errorThrown)
+                }
+              })
+        } // get_macros_refs_for()
 
     } // namespace utl_files
 })
