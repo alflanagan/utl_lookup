@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
 """Views of models in :py:mod:`utl_files`."""
-from urllib.parse import quote_plus
 
 from django.shortcuts import render, get_object_or_404
 from django.http.response import Http404
@@ -64,7 +63,6 @@ def api_macro_defs(_, macro_name, pkg_name=None, pkg_version=None, file_path=Non
     """API call to find the definition(s) of a macro."""
     utl_files = None
     pkgs = []
-    defs = []
 
     mdefs = MacroDefinition.objects.filter(name=macro_name)
     if not mdefs.exists():
@@ -291,10 +289,10 @@ def api_package_files_certified(_, pkg_name, pkg_version=None):
 
     if pkg_version:
         if app:
-            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name,
+            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name, app=app,
                                         version=pkg_version)
         else:
-            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name, app=app,
+            the_pkg = get_object_or_404(Package, is_certified=True, name=pkg_name,
                                         version=pkg_version)
     else:
         try:
@@ -313,6 +311,14 @@ def api_package_files_certified(_, pkg_name, pkg_version=None):
         results.append(utlfile.to_dict())
     return results
 # pylint: disable=invalid-name
+
+
+def get_packages_for_site_with_skins(site_domain, global_pkg_name, skin_app, skin_name):
+    """Return an iterable of all the packages known to be applicable to a
+    given site, using a specific global skin.
+
+    """
+    pass
 
 
 # api/macros_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/
@@ -368,3 +374,25 @@ def api_macros_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, sk
     results = [macro_def.to_dict() for macro_def in macro_defs]
     results.sort(key=lambda x: x["name"])
     return results
+
+
+# api/macrorefs_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/
+@json_view
+def api_macrorefs_for_site_with_skins(_, macro_name, site_domain, global_pkg_name,
+                                      skin_app, skin_name):
+    """Return a list of all the references to a given macro from the set of
+    packages likely to be active for a site, with a particular global skin
+    active, and a particular skin applied.
+
+    :param str macro_name: The name of the macro called.
+
+    :param str site_domain: The site's domain (i.e. URL of front page with 'http://' removed)
+
+    :param str global_pkg_name: The name of the global skin active for the site.
+
+    :param str skin_app: The application containing the skin.
+
+    :param str skin_name: The name of the skin in BLOX.
+
+    """
+    pass

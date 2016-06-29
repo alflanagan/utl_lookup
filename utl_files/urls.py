@@ -82,10 +82,16 @@ urlpatterns = [
         views.api_package_files_custom,
         name="api_package_files_custom"),
 
-    # api_macros_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, skin_name)
+    # api_macros_for_site_with_skins(_, site_domain, global_pkg_name,
+    #     skin_app, skin_name)
     url(r'api/macros_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/',
         views.api_macros_for_site_with_skins,
         name="api_macros_for_site_with_skins"),
 
+    # api_macrorefs_for_site_with_skins(_, macro_name, site_domain,
+    #     global_pkg_name, skin_app, skin_name):
+    url(r'api/macrorefs_for_site_with_skins/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/',
+        views.api_macrorefs_for_site_with_skins,
+        name="api_macrorefs_for_site_with_skins"),
 
 ]  # yapf: disable

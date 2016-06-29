@@ -19,15 +19,19 @@ from io import StringIO
 from wsgiref.util import FileWrapper
 from datetime import datetime
 from pathlib import Path
+from warnings import simplefilter
 
 import pytz
 from django.test import TestCase
 from django.http import HttpRequest, HttpResponse
 from django.core.handlers.wsgi import WSGIRequest
 from django.utils import timezone
+from django.conf import settings
 
 from utl_files import views
-from utl_files.models import Application, Package, UTLFile, MacroDefinition, MacroRef
+from utl_files.models import (Application, Package, UTLFile, MacroDefinition,
+                              MacroRef, CertifiedUsedBy)
+from utl_files.more_tests import TestCaseMixin
 from papers.models import NewsPaper, TownnewsSite
 
 
@@ -81,7 +85,7 @@ def make_wsgi_request(request_text):
     return my_request
 
 
-class homeTestCase(TestCase):
+class homeTestCase(TestCase, TestCaseMixin):
     """Unit tests for :py:func:`utl_files.views.home`."""
     TEST_PAPERS = [{"name": "agNET Ag News & Commodities"}]
 
@@ -243,7 +247,7 @@ class macrosTestCase(TestCase):
             self.assertIn(substring, response.content)
 
 
-class MacroTestCase(TestCase):
+class MacroTestCase(TestCaseMixin, TestCase):
     """Parent class for macro-related API call test cases that need similar
     data setup.
 
@@ -252,7 +256,7 @@ class MacroTestCase(TestCase):
     TEST_DIR = Path('utl_files/test_data/api_macro_text')
     TEST_DATA = ['macrodefs.json', 'packages.json', 'utlfiles.json']
 
-    app_keys = {51: "global", 47: "editorial",}
+    app_keys = {51: "global", 47: "editorial"}
 
     @classmethod
     def _load_test_pkgs(cls):
@@ -410,7 +414,7 @@ class api_macro_refsTestCase(MacroTestCase):
                     'pkg_certified': False,
                     'pkg_download': '2016-03-09T22:41:50Z',
                     'pkg_site': 'http://kearneyhub.com', }
-        self.assertDictContainsSubset(expected, data[0])
+        self.assertDictContainsSubset(data[0], expected)
 
         self.assertSetEqual(set(['id']), set(data[0].keys()) - set(expected.keys()))
         # verify we can use data to retrieve related records
@@ -459,7 +463,7 @@ class api_macro_defsTestCase(MacroTestCase):
 
         for record in results:
             expected = expected_results[record['start']]
-            self.assertDictContainsSubset(expected, record)
+            self.assertDictContainsSubset(record, expected)
             self.assertSetEqual(set(['id']),
                                 set(record.keys()) - set(expected.keys()))
 
@@ -482,7 +486,7 @@ class api_macro_defsTestCase(MacroTestCase):
                     'pkg_version': '1.23.1',
                     'start': 7951}
 
-        self.assertDictContainsSubset(expected, results[0])
+        self.assertDictContainsSubset(results[0], expected)
         self.assertSetEqual(set(['id']),
                             set(results[0].keys()) - set(expected.keys()))
 
@@ -507,7 +511,7 @@ class api_macro_defsTestCase(MacroTestCase):
                     'pkg_version': '1.23.1',
                     'start': 7951}
 
-        self.assertDictContainsSubset(expected, results[0])
+        self.assertDictContainsSubset(results[0], expected)
         self.assertSetEqual(set(['id']),
                             set(results[0].keys()) - set(expected.keys()))
 
@@ -588,8 +592,7 @@ class api_packagesTestCase(MacroTestCase):
                  "site": "http://kearneyhub.com",
                  "location": "kearneyhub.com/skins/editorial/kh-base_1.0",
                  "downloaded": "2016-06-08T20:15:49Z",
-                 "is_certified": "n",
-                 },
+                 "is_certified": "n", },
                 {"version": "1.30.1",
                  "app": "editorial",
                  "name": "editorial-core-base",
@@ -597,8 +600,7 @@ class api_packagesTestCase(MacroTestCase):
                  "site": None,
                  "location": "certified/skins/editorial/editorial-core-base_1.30.1",
                  "downloaded": "2015-02-20T21:55:40Z",
-                 "is_certified": "y"
-                }]
+                 "is_certified": "y", }]
 
     def test_get_all(self):
         """Unit test for :py:func:`utl_files.views.api_packages` with no arguments."""
@@ -611,7 +613,7 @@ class api_packagesTestCase(MacroTestCase):
         for data in self.expected:
             for result in results:
                 if data['name'] == result['name']:
-                    self.assertDictContainsSubset(data, result)
+                    self.assertDictContainsSubset(result, data)
                     match_count += 1
         self.assertEqual(match_count, len(results),
                          "Failed to match a package by name.")
@@ -628,7 +630,7 @@ class api_packagesTestCase(MacroTestCase):
         for data in self.expected:
             for result in results:
                 if data['name'] == result['name']:
-                    self.assertDictContainsSubset(data, result)
+                    self.assertDictContainsSubset(result, data)
                     match_count += 1
         self.assertEqual(match_count, len(results),
                          "Failed to match a package by name.")
@@ -646,7 +648,7 @@ class api_packagesTestCase(MacroTestCase):
         for data in self.expected:
             for result in results:
                 if data['name'] == result['name']:
-                    self.assertDictContainsSubset(data, result)
+                    self.assertDictContainsSubset(result, data)
                     match_count += 1
         self.assertEqual(match_count, len(results),
                          "Failed to match a package by name.")
@@ -669,7 +671,7 @@ class api_macro_textTestCase(MacroTestCase):
                         'line': mdef.line,
                         'source': mdef.source.file_path,
                         'name': mdef.name}
-            self.assertDictContainsSubset(expected, actual)
+            self.assertDictContainsSubset(actual, expected)
             self.assertSetEqual(set(['text']),
                                 set(actual.keys()) - set(expected.keys()))
             self.assertEqual(mdef.text, actual['text'])
@@ -724,10 +726,11 @@ class api_macro_w_syntaxTestCase(MacroTestCase):
             results = views.api_macro_w_syntax(request, mdef_id)
             self.assertEqual(results.status_code, 200)
             from_json = json.loads(results.content.decode('utf-8'))
-            self.assertDictContainsSubset({'package': mdef.source.pkg.name,
+            self.assertDictContainsSubset(from_json,
+                                          {'package': mdef.source.pkg.name,
                                            'line': mdef.line,
                                            'source': mdef.source.file_path,
-                                           'name': mdef.name}, from_json)
+                                           'name': mdef.name})
             if mdef.name == 'photo_text':
                 self.assertRegex(from_json['text'], self.EXPECTED[0])
 
@@ -791,7 +794,7 @@ class api_global_skins_for_siteTestCase(MacroTestCase):
 
 
 class api_app_skins_for_siteTestCase(MacroTestCase):
-
+    """Unit tests for :py:func:`utl_files.views.api_app_skins_for_site`."""
     def test_call(self):
         """Unit test for successful call of
         :py:func:`utl_files.views.api_app_skins_for_site`.
@@ -901,7 +904,7 @@ class api_package_files_customTestCase(TestCase):
         self.assertSetEqual(set(self.TEST_FILES), set(path_list))
 
 
-class api_packages_for_site_with_skinsTestCase(TestCase):
+class api_packages_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
     """Unit tests for function :py:func:`~utl_files.views.api_packages_for_site_with_skins`."""
     GSKIN_NAME = "global-richmond-portal_temp"
     ASKIN_NAME = "awesome-custom-skin"
@@ -933,6 +936,15 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
             disk_directory="/my/stuff/richmond.com/skins/editorial/awesome-custom-skin_1.3.4/",
             site=cls.tn_site,
             pkg_type=Package.SKIN)
+        cls.certified_skin, _ = Package.objects.get_or_create(
+            app=cls.app,
+            last_download=datetime(2016, 3, 22, 17, 57, 23, tzinfo=pytz.utc),
+            is_certified=True,
+            disk_directory='certified/skins/editorial/editorial-core-advanced-mobile_1.54.0.0',
+            name='editorial-core-advanced-mobile',
+            pkg_type=Package.SKIN,
+            site=None,
+            version='1.54.0.0')
 
     def test_create(self):
         """Unit test for :py:meth:`utl_files.views.api_packages_for_site_with_skins`."""
@@ -966,14 +978,86 @@ class api_packages_for_site_with_skinsTestCase(TestCase):
         self.assertNotIn("error", actual)
         for pkg_dict in actual:
             expected = expected_all[pkg_dict["name"]]
-            self.assertDictContainsSubset(expected, pkg_dict)
+            self.assertDictContainsSubset(pkg_dict, expected)
+
+    def test_w_used_by(self):
+        """Unit test for
+        :py:meth:`utl_files.views.api_packages_for_site_with_skins`, where
+        the skin is a certified skin associated with the site by
+        :py:class:`utl_files.models.CertifiedUsedBy`.
+
+        """
+        used_by, _ = CertifiedUsedBy.objects.get_or_create(site=self.tn_site,
+                                                           package=self.certified_skin)
+        try:
+            request = make_wsgi_request("files/api_packages_for_site_with_skins/{}/{}/N/{}/{}/{}/"
+                                        "".format(self.tn_site.domain,
+                                                  self.GSKIN_NAME,
+                                                  self.app.name,
+                                                  self.certified_skin.name,
+                                                  self.certified_skin.version))
+
+            response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                              self.GSKIN_NAME, self.app.name,
+                                                              self.ASKIN_NAME)
+            actual = json.loads(response.getvalue().decode('utf-8'))
+            self.assertEqual(len(actual), 3)
+            self.assertSetEqual({pkg["name"] for pkg in actual},
+                                set([pkg.name for pkg in [self.certified_skin,
+                                                          self.global_skin, self.app_skin]]))
+        finally:
+            used_by.delete()
 
 
-class api_package_files_certifiedTestCase(TestCase):
-    pass
+class api_package_files_certifiedTestCase(TestCaseMixin, TestCase):
+    """Unit tests for :py:func:`utl_files.views.api_package_files_certified`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.paper, _ = NewsPaper.objects.get_or_create(name='Richmond Times-Dispatch')
+        cls.tn_site, _ = TownnewsSite.objects.get_or_create(URL='http://richmond.com',
+                                                            name='RTD',
+                                                            paper=cls.paper)
+        cls.app, _ = Application.objects.get_or_create(name="editorial")
+        cls.gl_app, _ = Application.objects.get_or_create(name="global")
+        simplefilter("ignore")
+        # pesky detail required for Package.load_from()
+        settings.TNPACKAGE_FILES_ROOT = str(Path('utl_files/test_data').absolute())
+        cls.data_dir = Path('utl_files/test_data/certified/skins/'
+                            'skin-editorial-core-base').absolute()
+        try:
+            cls.pkg = Package.load_from(cls.data_dir,
+                                        cls.tn_site,
+                                        Package.SKIN)
+        finally:
+            simplefilter("default")
+
+    def test_basic_call(self):
+        """Unit test for :py:meth:`utl_files.views.api_package_files_certified` with a single
+        package returned.
+
+        """
+        url = 'api/package_files/certified/editorial-core-base/1.45.1.0/'
+        request = make_wsgi_request(url)
+        response = views.api_package_files_certified(request,
+                                                     'editorial-core-base',
+                                                     '1.45.1.0')
+        actual = json.loads(response.getvalue().decode('utf-8'))
+        self.assertNotIn('error', actual)
+        self.assertEqual(len(actual), 142)
+        expected = {'pkg_certified': True,
+                    'pkg_download': '2016-06-09T19:46:25Z',
+                    'pkg_name': 'editorial-core-base',
+                    'pkg_site': 'http://richmond.com',
+                    'pkg_version': '1.45.1.0'}
+        for pkg_file in actual:
+            self.assertDictContainsSubset(pkg_file, expected)
+        actual_files = [pkg_file['path'] for pkg_file in actual]
+        for actual_fname in actual_files:
+            self.assertTrue((self.data_dir / actual_fname).exists())
 
 
-class api_macros_for_site_with_skinsTestCase(TestCase):
+class api_macros_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
     """Unit tests for :py:func:`~utl_files.views.api_macros_for_site_with_skins`."""
 
     @classmethod
@@ -1086,8 +1170,7 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
                                'pkg_download': '2016-06-08T20:15:49Z',
                                'pkg_site': 'http://kearneyhub.com'}
 
-            self.assertDictContainsSubset(return_expected,
-                                          mdef)
+            self.assertDictContainsSubset(mdef, return_expected)
 
             # check for unexpected keys
             self.assertSetEqual(set(['id', 'name', 'start', 'end', 'line']),
@@ -1097,7 +1180,7 @@ class api_macros_for_site_with_skinsTestCase(TestCase):
             # get the other expected values
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
-            self.assertDictContainsSubset(exp_mdef, mdef)
+            self.assertDictContainsSubset(mdef, exp_mdef)
 
 # Local Variables:
 # python-indent-offset: 4
