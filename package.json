@@ -1,0 +1,23 @@
+{
+  "name": "utl_lookup",
+  "version": "1.0.0",
+  "description": "Packages to support utl_lookup site",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.omaha.com:tools/utl_lookup.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "jquery": "^3.1.0",
+    "jquery-migrate": "^3.0.0",
+    "jstree": "^3.3.1"
+  }
+}

@@ -25,3 +25,4 @@ doc/api/
 doc/django_objects.inv
 # another generated dir
 doc/management
+node_modules/
