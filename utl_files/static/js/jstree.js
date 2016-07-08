@@ -13,7 +13,7 @@
 }(function ($, undefined) {
 	"use strict";
 /*!
- * jsTree 3.3.0
+ * jsTree 3.3.1
  * http://jstree.com/
  *
  * Copyright (c) 2014 Ivan Bozhanov (http://vakata.com)
@@ -72,7 +72,7 @@
 		 * specifies the jstree version in use
 		 * @name $.jstree.version
 		 */
-		version : '3.3.0',
+		version : '3.3.1',
 		/**
 		 * holds all the default options used when creating new instances
 		 * @name $.jstree.defaults
@@ -2570,7 +2570,9 @@
 							.children(".jstree-children").stop(true, true)
 								.slideDown(animation, function () {
 									this.style.display = "";
-									t.trigger("after_open", { "node" : obj });
+									if (t.element) {
+										t.trigger("after_open", { "node" : obj });
+									}
 								});
 					}
 				}
@@ -2682,7 +2684,9 @@
 						.children(".jstree-children").stop(true, true).slideUp(animation, function () {
 							this.style.display = "";
 							d.children('.jstree-children').remove();
-							t.trigger("after_close", { "node" : obj });
+							if (t.element) {
+								t.trigger("after_close", { "node" : obj });
+							}
 						});
 				}
 			}
@@ -5775,6 +5779,9 @@
 			var last_ts = 0, cto = null, ex, ey;
 			this.element
 				.on("contextmenu.jstree", ".jstree-anchor", $.proxy(function (e, data) {
+						if (e.target.tagName.toLowerCase() === 'input') {
+							return;
+						}
 						e.preventDefault();
 						last_ts = e.ctrlKey ? +new Date() : 0;
 						if(data || cto) {
