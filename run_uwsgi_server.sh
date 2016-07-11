@@ -5,6 +5,7 @@ export LANG=en_US.UTF-8
 
 BASE_DIR=/mnt/extra/Devel
 # PYVENV_DIR=/mnt/extra/python-environments/utl_lookup
+PIDFILE=/tmp/utl_lookup-master.pid
 
 # . ${PYVENV_DIR}/bin/activate
 
@@ -15,7 +16,7 @@ echo "Calling /usr/local/bin/uwsgi"
 /usr/local/bin/uwsgi --chdir=${BASE_DIR}/utl_lookup \
     --module=utl_lookup.wsgi:application \
     --env DJANGO_SETTINGS_MODULE=utl_lookup.settings \
-    --master --pidfile=/tmp/utl_lookup-master.pid \
+    --master --pidfile=${PIDFILE} \
     --socket=127.0.0.1:8001 \
     --processes=2 \
     --uid=985 --gid=981 \

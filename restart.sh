@@ -9,6 +9,7 @@ if [ -f ${PIDFILE} ]; then
 fi
 
 sleep 1  # need to give other instance time to release socket
+rm -f ${PIDFILE}
 
 echo ${MAINDIR}/run_uwsgi_server.sh
 
