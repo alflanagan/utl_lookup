@@ -16,8 +16,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
-    "jquery": "^3.1.0",
-    "jquery-migrate": "^3.0.0",
+    "jquery": "<3.0",
     "jstree": "^3.3.1"
   }
 }
