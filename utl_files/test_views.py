@@ -286,11 +286,13 @@ class MacroTestCase(TestCaseMixin, TestCase):
         """Load test UTLFile data from an external file."""
         cls.test_files = []
         with (cls.TEST_DIR / 'utlfiles.json').open('r') as ufilein:
-            ufile_data = json.load(ufilein)
+            ufile_text = ufilein.read()
+            ufile_data = json.loads(ufile_text)
         for uf in ufile_data:
             uf_datum = uf["fields"]
             the_pkg = Package.objects.get(name=uf_datum["pkg"])
-            new_uf = UTLFile(pkg=the_pkg, file_path=uf_datum["file_path"])
+            new_uf = UTLFile(pkg=the_pkg, file_path=uf_datum["file_path"],
+                             file_text=uf_datum["file_text"])
             new_uf.full_clean()
             new_uf.save()
             cls.test_files.append(new_uf)
@@ -1001,12 +1003,69 @@ class api_packages_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
                                                               self.GSKIN_NAME, self.app.name,
                                                               self.ASKIN_NAME)
             actual = json.loads(response.getvalue().decode('utf-8'))
-            self.assertEqual(len(actual), 3)
             self.assertSetEqual({pkg["name"] for pkg in actual},
-                                set([pkg.name for pkg in [self.certified_skin,
-                                                          self.global_skin, self.app_skin]]))
+                                set([pkg.name for pkg in [self.global_skin, self.app_skin]]))
+
+            response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                              self.GSKIN_NAME, self.app.name,
+                                                              self.certified_skin.name)
+            actual = json.loads(response.getvalue().decode('utf-8'))
+            self.assertSetEqual({pkg["name"] for pkg in actual},
+                                set([pkg.name for pkg in
+                                     [self.global_skin, self.certified_skin]]))
         finally:
             used_by.delete()
+
+    def test_wout_used_by(self):
+        """Unit test for :py:meth:`utl_files.views.api_packages_for_site_with_skins`, where the
+        skin is a certified skin not associated with the site by
+        :py:class:`~utl_files.models.CertifiedUsedBy`. In that case the view attempts to find a
+        match anyway.
+
+        """
+        self.assertEqual(CertifiedUsedBy.objects.filter(site=self.tn_site,
+                                                        package=self.certified_skin).count(),
+                         0)
+        request = make_wsgi_request("files/api_packages_for_site_with_skins/{}/{}/N/{}/{}/{}/"
+                                    "".format(self.tn_site.domain,
+                                              self.GSKIN_NAME,
+                                              self.app.name,
+                                              self.certified_skin.name,
+                                              self.certified_skin.version))
+
+        response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                          self.GSKIN_NAME, self.app.name,
+                                                          self.ASKIN_NAME)
+        actual = json.loads(response.getvalue().decode('utf-8'))
+        self.assertSetEqual({pkg["name"] for pkg in actual},
+                            set([pkg.name for pkg in [self.global_skin, self.app_skin]]))
+
+        response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                          self.GSKIN_NAME, self.app.name,
+                                                          self.certified_skin.name)
+        actual = json.loads(response.getvalue().decode('utf-8'))
+        self.assertSetEqual({pkg["name"] for pkg in actual},
+                            set([pkg.name for pkg in
+                                 [self.global_skin, self.certified_skin]]))
+
+    def test_no_match(self):
+        """Unit test for
+        :py:meth:`utl_files.views.api_packages_for_site_with_skins`, where
+        the skin can't be found.
+
+        """
+        request = make_wsgi_request("files/api_packages_for_site_with_skins/{}/{}/N/{}/{}/{}/"
+                                    "".format(self.tn_site.domain,
+                                              self.GSKIN_NAME,
+                                              self.app.name,
+                                              'some-bogus-skin-name',
+                                              self.certified_skin.version))
+
+        response = views.api_packages_for_site_with_skins(request, self.tn_site.domain,
+                                                          self.GSKIN_NAME, self.app.name,
+                                                          'some-bogus-skin-name')
+        actual = json.loads(response.getvalue().decode('utf-8'))
+        self.assertIn('error', actual)
 
 
 class api_package_files_certifiedTestCase(TestCaseMixin, TestCase):
@@ -1055,6 +1114,58 @@ class api_package_files_certifiedTestCase(TestCaseMixin, TestCase):
         actual_files = [pkg_file['path'] for pkg_file in actual]
         for actual_fname in actual_files:
             self.assertTrue((self.data_dir / actual_fname).exists())
+
+    def test_no_version(self):
+        """Unit test for :py:meth:`utl_files.views.api_package_files_certified` where the package
+        name is specified but not the version.
+
+        """
+        url = 'api/package_files/certified/editorial-core-base/'
+        request = make_wsgi_request(url)
+        response = views.api_package_files_certified(request,
+                                                     'editorial-core-base')
+        actual = json.loads(response.getvalue().decode('utf-8'))
+        self.assertNotIn('error', actual)
+        self.assertEqual(len(actual), 142)
+        expected = {'pkg_certified': True,
+                    'pkg_download': '2016-06-09T19:46:25Z',
+                    'pkg_name': 'editorial-core-base',
+                    'pkg_site': 'http://richmond.com',
+                    'pkg_version': '1.45.1.0'}
+        for pkg_file in actual:
+            self.assertDictContainsSubset(pkg_file, expected)
+        actual_files = [pkg_file['path'] for pkg_file in actual]
+        for actual_fname in actual_files:
+            self.assertTrue((self.data_dir / actual_fname).exists())
+
+    def test_multiple_found(self):
+        """Unit test for :py:meth:`utl_files.views.api_package_files_certified` where the
+        criteria specified match multiple packages.
+
+        """
+        the_pkg = Package.objects.get(name='editorial-core-base', version='1.45.1.0')
+        new_pkg = Package(name=the_pkg.name,
+                          version='1.52.1.0',
+                          app=the_pkg.app,
+                          is_certified=the_pkg.is_certified,
+                          last_download=the_pkg.last_download,
+                          site=the_pkg.site,
+                          disk_directory=the_pkg.disk_directory,
+                          pkg_type=the_pkg.pkg_type)
+        new_pkg.full_clean()
+        new_pkg.save()
+        try:
+            url = 'api/package_files/certified/editorial-core-base/'
+            request = make_wsgi_request(url)
+            response = views.api_package_files_certified(request,
+                                                         'editorial-core-base')
+            actual = json.loads(response.getvalue().decode('utf-8'))
+            self.assertIn('error', actual)
+            self.assertEqual(actual['error'], 404)
+            self.assertIn('without version',
+                          actual['message'])
+        finally:
+            new_pkg.delete()
 
 
 class api_macros_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
@@ -1181,6 +1292,20 @@ class api_macros_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
             self.assertIn(mdef["name"], expected)
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(mdef, exp_mdef)
+
+
+# class api_file_text_w_syntaxTestCase(MacroTestCase):
+
+    # def test_markup(self):
+        # # hardly the best way to test this, but at least will detect changes
+        # for file in self.test_files:
+            # html_name = Path(self.TEST_DIR) / "{}_mkup.html".format(file.pkg.name)
+            # with html_name.open('r') as htmlin:
+                # expected_text = htmlin.read()
+            # actual_text = file.text_with_markup
+            # # this won't work: order of tags not guaranteed. We need assertHTMLEqual()
+            # self.assertEqual(actual_text, expected_text)
+
 
 # Local Variables:
 # python-indent-offset: 4

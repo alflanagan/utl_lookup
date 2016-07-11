@@ -94,4 +94,9 @@ urlpatterns = [
         views.api_macrorefs_for_site_with_skins,
         name="api_macrorefs_for_site_with_skins"),
 
+    # api_file_text_w_syntax(_, file_id)
+    url(r'api/file_text_w_syntax/([^/]+)/',
+        views.api_file_text_w_syntax,
+        name="api_file_text_w_syntax")
+
 ]  # yapf: disable

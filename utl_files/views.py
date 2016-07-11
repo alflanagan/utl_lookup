@@ -260,12 +260,14 @@ def api_packages_for_site_with_skins(_, site_domain, global_pkg_name, skin_app, 
         # special "dummy" site
         the_site = get_object_or_404(TownnewsSite, URL='http://townnews.com')
 
+    # we have the global and app skin. Now add all blocks and components.
     for pkg in Package.objects.filter(site=the_site,
                                       pkg_type__in=[Package.BLOCK, Package.COMPONENT]):
         matched_pkgs.append(pkg)
     if site_domain != "certified":
         for certif in CertifiedUsedBy.objects.filter(site=the_site):
-            matched_pkgs.append(certif.package)
+            if certif.package.pkg_type in [Package.BLOCK, Package.COMPONENT]:
+                matched_pkgs.append(certif.package)
 
     return [pkg.to_dict() for pkg in matched_pkgs]
 
@@ -396,3 +398,13 @@ def api_macrorefs_for_site_with_skins(_, macro_name, site_domain, global_pkg_nam
 
     """
     pass
+
+
+# api/file_text_w_syntax/([^/]+)/
+@json_view
+def api_file_text_w_syntax(_, file_id):
+    utl_file = get_object_or_404(UTLFile, pk=file_id)
+    isinstance(utl_file, UTLFile)
+    return {'pkg': utl_file.pkg.id,
+            'file_path': utl_file.file_path,
+            'text': utl_file.text_with_markup}
