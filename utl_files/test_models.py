@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from warnings import simplefilter
 from datetime import datetime
+import logging
 
 from django.utils import timezone
 from django.test import TestCase, TransactionTestCase
@@ -18,6 +19,7 @@ from testplus.mock_objects import MockStream
 
 from utl_files.models import (Application, MacroDefinition, MacroRef, Package, UTLFile,
                               UTLFileImportError, PackageError, PackageProp, PackageDep)
+from utl_files.more_tests import TestCaseMixin
 from papers.models import TownnewsSite, NewsPaper, TownnewsSiteMetaData
 
 # pylint: disable=no-member,invalid-name
@@ -88,6 +90,8 @@ class PackageTestCase(TransactionTestCase):
     UNCERT_DIR = "omaha.com/skins/custom-newsletter-antwort-columns_0.15"
 
     ERROR_PKG_DIR = "dothaneagle.com/skins/editorial/custom-newsletter-2_1.9.11"
+    WARNING_PKG_DIR = "omaha.com/blocks/custom-parsing-no-meta"
+    WARNING_PKG_DIR2 = "dothaneagle.com/skins/editorial/custom-newsletter-2_1.9.11"
 
     @staticmethod
     def find_record_or_create(model_class, *_, **kwargs):
@@ -103,6 +107,7 @@ class PackageTestCase(TransactionTestCase):
             item.save()
         return item
 
+    # note: not using setUpData() because this is TransactionTestCase
     def setUp(self):
         """Create package objects for tests."""
         self.global_app = self.find_record_or_create(Application, name="global")
@@ -125,6 +130,14 @@ class PackageTestCase(TransactionTestCase):
                                                      URL='http://omaha.com',
                                                      name='omaha.com',
                                                      paper=self.paper2)
+        try:
+            self.dothaneagle = TownnewsSite.objects.get(URL='http://dothaneagle.com')
+        except TownnewsSite.DoesNotExist:
+            self.dothaneagle = TownnewsSite(URL='http://dothaneagle.com',
+                                            name='The Dothan Eagle',
+                                            paper=self.paper2)
+            self.dothaneagle.full_clean()
+            self.dothaneagle.save()
 
         self.metadata = [TownnewsSiteMetaData(site=self.test_site,
                                               pkg_name='some-totally-bogus-package',
@@ -200,6 +213,9 @@ class PackageTestCase(TransactionTestCase):
                        pkg_type=Package.SKIN)
         pkg4.full_clean()
         pkg4.save()
+
+    def tearDown(self):
+        simplefilter("default")
 
     def test_insert(self):
         """Unit test of :py:meth:`Package.save` (executed in :py:meth:`setUp`)"""
@@ -338,12 +354,9 @@ class PackageTestCase(TransactionTestCase):
     def test_load_from_failure(self):
         """Unit tests for :py:meth:`utl_files.models.Package.load_from(directory)` error cases."""
 
-        the_site = self.find_record_or_create(TownnewsSite,
-                                              URL='http://dothaneagle.com',
-                                              name='The Dothan Eagle',
-                                              paper=self.paper2)
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.ERROR_PKG_DIR)
-        self.assertRaises(UserWarning, Package.load_from, full_load_path, the_site, Package.SKIN)
+        self.assertRaises(UserWarning, Package.load_from, full_load_path,
+                          self.dothaneagle, Package.SKIN)
         site_meta_file = Path(settings.TNPACKAGE_FILES_ROOT) / 'dothaneagle.com/site_meta.json'
         self.assertFalse(site_meta_file.exists())
         Application.objects.get(name='editorial').delete()
@@ -356,6 +369,31 @@ class PackageTestCase(TransactionTestCase):
         the_pkg = Package.load_from(full_load_path, self.test_site2, Package.SKIN)
         the_pkg.disk_directory = "no_such_dir"
         self.assertRaises(PackageError, the_pkg.get_utl_files)
+
+    def test_load_from_warning(self):
+        """Unit test for :py:meth:`utl_files.models.Package.load_from(directory)` when package
+        has no metadata file.
+
+        """
+        full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.WARNING_PKG_DIR)
+        # intercept warnings, which go to logger named 'py.warnings'.
+        logger = logging.getLogger("py.warnings")
+        old_handlers = logger.handlers
+        my_stream = MockStream()
+        logger.handlers = [logging.StreamHandler(stream=my_stream)]
+        # because of multiple warnings, don't treat this as error (that would end processing
+        # before reaching the part we want to test)
+        simplefilter("default")
+        try:
+            Package.load_from(full_load_path, self.test_site2, Package.BLOCK)
+            self.assertIn(".meta.json, file not found", my_stream.logged)
+            # this should be getting name from info.json, but does not???
+            full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.WARNING_PKG_DIR2)
+            Package.load_from(full_load_path, self.dothaneagle, Package.BLOCK)
+        finally:
+            # set it back for other tests
+            simplefilter("error")
+            logger.handlers = old_handlers
 
     def test_find_packages_for(self):
         """Unit tests for :py:meth:`~utl_files.models.Pakage.find_packages_for`"""
@@ -481,6 +519,8 @@ class UTLFileTestCase(TestCase):
                     'pkg_name': 'skin-editorial-core-base',
                     'pkg_site': None,
                     'pkg_version': '1.45.1.0'}
+        with self.simple_utl.full_file_path.open('r') as utlin:
+            expected["text"] = utlin.read()
         actual = self.simple_utl.to_dict()
         self.assertDictEqual(expected, actual)
 
@@ -546,7 +586,7 @@ class UTLFileTestCase(TestCase):
             self.assertIn("Syntax error", fake_stderr.logged)
 
 
-class PackagePropTestCase(TestCase):
+class PackagePropTestCase(TestCaseMixin, TestCase):
     """Unit tests for :py:class:`uti_files.models.PackageProp`."""
 
     # pylint:disable=W0201
@@ -604,7 +644,7 @@ class PackagePropTestCase(TestCase):
         new_prop.full_clean()
         new_prop.save()
         try:
-            self.assertDictContainsSubset({"key": "fred", "value": "wilma", }, new_prop.to_dict())
+            self.assertDictContainsSubset(new_prop.to_dict(), {"key": "fred", "value": "wilma", })
             self.assertIn("id", new_prop.to_dict())
         finally:
             new_prop.delete()  # clean up for other tests
@@ -641,7 +681,7 @@ class PackagePropTestCase(TestCase):
                              'version', 'certified', 'propertyGroups'})
 
 
-class PackageDepTestCase(TestCase):
+class PackageDepTestCase(TestCaseMixin, TestCase):
     """Unit tests for :py:class:`utl_files.models.PackageDep`."""
 
     @classmethod
@@ -670,6 +710,8 @@ class PackageDepTestCase(TestCase):
                                pkg_type=Package.SKIN)
         cls.test_dep.full_clean()
         cls.test_dep.save()
+        # load files from our test directory, not system directory
+        settings.TNPACKAGE_FILES_ROOT = str(Path('.').resolve() / Path('utl_files/test_data'))
 
     def test_create(self):
         """Unit tests for :py:meth:`utl_files.models.PackageDep`."""
@@ -722,7 +764,7 @@ class PackageDepTestCase(TestCase):
                     "dep_version": self.test_dep.version, }
 
         actual = new_dep.to_dict()
-        self.assertDictContainsSubset(expected, actual)
+        self.assertDictContainsSubset(actual, expected)
         self.assertSetEqual(set(['id', ]),
                             set(actual.keys()) - set(expected.keys()))
 
@@ -773,6 +815,23 @@ class PackageDepTestCase(TestCase):
         new_dep.save()
         # all we really require here is that no exception is thrown
         new_dep.check_for_deps()
+
+    def test_from_package_metadata(self):
+        """Unit tests for :py:meth:`ult_files.models.PackageDep.from_package_metadata`."""
+        dothaneagle = TownnewsSite.objects.get(URL='http://omaha.com')
+        full_path = (Path(settings.TNPACKAGE_FILES_ROOT) /
+                     'omaha.com/skins/custom-newsletter-antwort-columns_0.15')
+        pkg_with_metadata = Package.load_from(
+            full_path,
+            dothaneagle, Package.BLOCK)
+        new_deps = PackageDep.objects.filter(pkg=pkg_with_metadata)
+        self.assertEqual(len(new_deps), 1)
+        dep = new_deps[0]
+        isinstance(dep, PackageDep)
+        self.assertEqual(dep.pkg.id, pkg_with_metadata.id)
+        self.assertEqual(dep.dep_name, 'custom_newsletter')
+        self.assertEqual(dep.dep_version, '0.27')
+        self.assertIsNone(dep.dep_pkg)
 
 
 class MacroDefinitionTestCase(TestCase):
@@ -832,7 +891,6 @@ class MacroDefinitionTestCase(TestCase):
                             set(actual.keys()) - set(expected.keys()))
 
 
-
 class MacroRefTestCase(TestCase):
     """Unit tests for :py:class:`utl_files.models.MacroRef`."""
 
@@ -887,7 +945,7 @@ class MacroRefTestCase(TestCase):
                     "pkg_download": pkg.last_download,
                     "pkg_certified": True,
                     "start": ref.start,
-                    "pkg_site": pkg.site.URL if pkg.site else None,}
+                    "pkg_site": pkg.site.URL if pkg.site else None}
 
         self.assertDictContainsSubset(expected, self.test_ref.to_dict())
         # make sure id is the only non-checked field in return dictionary

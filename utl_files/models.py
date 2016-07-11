@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_parse_handler import UTLParseError
 from utl_lib.handler_ast import UTLParseHandlerAST
-from utl_lib.macro_xref import UTLMacroXref, UTLMacro
+from utl_lib.macro_xref import UTLMacroXref
 from utl_lib.tn_package import TNPackage
 from utl_lib.tn_site import TNSiteMeta
 
@@ -258,7 +258,6 @@ class Package(models.Model):
         my_pkg.save()
         my_pkg.get_utl_files()
         try:
-            # TODO: suppress dup. warning from called procs re: .meta.json not found
             PackageProp.from_package_metadata(my_pkg)
             PackageDep.from_package_metadata(my_pkg)
         except FileNotFoundError:
@@ -347,7 +346,7 @@ class PackageProp(models.Model):
                 new_prop = PackageProp(pkg=package, key=key, value=data[key])
                 try:
                     new_prop.full_clean()
-                except:
+                except:  # pragma: nocover
                     print("Key is '{}', value is '{}'.".format(key, data[key]))
                     raise
                 new_prop.save()
@@ -477,6 +476,7 @@ class UTLFile(models.Model):
         max_length=2048,
         help_text='The file path, relative to the package base directory.')
     pkg = models.ForeignKey(Package, on_delete=models.CASCADE)
+    file_text = models.TextField(blank=True, help_text="Source code from UTL file.")
 
     # instantiate parser once -- it's big
     handler = UTLParseHandlerAST(exception_on_error=True)
@@ -491,7 +491,7 @@ class UTLFile(models.Model):
 
     def to_dict(self):
         """Write record attributes to a dictionary, for easy conversion to JSON."""
-        my_fields = {"id": self.pk, "path": self.file_path}
+        my_fields = {"id": self.pk, "path": self.file_path, "text": self.file_text}
         return self.pkg.add_keys_to_dict(my_fields)
 
     @property
@@ -516,55 +516,60 @@ class UTLFile(models.Model):
         new_file = cls(file_path=str(filename.relative_to(Path(settings.TNPACKAGE_FILES_ROOT) /
                                                           package.disk_directory)),
                        pkg=package)
+        if new_file.full_file_path.exists():
+            with new_file.full_file_path.open("r") as srcin:
+                new_file.file_text = srcin.read()
         new_file.full_clean()
         new_file.save()
         new_file.get_macros()
         return new_file
 
     def get_macros(self):
-        """Load the given UTL file and add information about macro definitions and references to
-        the database.
+        """Add information about macro definitions and references to the database.
 
         """
-        with self.full_file_path.open() as utlin:
-            text = utlin.read()
+        if not self.file_text:
+            with self.full_file_path.open() as utlin:
+                self.file_text = utlin.read()
 
-        if not text:
-            # file was empty. Nothing to do
-            return
+        if self.file_text:
+            self.parser.restart()  # existing handlers are OK, don't store state
+            try:
+                utldoc = self.parser.parse(self.file_text, filename=self.file_path)
+            except UTLParseError as upe:
+                logging.error(" parsing '{}': {}".format(self.file_path, upe))
+                return
 
-        self.parser.restart()  # existing handlers are OK, don't store state
-        try:
-            utldoc = self.parser.parse(text, filename=self.file_path)
-        except UTLParseError as upe:
-            logging.error(" parsing '{}': {}".format(self.file_path, upe))
-            return
+            # not sure if None value is possible
+            if utldoc is None:  # pragma: no cover
+                logging.error(" parsing '{}': returned None.".format(self.file_path))
 
-        # not sure if None value is possible
-        if utldoc is None:  # pragma: no cover
-            logging.error(" parsing '{}': returned None.".format(self.file_path))
+            xref = UTLMacroXref(utldoc, self.file_text)
+            for macro in xref.macros:
+                new_macro = MacroDefinition(name=macro.name,
+                                            source=self,
+                                            text=self.file_text[macro.start:macro.end],
+                                            start=macro.start,
+                                            end=macro.end,
+                                            line=macro.line)
+                new_macro.full_clean()
+                new_macro.save()
 
-        xref = UTLMacroXref(utldoc, text)
-        for macro in xref.macros:
-            isinstance(macro, UTLMacro)
-            new_macro = MacroDefinition(name=macro.name,
-                                        source=self,
-                                        text=text[macro.start:macro.end],
-                                        start=macro.start,
-                                        end=macro.end,
-                                        line=macro.line)
-            new_macro.full_clean()
-            new_macro.save()
+            for ref in xref.references:
+                new_ref = MacroRef(macro_name=ref["macro"],
+                                   source=self,
+                                   start=ref["start"],
+                                   line=ref["line"],
+                                   text=ref["call_text"])
+                new_ref.full_clean()
+                new_ref.save()
 
-        for ref in xref.references:
-
-            new_ref = MacroRef(macro_name=ref["macro"],
-                               source=self,
-                               start=ref["start"],
-                               line=ref["line"],
-                               text=ref["call_text"])
-            new_ref.full_clean()
-            new_ref.save()
+    @property
+    def text_with_markup(self):
+        """Returns the text of the file, with syntax markup."""
+        working = self.file_text.strip()
+        twmu = UTLWithMarkup(working)
+        return twmu.text
 
 
 class MacroDefinition(models.Model):
@@ -700,9 +705,8 @@ class MacroRef(models.Model):
         return the_pkg.add_keys_to_dict(my_fields)
 
 
-# TODO: Has this been superceded by TownnewsSiteMetaData?
-# will at least be redundant info, as TownnewsSiteMetaData can reference
-# packages that are not (currently) in the database
+# Actually redundant info, as TownnewsSiteMetaData can reference packages that are not
+# (currently) in the database
 class CertifiedUsedBy(models.Model):
     """Implements many-to-many relationship between certified packages and sites.
 
