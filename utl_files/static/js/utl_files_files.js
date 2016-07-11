@@ -48,6 +48,7 @@ $(function () {
     DEFS_PNL = "#defs-panel",
     REFS_PNL = "#refs-panel";
 
+  /* @global */
   const on_tab_click = (evt) => {
     $(DEFS_PNL).hide()
     $("#defs-tab").removeClass("active")
@@ -85,13 +86,17 @@ $(function () {
    * @constructor
    * @global
    * 
-   * @param {string} root_id The ID of the HTML element that acts as
+   * @param {string} fileview_id The ID of the HTML element that acts as
    * the root of the created tree
+   *
+   * @param {FileDisplay} file_display The ID of the HTML element
+   * providing a display for showing file contents.
    *
    * @returns {FilesView} The new object
    */
-  const FilesView = function (fileview_id) {
+  const FilesView = function (fileview_id, file_display) {
     this.view_id = fileview_id
+    this.display = new FileDisplay(file_display)
 
     console.log('Creating FilesView("' + fileview_id + '")')
     $(this.view_id).jstree({
@@ -132,7 +137,14 @@ $(function () {
             }
           })
           if (found_it === false) {
-            let new_node = this.jst.create_node(current_data.id, parts[i])
+            let new_node;
+            if ( i === parts.length - 1) {
+              new_node =this.jst.create_node(current_data.id,
+                                             { "text": parts[i], "file_id": utlfile.id })
+            } else {
+              new_node = this.jst.create_node(current_data.id,
+                                              { "text": parts[i] })
+            }
             current_data = this.jst.get_node(new_node)
           }
         } // for
@@ -146,6 +158,40 @@ $(function () {
       this.root_id = this.jst.create_node(null, "/")
       this.root_node = this.jst.get_node(this.root_id, true)
     }
+
+    /**
+     * @summary Handler for selection of a file tree node item.
+     *
+     * @description 
+     *
+     * @param {Object} node JSTree object (not used)
+     *
+     * @param {Object} selected The selection object
+     *
+     * @param {Object} selected.node DOM node for the selected item.
+     *
+     * @param {Object} selected.event A "click" event object.
+     *
+     * @param {Object} selected.instance I think this is the JSTree
+     *     object (like result of <code>$(TREEVIEW).jstree()</code>)
+     *
+     * @param {Object} selected.selected An array of strings, the
+     *     IDs of the selected nodes.
+     */
+    this.onselect_node = (node, selected) => {
+      // here we get ID from selected node, tell the file display to
+      // display contents of that file.
+      // console.log("File name is " + selected.node.original["text"])
+      // console.log("File ID is " + selected.node.original["file_id"])
+      if (selected.node.original["file_id"]) {
+        this.display.load_file(selected.node.original["file_id"])
+      } else {
+        this.display.clear_source();
+      }
+    }
+
+    $(this.view_id).on("select_node.jstree", this.onselect_node)
+
     return this
   } // FilesView()
 
@@ -167,8 +213,6 @@ $(function () {
    *
    * @param {utl_files.DropDownControl} skin_control the dropdown used
    * to select an application skin
-   *
-   * @param {FilesView} files_view The file listing display object
    *
    */
   const TreeViewPackageList = function (list_id, site_control, skin_control) {
@@ -260,7 +304,7 @@ $(function () {
       this.site_control = new utl_files.DropDownControl("#id_site", "#id_site_label", "Site", site_control_handler)
       this.global_control = new utl_files.DropDownControl("#id_global_skin", "#id_global_skin_label", "Global Skin", add_pkgs_to_tree)
       this.skin_control = new utl_files.DropDownControl("#id_app_skin", "#id_app_skin_label", "App Skin", add_pkgs_to_tree)
-      this.files_view = new FilesView("#files-tree-root")
+      this.files_view = new FilesView("#files-tree-root", "#source-display")
 
       this.global_node = new TreeViewPackageList(GLOBAL_LIST, this.site_control, this.skin_control)
       this.skin_node = new TreeViewPackageList(SKIN_LIST, this.site_control, this.skin_control)
@@ -396,6 +440,38 @@ $(function () {
 
     } // this.TreeView
 
+  /**
+   * @summary Manages the display of source code from a file.
+   *
+   * @constructor
+   * @global
+   */
+  const FileDisplay = function () {
+    
+    this.load_file = (file_id) => {
+      console.log("Calling " + "/files/api/file_text_w_syntax/" + file_id + "/")
+      $.getJSON("/files/api/file_text_w_syntax/" + file_id + "/")
+        .done(
+          data => {
+            let lines = data.text.split("\n")
+            this.clear_source()
+            lines = lines.join("<br>")
+            $("#source-display").html("<div></div>")
+            $("#source-display div").html(lines)
+          })
+        .fail(
+          function (jqhxr, level, message) {
+            console.log("ERROR in api call to /files/file_text_w_syntax/.")
+            console.log(level + ": " + message)
+          })
+
+    } // this.load_file()
+
+    this.clear_source = () => {
+      $("#source-display div").detach()
+    }
+
+  } // FileDisplay
   //============= immediate code =====================================
   $(TREE_VIEW).jstree({
     core: {
