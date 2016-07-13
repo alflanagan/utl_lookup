@@ -4,6 +4,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.http.response import Http404
 from jsonview.decorators import json_view
+import urllib
 
 from .models import Package, UTLFile, MacroRef, MacroDefinition, Application, CertifiedUsedBy
 from papers.models import TownnewsSite
@@ -408,3 +409,16 @@ def api_file_text_w_syntax(_, file_id):
     return {'pkg': utl_file.pkg.id,
             'file_path': utl_file.file_path,
             'text': utl_file.text_with_markup}
+
+
+def certified_file_w_syntax(request, package_name, package_version, file_name):
+    the_pkg = get_object_or_404(Package, name=package_name, is_certified=True,
+                                version=package_version)
+    the_path = urllib.parse.unquote(file_name)
+    utl_file = get_object_or_404(UTLFile, pkg=the_pkg, file_path=the_path)
+    markup_text = utl_file.text_with_markup.replace('\n', '<br>')
+    # markup_text = markup_text.replace('[%', '<span class="utl_delim">[%</span>')
+    context = {"file_name": the_path,
+               "file_text": utl_file.file_text,
+               "markup": markup_text}
+    return render(request, "utl_files/file_display.html", context)

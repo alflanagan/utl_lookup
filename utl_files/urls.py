@@ -97,6 +97,11 @@ urlpatterns = [
     # api_file_text_w_syntax(_, file_id)
     url(r'api/file_text_w_syntax/([^/]+)/',
         views.api_file_text_w_syntax,
-        name="api_file_text_w_syntax")
+        name="api_file_text_w_syntax"),
+
+    # api_certified_file_w_syntax(request, package_name, package_version, file_name)
+    url(r'certified/file_w_syntax/([^/]+)/([^/]+)/([^/]+)/',
+        views.certified_file_w_syntax,
+        name="certified_file_w_syntax")
 
 ]  # yapf: disable
