@@ -10,16 +10,21 @@ JS_SOURCES = $(wildcard utl_files/static/js/*.js papers/static/js/*.js)
 PY_SOURCES = $(wildcard *.py */*.py */*/*.py */*/*/*.py */*/*/*/*.py)
 SH_SOURCES = $(wildcard *.sh)
 
+REQTS_SRC = requirements.in dev-requirements.in emacs-requirements.in
+REQTS_PINNED = $(REQTS_SRC:.in=.txt)
+
+%.txt: %.in
+	pip-compile $<
+
 %.css: %.less
 	lessc  --source-map --strict-math=on --strict-units=on $< $@
 
 all: utl_files/static/styles/site.css TAGS $(DOC_DIR)/index.html $(PYDOC_MAIN)
 
-.PHONY: clean
-
 TAGS: $(JS_SOURCES) $(PY_SOURCES) $(SH_SOURCES)
 	etags -R --exclude=data --exclude=static --exclude='*.min.*' --exclude=$(DOC_DIR) --exclude='*.json'
 
+.PHONY: clean
 clean:
 	rm -f TAGS utl_files/static/styles/site.css utl_files/static/styles/site.css.map; \
 	if [ ! -z '$(DOC_DIR)' ]; then \
@@ -52,3 +57,10 @@ pydocs: $(PYDOC_MAIN) ;
 
 .PHONY: docs
 docs: jsdocs pydocs ;
+
+.PHONY: pin_reqts
+pin_reqts:
+	pip install --upgrade pip pip-tools setuptools; \
+	rm -f $(REQTS_PINNED); \
+	$(MAKE) $(REQTS_PINNED); \
+	pip-sync $(REQTS_PINNED)
