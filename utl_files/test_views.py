@@ -693,30 +693,59 @@ class api_macro_textTestCase(MacroTestCase):
 class api_macro_w_syntaxTestCase(MacroTestCase):
     """Unit tests for :py:func:`~utl_files.`"""
 
-    EXPECTED = [r'\[%\s*<span class="statement_list"><span class="macro_defn"><span class='
-                r'"macro_decl">macro photo_text</span><!-- macro_decl --> %\]<span class="statement'
-                r'_list"><span class="document">\s*</span><!-- document -->\[%\s*<span class="if">'
-                r'if <span class="expr"><span class="expr"><span class="id">photo_credit</span><!--'
-                r' id --> == <span class="literal">&#x27;true&#x27;</span><!-- literal --></span>'
-                r'<!-- expr --> &amp;&amp; <span class="id">credit</span><!-- id --></span><!-- '
-                r'expr --> %\]<span class="statement_list"><span class="document">&lt;div class='
-                r'"photo-byline"&gt;</span><!-- document -->\s*\[%\s*<span class="id">photo_credit'
-                r'_text</span><!-- id -->;\s*<span class="expr"><span class="id">credit</span><!--'
-                r' id --> | <span class="id">html</span><!-- id --></span><!-- expr -->;\s*<span '
-                r'class="id">credit</span><!-- id --> %\]\s*<span class="document">\s*&lt;/div&gt;'
-                r'\s*</span><!-- document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- '
-                r'if -->;\s* <span class="comment">/\* photo_credit \*/\s*</span><!-- comment -->'
-                r'\s*<span class="if">\s*if <span class="expr"><span class="expr"><span class="id">'
-                r'photo_caption</span><!-- id --> == <span class="literal">&#x27;true&#x27;</span>'
-                r'<!-- literal --></span><!-- expr --> &amp;&amp; <span class="id">caption</span>'
-                r'<!-- id --></span><!-- expr --> %\]<span class="statement_list"><span class='
-                r'"document">\s*&lt;div class=&quot;photo-cutline&quot;&gt;\s*</span><!-- document'
-                r' -->\s*\[% <span class="expr"><span class="id">caption</span><!-- id --> | <span'
-                r' class="id">html</span><!-- id --></span><!-- expr -->;\s*<span class="id">'
-                r'caption</span><!-- id --> %\]<span class="document">\s*&lt;/div&gt;\s*</span><!--'
-                r' document --></span><!-- statement_list -->\s*\[%\s*end</span><!-- if --></span>'
-                r'<!-- statement_list -->; /* photo caption */\nend</span><!-- macro_defn --> %\]'
-                r'</span><!-- statement_list -->', ]
+    template1 = r'(</span><!-- (|) -->){}'
+    template2 = r'(<span class="(|)">){}'
+
+    # TODO: better data structure for this.
+    EXPECTED = {"photo_text":
+                (r'\[%\s*(<span class="(statement_list|utldoc|statement|macro_defn|macro_decl)">)'
+                 r'{5}macro <span class="id">photo_text(</span><!-- (id|macro_decl) -->){2} %\]'
+                 r'(<span class="(statement_list|statement|document)">){3}\n\s*'
+                 r'(</span><!-- (document|statement) -->){2}\[%\s*'
+                 r'(<span class="(statement|if_stmt)">){2}if (<span class="(expr|id)">){4}'
+                 r'photo_credit(</span><!-- (expr|id) -->){2}\s*==\s*'
+                 r'(<span class="(expr|literal)">){2}&#x27;true&#x27;'
+                 r'(</span><!-- (literal|expr) -->){3} &amp;&amp; (<span class="(id|expr)">){2}'
+                 r'credit(</span><!-- (id|expr) -->){3} <span class="eostmt">%]'
+                 r'</span><!-- eostmt -->(<span class="(statement_list|statement|document)">){3}'
+                 r'\n\s*&lt;div class=&quot;photo-byline&quot;&gt;\n\s*'
+                 r'(</span><!-- (document|statement) -->){2}\[%\s*'
+                 r'(<span class="(statement|id|expr)">){3}photo_credit_text'
+                 r'(</span><!-- (id|expr) -->){2}<span class="eostmt">;'
+                 r'(</span><!-- (eostmt|statement) -->){2}\n\s*'
+                 r'(<span class="(statement|expr|id)">){4}credit(</span><!-- (expr|id) -->){2}'
+                 r' \| (<span class="(expr|id)">){2}html(</span><!-- (expr|id) -->){3}'
+                 r'<span class="eostmt">;(</span><!-- (eostmt|statement) -->){2}\s*'
+                 r'(<span class="(statement|id|expr)">){3}credit(</span><!-- (expr|id) -->)'
+                 r'{2}\s*<span class="eostmt">%](</span><!-- (eostmt|statement) -->){2}'
+                 r'(<span class="(statement|document)">){2}\s*&lt;/div&gt;\s*'
+                 r'(</span><!-- (document|statement|statement_list) -->){3}\[%\s*end'
+                 r'</span><!-- if_stmt --><span class="eostmt">;(</span><!-- (eostmt|'
+                 r'statement) -->){2}\s*<span class="comment">/\* photo_credit \*/'
+                 r'</span><!-- comment -->\s*'
+                 r'(<span class="(statement|if_stmt)">){2}if (<span class="(expr|id)">){4}'
+                 r'photo_caption(</span><!-- (id|expr) -->){2} == (<span class="(expr|literal)">)'
+                 r'{2}&#x27;true&#x27;(</span><!-- (expr|literal) -->){3}\s*&amp;&amp;\s*'
+                 r'(<span class="(id|expr)">){2}caption(</span><!-- (id|expr) -->){3}'
+                 r'\s*<span class="eostmt">%\]</span><!-- eostmt -->\s*'
+                 r'(<span class="(statement_list|statement|document)">){3}\s*'
+                 r'&lt;div class=&quot;photo-cutline&quot;&gt;\s*'
+                 r'(</span><!-- (document|statement) -->){2}')}
+                 # [% <span class="statement"><span class="expr"><span class="expr">
+                 # <span class="id">caption</span><!-- expr --></span><!-- id --> |
+                 #  <span class="expr"><span class="id">html</span><!-- expr -->
+                 # </span><!-- id --></span><!-- expr --><span class="eostmt">;</span>
+                 # <!-- eostmt --></span><!-- statement -->  <span class="statement">
+                 # <span class="id"><span class="expr">caption</span><!-- id --></span>
+                 # <!-- expr --> <span class="eostmt">%]</span><!-- eostmt --></span>
+                 # <!-- statement --><span class="statement"><span class="document">
+                 #    &lt;/div&gt;
+                 #    </span><!-- document --></span><!-- statement --></span>
+                 # <!-- statement_list -->[%  end</span><!-- if_stmt --><span class="eostmt">
+                 # ;</span><!-- eostmt --></span><!-- statement --></span><!-- statement_list -->
+                 #  <span class="comment">/* photo caption */</span><!-- comment -->
+                 # end</span><!-- macro_defn --> <span class="eostmt">%]</span><!-- eostmt -->
+                 # </span><!-- statement --></span><!-- utldoc --></span><!-- statement_list -->
 
     def test_basic_call(self):
         """Unit test of basic call to API."""
@@ -733,8 +762,8 @@ class api_macro_w_syntaxTestCase(MacroTestCase):
                                            'line': mdef.line,
                                            'source': mdef.source.file_path,
                                            'name': mdef.name})
-            if mdef.name == 'photo_text':
-                self.assertRegex(from_json['text'], self.EXPECTED[0])
+            if mdef.name in self.EXPECTED:
+                self.assertRegex(from_json['text'], self.EXPECTED[mdef.name])
 
 
 class api_global_skins_for_siteTestCase(MacroTestCase):
