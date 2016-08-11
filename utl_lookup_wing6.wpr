@@ -1,0 +1,54 @@
+#!wing
+#!version=6.0
+##################################################################
+# Wing IDE project file                                          #
+##################################################################
+[project attributes]
+debug.launch-configs = (2,
+                        {'launch-81elQMhWsEhTIC1Y': ({},
+        {'buildcmd': ('project',
+                      None),
+         'env': ('project',
+                 [u'']),
+         'name': u'Launch manage.py',
+         'pyexec': ('project',
+                    u''),
+         'pypath': ('project',
+                    ''),
+         'pyrunargs': ('project',
+                       '-u'),
+         'runargs': u'runserver 8000',
+         'rundir': ('custom',
+                    u'/mnt/extra/Devel/utl_lookup')})})
+proj.debug-sub-processes = True
+proj.directory-list = [{'dirloc': loc('.'),
+                        'excludes': [u'static/admin',
+                                     u'doc/_build',
+                                     u'data',
+                                     u'node_modules',
+                                     u'utl_files/test_data',
+                                     u'static/styles',
+                                     u'static/images',
+                                     u'doc/management',
+                                     u'static/js',
+                                     u'doc/api',
+                                     u'external'],
+                        'filter': '*',
+                        'include_hidden': False,
+                        'recursive': True,
+                        'watch_for_changes': True}]
+proj.file-type = 'shared'
+proj.launch-config = {loc('manage.py'): ('project',
+        (u'runserver 8000',
+         'launch-81elQMhWsEhTIC1Y')),
+                      loc('utl_files/test_iterator.py'): ('project',
+        (u'../../utl_indexer/problem1.utl',
+         'launch-81elQMhWsEhTIC1Y')),
+                      loc('utl_files/test_models.py'): ('project',
+        (u'',
+         'launch-81elQMhWsEhTIC1Y'))}
+proj.main-file = loc('manage.py')
+testing.auto-test-file-specs = (('glob',
+                                 'test_*.py'),)
+testing.test-framework = {None: ':internal djangotest',
+                          loc('manage.py'): ':internal djangotest'}
