@@ -10,9 +10,11 @@
 """
 # pylint: disable=too-few-public-methods
 
-from django.test import TestCase
+# this script doesn't require Django database support
+from unittest import TestCase, main
 
-from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator, ParsedSegment
+from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator
+from utl_lib.ast_node import ASTNode
 
 
 class UTLWithMarkupTestCase(TestCase):
@@ -22,12 +24,14 @@ class UTLWithMarkupTestCase(TestCase):
         """Unit test for :py:meth:`code_markup.UTLWithMarkup`."""
         item1 = UTLWithMarkup('[% if fred==wilma then echo "barney"; %]')
         self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]')
-        expected = (r'^\[% <span class="statement_list"><span class="if">if <span class='
-                    r'"expr"><span class="id">fred</span><!-- id -->==<span class="id">'
-                    r'wilma</span><!-- id --></span><!-- expr --> then (<span class="'
-                    r'(statement_list|echo)">){2}echo <span class="literal">&quot;barney'
-                    r'&quot;</span><!-- literal -->(</span><!-- (echo|statement_list) -->)'
-                    r'{2}</span><!-- if -->; %]</span><!-- statement_list -->$')
+        expected = (r'^\[% (<span class="(statement_list|utldoc|abbrev_if_stmt|statement)">){4}if '
+                    r'(<span class="(expr|id)">){3}fred(</span><!-- (id|expr) -->){2}==(<span '
+                    r'class="(id|expr)">){2}wilma(</span><!-- (id|expr) -->){3} then (<span '
+                    r'class="(echo|statement)">){2}echo (<span class="(literal|expr)">){2}&quot;'
+                    r'barney&quot;(</span><!-- (expr|literal|echo) -->){3}'
+                    r'<span class="eostmt">;(</span><!-- (eostmt|statement|abbrev_if_stmt) -->){4}'
+                    r' (<span class="(statement|eostmt)">){2}%](</span><!-- (eostmt|'
+                    r'statement|statement_list|utldoc) -->){4}$')
         actual = item1.text
         self.assertRegex(actual, expected)
 
@@ -39,11 +43,11 @@ class UTLWithMarkupTestCase(TestCase):
         item1 = UTLWithMarkup('<div class="fred"><p>a paragraph<p></div>')
         self.assertEqual(item1.source, '<div class="fred"><p>a paragraph<p></div>')
 
-        expected = ('<span class="statement_list"><span class="document">&lt;div class=&qu'
-                    'ot;fred&quot;&gt;&lt;p&gt;a paragraph&lt;p&gt;&lt;/div&gt;</span><!--'
-                    ' document --></span><!-- statement_list -->')
-
-        self.assertEqual(item1.text, expected)
+        expected = (r'(<span class="(statement_list|document|utldoc|statement)">){4}&lt;div '
+                    r'class=&quot;fred&quot;&gt;&lt;p&gt;a paragraph&lt;p&gt;&lt;/div&gt;(</span>'
+                    r'<!-- (document|statement|statement_list|utldoc) -->){4}$')
+        actual = item1.text
+        self.assertRegex(actual, expected)
 
     def test_begin_tag(self):
         """Unit tests of :py:meth:`~utl_files.UTLWithMarkup.text` with a
@@ -53,13 +57,14 @@ class UTLWithMarkupTestCase(TestCase):
         source_text = '[% if fred==wilma then echo "barney"; %]'
         item1 = UTLWithMarkup(source_text, markup_start='<start {}>',
                               markup_end='<end {}>')
-        # note: order doesn't matter for statement_list and echo after then,
-        # because both spans are same length
-        expected = (r'^\[% <start statement_list><start if>if <start expr><start id>fred'
-                    r'<end id>==<start id>wilma<end id><end expr> then (<start '
-                    '(statement_list|echo)>){2}echo <start literal>&quot;barney&quot;<end'
-                    ' literal>(<end (echo|statement_list)>){2}<end if>; %]<end '
-                    'statement_list>$')
+        expected = (r'^\[% (<start (statement_list|abbrev_if_stmt|statement|utldoc)>){4}'
+                    r'if (<start (expr|id)>){3}fred(<end (id|expr)>){2}==(<start (expr|id)>){2}'
+                    r'wilma(<end (expr|id)>){3} then (<start (statement|echo)>){2}'
+                    r'echo (<start (literal|expr)>){2}&quot;barney&quot;'
+                    r'(<end (literal|expr|echo)>){3}'
+                    r'<start eostmt>;(<end (eostmt|statement|abbrev_if_stmt)>){4}'
+                    r' (<start (eostmt|statement)>){2}%]'
+                    r'(<end (eostmt|statement|utldoc|statement_list)>){4}$')
         actual = item1.text
         self.assertRegex(actual, expected)
 
@@ -78,14 +83,39 @@ class UTLWithMarkupTestCase(TestCase):
         source_text = ('[% if fred/* Flintstone */==wilma/* wife */ then echo "barney" '
                        '/* friend */; %]')
         item1 = UTLWithMarkup(source_text, markup_end='</span>')
-        expected = (r'\[% <span class="statement_list"><span class="if">if <span class='
-                    r'"expr"><span class="id">fred</span><span class="comment">/\* '
-                    r'Flintstone \*/</span>==<span class="id">wilma</span></span><span class'
-                    r'="comment">/\* wife \*/</span> then (<span class="(statement_list|'
-                    r'echo)">){2}echo <span class="literal">&quot;barney&quot;(</span>){4}'
-                    r' <span class="comment">/\* friend \*/</span>; %]</span>$')
+        expected = (r'^\[% (<span class="(statement_list|utldoc|statement|abbrev_if_stmt)">){4}if '
+                    r'(<span class="(expr|id)">){3}fred(</span>){2}<span class="comment">/\* '
+                    r'Flintstone \*/</span>==(<span class="(id|expr)">){2}wilma(</span>){3}'
+                    r'<span class="comment">/\* wife \*/</span> then (<span class="(statement|'
+                    r'echo)">){2}echo (<span class="(literal|expr)">){2}&quot;barney&quot;(</span>)'
+                    r'{3} <span class="comment">/\* friend \*/</span><span class="eostmt">;'
+                    r'(</span>){4} (<span class="(eostmt|statement)">){2}%](</span>){4}$')
+        actual = item1.text
+        self.assertRegex(actual, expected)
 
-        self.assertRegex(item1.text, expected)
+    def test_markup_start(self):
+        """Unit tests for :py:meth:`~utl_files.code_markup.UTLWithMarkup.markup_start`."""
+        fred = UTLWithMarkup('')
+        self.assertEqual(fred.markup_start('test'), '<span class="test">')
+
+        wilma = UTLWithMarkup('', markup_start='hello, {}')
+        self.assertEqual(wilma.markup_start('test'), 'hello, test')
+
+        the_node = ASTNode('goodbye', {}, [])
+        self.assertEqual(fred.markup_start(the_node), '<span class="goodbye">')
+        self.assertEqual(wilma.markup_start(the_node), 'hello, goodbye')
+
+    def test_markup_end(self):
+        """Unit tests for :py:meth:`~utl_files.code_markup.UTLWithMarkup.markup_end`."""
+        fred = UTLWithMarkup('')
+        self.assertEqual(fred.markup_end('test'), '</span><!-- test -->')
+
+        wilma = UTLWithMarkup('', markup_end='hello, {}')
+        self.assertEqual(wilma.markup_end('test'), 'hello, test')
+
+        the_node = ASTNode('goodbye', {}, [])
+        self.assertEqual(fred.markup_end(the_node), '</span><!-- goodbye -->')
+        self.assertEqual(wilma.markup_end(the_node), 'hello, goodbye')
 
 
 class UTLTextParseIteratorTestCase(TestCase):
@@ -93,35 +123,36 @@ class UTLTextParseIteratorTestCase(TestCase):
 
     def test_create(self):
         """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
-        item1 = UTLTextParseIterator('[% if fred==wilma then echo "barney"; %]')
-        self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]')
-        self.assertSetEqual(set(item1.start_pos.keys()),
-                            set([3, 6, 12, 23, 28]))
-        self.assertSetEqual(set(item1.end_pos.keys()),
-                            set([10, 17, 36, 40]))
-        # should be able to do this with dict comprehension, haven't figured out
-        # how **hangs head in shame**
-        test_dict = {}
-        for key in item1.end_pos:
-            test_dict[key] = set([node.symbol for node in item1.end_pos[key]])
-        self.assertDictEqual(test_dict,
-                             {40: set(['statement_list']),
-                              10: set(['id']),
-                              36: set(['if', 'statement_list', 'echo', 'literal']),
-                              17: set(['expr', 'id'])})
+        item1 = UTLTextParseIterator('[% if fred==wilma then echo "barney"; %]   ')
+        self.assertEqual(item1.source, '[% if fred==wilma then echo "barney"; %]   ')
 
-        test_dict = {}
-        for key in item1.start_pos:
-            test_dict[key] = set([node.symbol for node in item1.start_pos[key]])
-        self.assertDictEqual(test_dict,
-                             {28: set(['literal']),
-                              3: set(['statement_list', 'if']),
-                              12: set(['id']),
-                              6: set(['expr', 'id']),
-                              23: set(['statement_list', 'echo'])})
+        expected_starts = {3: {"utldoc", "statement_list", "statement", "abbrev_if_stmt"},
+                           6: {"expr", "expr", "id"},
+                           12: {"expr", "id"},
+                           23: {"statement", "echo"},
+                           28: {"expr", "literal"},
+                           36: {"eostmt"},
+                           38: {"statement", "eostmt"}}
+        self.assertEqual(item1.start_pos.keys(), expected_starts.keys())
+        for key in expected_starts:
+            self.assertSetEqual(set([node.symbol for node in item1.start_pos[key]]),
+                                expected_starts[key])
+        expected_ends = {10: {'expr', 'id'},
+                         17: {'expr', 'expr', 'id'},
+                         36: {'echo', 'expr', 'literal'},
+                         37: {'statement', 'abbrev_if_stmt', 'statement', 'eostmt'},
+                         40: {'statement', 'eostmt'},
+                         43: {'utldoc', 'statement_list'}}
+
+        self.assertEqual(expected_ends.keys(), item1.end_pos.keys())
+        for key in expected_ends:
+            self.assertSetEqual(set([node.symbol for node in item1.end_pos[key]]),
+                                expected_ends[key])
 
     def test_iterate(self):
         """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
+        # TODO: need to incorporate case from parts where anchor not set to end
+        # may have to mangle data to trigger that case.
         # added single-letter ID to catch edge cases :)
         item1 = UTLTextParseIterator('[% if fred==wilma then echo i + "barney"; %]')
 
@@ -135,95 +166,76 @@ class UTLTextParseIteratorTestCase(TestCase):
             end_nodes.append(set([node.symbol for node in parsed_seg.ends]))
 
         expected_strs = ['[% ', 'if ', 'fred', '==', 'wilma', ' then ',
-                         'echo ', 'i', ' + ', '"barney"', '; %]']
+                         'echo ', 'i', ' + ', '"barney"', ';', ' ', '%]']
         self.assertSequenceEqual(expected_strs, substrs)
 
         expected_start_nodes = [set(),  # '[% '
-                                {'if', 'statement_list'},  # 'if '
+                                {'abbrev_if_stmt', 'statement_list', 'statement',
+                                 'utldoc'},  # 'if '
                                 {'expr', 'id'},  # 'fred'
                                 set(),  # '=='
-                                {'id'},  # 'wilma'
+                                {'expr', 'id'},  # 'wilma'
                                 set(),  # ' then '
-                                {'echo', 'statement_list'},  # 'echo '
+                                {'echo', 'statement'},  # 'echo '
                                 {'expr', 'id'},  # 'i'
                                 set(),  # ' + '
-                                {'literal'},  # '"barney"'
-                                set()]  # '; %]'
+                                {'literal', 'expr'},  # '"barney"'
+                                {'eostmt'},  # '; '
+                                set(),  # ' '
+                                {'statement', 'eostmt'}]  # '%]'
         self.assertSequenceEqual(expected_start_nodes, start_nodes)
 
         # so start nodes are nodes that start immediately before substr, end
         # nodes are nodes that end immediately after substr. so if substr
         # matches a production by itself the node will appear in both sets
+
         expected_end_nodes = [set(),  # '[% '
                               set(),  # 'if '
-                              {'id'},  # 'fred'
+                              {'expr', 'id'},  # 'fred'
                               set(),  # '=='
                               {'id', 'expr'},  # 'wilma'
                               set(),  # ' then '
                               set(),  # 'echo '
-                              {'id'},  # 'i'
+                              {'id', 'expr'},  # 'i'
                               set(),  # ' + '
-                              {'literal', 'echo', 'statement_list', 'if', 'expr'},  # '"barney"'
-                              {'statement_list'}]  # '; %]'
+                              {'literal', 'echo', 'expr'},  # '"barney"'
+                              {'abbrev_if_stmt', 'statement', 'eostmt'},  # ';'
+                              set(),  # ' '
+                              {'statement', 'statement_list', 'utldoc', 'eostmt'}]  # '%]'
         self.assertSequenceEqual(expected_end_nodes, end_nodes)
 
     def test_w_docs(self):
         """Unit test for :py:meth:`code_markup.UTLTextParseIterator`."""
-        # added single-letter ID to catch edge cases :)
         item1 = UTLTextParseIterator('[% if fred==wilma %] <p>first para<p> [% else %] <span>'
                                      ' second doc </span> [% end %]')
 
-        substrs = []
-        start_nodes = []
-        end_nodes = []
-        is_document = []
-        for segment in item1.parts:
-            isinstance(segment, ParsedSegment)
-            substrs.append(segment.text)
-            start_nodes.append(set([node.symbol for node in segment.starts]))
-            end_nodes.append(set([node.symbol for node in segment.ends]))
-            is_document.append(segment.is_doc)
+        expected = [('[% ', False, set(), set()),
+                    ('if ', False, {"utldoc", "statement_list", "statement", "if_stmt"}, set()),
+                    ('fred', False, {"expr", "id", "expr"}, {"id", "expr"}),
+                    ('==', False, set(), set()),
+                    ('wilma', False, {"expr", "id"}, {"expr", "id", "expr"}),
+                    (' ', False, set(), set()),
+                    ('%]', False, {"eostmt"}, {"eostmt"}),
+                    (' ', False, set(), set()),
+                    ('<p>first para<p> ', True, {"statement_list", "statement"},
+                     {"statement_list", "statement"}),
+                    ('[% ', False, set(), set()),
+                    ('else ', False, {"else_stmt"}, set()),
+                    ('%]', False, {"eostmt"}, {"eostmt"}),
+                    (' ', False, set(), set()),
+                    ('<span> second doc </span> ', True, {"statement", "statement_list"},
+                     {"statement", "statement_list", "else_stmt"}),
+                    ('[% end', False, set(), {"if_stmt"}),
+                    (' ', False, set(), set()),
+                    ('%]', False, {"eostmt"}, {"eostmt", "statement", "utldoc", "statement_list"})]
 
-        # note problem with our parser: it doesn't break out keywords from  %], [%
-        expected = ['[% ', 'if ', 'fred', '==', 'wilma', ' %] ', '<p>first para<p> ', '[% ',
-                    'else %] ', '<span> second doc </span> ', '[% end', ' %]']
-        self.assertSequenceEqual(expected, substrs)
-
-        expected_docs = [False, False, False, False, False, False, True, False,
-                         False, True, False, False]
-        self.assertSequenceEqual(expected_docs, is_document)
-
-        expected_start_nodes = [set(),  # '[% '
-                                {'if', 'statement_list'},  # 'if '
-                                {'expr', 'id'},  # 'fred'
-                                set(),  # '=='
-                                {'id'},  # 'wilma'
-                                set(),  # ' %] '
-                                {'statement_list'},  # '<p>first para<p> '
-                                set(),  # '[% '
-                                {'else'},  # 'else %] '
-                                {'statement_list'},  # '<span> second doc </span> '
-                                set(),  # '[% end'
-                                set()]  # '; %]'
-        self.assertSequenceEqual(expected_start_nodes, start_nodes)
-
-        expected_end_nodes = [set(),  # '[% '
-                              set(),  # 'if '
-                              {'id'},  # 'fred'
-                              set(),  # '=='
-                              {'id', 'expr'},  # 'wilma'
-                              set(),  # ' %] '
-                              {'statement_list'},  # '<p>first para<p> '
-                              set(),  # '[% '
-                              set(),  # 'else %] '
-                              {'statement_list', 'else'},  # '<span> second doc </span> '
-                              {'if'},  # '[% end'
-                              {'statement_list'}]  # '; %]'
-        self.assertSequenceEqual(expected_end_nodes, end_nodes)
-
-        expected_docs = [False, False, False, False, False, False, True,
-                         False, False, True, False, False]
-        self.assertSequenceEqual(expected_docs, is_document)
+        actual = [(part.text,
+                   part.is_doc,
+                   set([start.symbol for start in part.starts]),
+                   set([end.symbol for end in part.ends]), )
+                  for part in item1.parts]
+        self.assertSequenceEqual(actual,
+                                 expected)
 
     def test_missing_close_bracket(self):
         """Test expected output from
@@ -241,13 +253,27 @@ class UTLTextParseIteratorTestCase(TestCase):
         self.assertSequenceEqual([part.text for part in parts],
                                  ['[% ', 'if ', 'a', ' then ', 'b', '%]'])
         self.assertSequenceEqual([set([node.symbol for node in part.starts]) for part in parts],
-                                 [set(), {'statement_list', 'if'}, {'id'}, set(),
-                                  {'statement_list', 'id'}, set()])
+                                 [set(),
+                                  {'statement_list', 'utldoc', 'abbrev_if_stmt', 'statement'},
+                                  {'id', 'expr'},
+                                  set(),
+                                  {'statement', 'id', 'expr'},
+                                  {'eostmt'}])
         self.assertSequenceEqual([set([node.symbol for node in part.ends]) for part in parts],
-                                 [set(), set(), {'id'}, set(),
-                                  {'statement_list', 'id', 'if'}, {'statement_list'}])
+                                 [set(),
+                                  set(),
+                                  {'id', 'expr'},
+                                  set(),
+                                  {'id', 'expr'},
+                                  {'statement_list', 'eostmt', 'utldoc', 'statement',
+                                   'abbrev_if_stmt'}])
         self.assertSequenceEqual([part.is_doc for part in parts], [False] * 6)
 
+
+if __name__ == '__main__':
+    # this is useful for running these tests without creating a test database,
+    # which we don't use in this file.
+    main()
 
 # Local Variables:
 # python-indent-offset: 4

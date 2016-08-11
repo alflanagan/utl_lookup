@@ -17,7 +17,7 @@ from collections import defaultdict
 from typing import Union, Sequence, Iterator
 
 from utl_lib.ast_node import ASTNode, FrozenASTNode
-from utl_lib.handler_ast import UTLParseHandlerAST
+from utl_lib.handler_parse_tree import UTLParseHandlerParseTree
 from utl_lib.utl_yacc import UTLParser
 from utl_lib.utl_lex_comments import UTLLexerComments
 
@@ -31,12 +31,12 @@ class ParsedSegment(object):
     """
     @staticmethod
     def _ast_node_sort_key(a_node):
+        """Return length of source string to define a sorting key."""
         try:
             return a_node.attributes["end"] - a_node.attributes["start"]
         except KeyError:
             return 0
 
-    # TODO: Add comments
     def __init__(self, text: str, starts: Sequence[ASTNode],
                  ends: Sequence[ASTNode], is_document: bool):
         self.text = text
@@ -44,12 +44,11 @@ class ParsedSegment(object):
         self.ends = list(ends)
         self.is_doc = is_document
 
-        #For retrieval of starts, we want the outer nodes first
-        #For retrieval of ends, we want the inner nodes first
-        #so we need to sort by size
+        # For retrieval of starts, we want the outer nodes first
+        # For retrieval of ends, we want the inner nodes first
+        # so we need to sort by size
         self.starts.sort(key=self._ast_node_sort_key, reverse=True)
         self.ends.sort(key=self._ast_node_sort_key)
-
 
 
 class UTLTextParseIterator():
@@ -74,9 +73,10 @@ class UTLTextParseIterator():
     """
 
     def __init__(self, source_text):
-        self.parser = UTLParser([UTLParseHandlerAST()])
+        self.parser = UTLParser([UTLParseHandlerParseTree(exception_on_error=True)])
         self.source = source_text
-        self.parse_tree = FrozenASTNode(self.parser.parse(self.source))
+        self.parse_tree = self.parser.parse(self.source)
+        self.parse_tree = FrozenASTNode(self.parse_tree)
         self.start_pos = defaultdict(list)
         """Mapping from source text position to the production node(s) that
         start there.
@@ -100,16 +100,15 @@ class UTLTextParseIterator():
         start there.
 
         """
-        # TODO: need to get correct order of start, end tags when multiple
-        # tags are present at the same position -- otherwise tags that share
-        # same end tag, such as <span>, end up covering the wrong substring.
         limit = len(self.source)
         for ast_node in self.parse_tree.walk():
             if ast_node.symbol == 'document':
                 self.documents[ast_node.attributes["start"]] = ast_node.attributes["text"]
             else:
                 # omit productions that didn't match any text
-                if not ast_node.attributes["start"] == ast_node.attributes["end"]:
+                if ("start" in ast_node.attributes and
+                        "end" in ast_node.attributes and
+                        ast_node.attributes["start"] != ast_node.attributes["end"]):
                     self.start_pos[ast_node.attributes["start"]].append(ast_node)
                     # parser may report end one past len(source), but we
                     # don't need to check that far
@@ -184,6 +183,7 @@ class UTLTextParseIterator():
                     i += 1
             else:
                 i += 1
+        assert anchor >= len(self.source)
         if anchor < len(self.source):
             yield ParsedSegment(self.source[anchor:], set(), set(), False)
 
