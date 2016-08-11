@@ -376,7 +376,8 @@ class PackageTestCase(TransactionTestCase):
 
         """
         full_load_path = Path(settings.TNPACKAGE_FILES_ROOT) / Path(self.WARNING_PKG_DIR)
-        # intercept warnings, which go to logger named 'py.warnings'.
+        # use logger to intercept warnings
+        logging.captureWarnings(True)
         logger = logging.getLogger("py.warnings")
         old_handlers = logger.handlers
         my_stream = MockStream()
@@ -394,6 +395,7 @@ class PackageTestCase(TransactionTestCase):
             # set it back for other tests
             simplefilter("error")
             logger.handlers = old_handlers
+            logging.captureWarnings(False)
 
     def test_find_packages_for(self):
         """Unit tests for :py:meth:`~utl_files.models.Pakage.find_packages_for`"""
