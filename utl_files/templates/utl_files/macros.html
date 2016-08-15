@@ -11,6 +11,12 @@
         fields, widgets, templates, etc. for bootstrap 3 (which even
         crispy forms does not seem to handle as well as it should).
     {% endcomment %}
+    {% comment %}
+        Bootstrap does a great job reformatting this for smaller form
+        factor, but... Might work better to break it into 3 pages; first
+        page: select site, global skin, and skin. Second page: select macro
+        name. 3rd page: view info and text of macro.
+    {% endcomment %}
  {% autoescape on %}
     <form class="form-inline" id="package-context-form" role="search">
 
