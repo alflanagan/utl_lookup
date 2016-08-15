@@ -1,0 +1,28 @@
+#!/usr/bin/env dash
+
+if [ "$1" = "--help" -o "$1" = "-h" ] ; then
+    echo "Usage: $(basename $0)"
+    echo "    Sets up a watch on .less files in app utl_files."
+    echo "    If a .less file changes, it automatically compiles it to the .css file."
+    exit 0
+fi
+
+# location of the .watchmanconfig file
+PROJDIR=/mnt/extra/Devel/utl_lookup/utl_files/static
+LESSDIR=${PROJDIR}/styles
+LESSCMD=/mnt/extra/Devel/utl_lookup/buildcss.sh
+
+# this does nothing if watch already exists
+watchman watch-project ${LESSDIR}
+
+watchman -j <<-EOF
+["trigger", "${LESSDIR}", {
+  "name": "less2css",
+  "command": ["${LESSCMD}"],
+  "append_files": true,
+  "expression": ["suffix", "less"]
+}]
+EOF
+
+echo use \'watchman trigger-del ${LESSDIR} less2css\' to stop compiling automatically.
+# would be good to copy fils to static/, but we're using other user for that
