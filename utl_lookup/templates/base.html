@@ -35,6 +35,9 @@
         </div>
         {% block page_body %} {% endblock %}
       </div>
+      <div class="footer">
+        <p class="django-ver">Powered by: <span class="django-ver">Django {{ djvers }}</span></p>
+      <div>
     </main>
     <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
     {% bootstrap_javascript %}
