@@ -24,7 +24,10 @@ echo "Calling /usr/local/bin/uwsgi"
     --max-requests=5000 \
     --vacuum \
     --py-programname=/usr/local/bin/python3.5 \
-    --pythonpath ${BASE_DIR}/utl_lookup --pythonpath ${BASE_DIR}/utl_indexer --pythonpath ${BASE_DIR}/shared_libraries \
+    --pythonpath /usr/local/lib/python3.5/site-packages \
+    --pythonpath ${BASE_DIR}/utl_lookup \
+    --pythonpath ${BASE_DIR}/utl_indexer \
+    --pythonpath ${BASE_DIR}/shared_libraries \
     --daemonize=/var/log/uwsgi/utl_lookup.log
 ERR=$?
 
