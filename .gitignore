@@ -27,3 +27,4 @@ doc/django_objects.inv
 doc/management
 node_modules/
 .tern-port
+*.log

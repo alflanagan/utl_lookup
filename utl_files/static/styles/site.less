@@ -87,6 +87,29 @@
     }
 }
 
+.footer .django-ver {
+    margin-left: 10em;
+    margin-right: 10em;
+    background-color: lightgrey;
+}
+
+#id_site_div.dropdown {
+    #id_site_btn {
+        width: 10em;
+    }
+    #id_site_label {
+        display: none;
+    }
+    #id_site li:hover {
+        background-color: grey;
+        color: white;
+    }
+}
+
+#id_checkbox_group {
+    margin-left: 2em;
+}
+
 /********************************/
 /* syntax highlighting          */
 /********************************/
@@ -109,10 +132,6 @@ span.dotted_id {color: @id_color;}
 span.echo_stmt {color: @keyword_color; }
 span.else_stmt {color: @keyword_color; }
 span.elseif_stmt {color: @keyword_color; }
-/* alas, we sometimes end up with IDs tagged as "id"
-   and sometimes with "expr". Good idea to use same
-   color for both.
-*/
 span.expr {color: @id_color;}
 span.for_stmt {color: @keyword_color; }
 span.id {color: @id_color !important; }
@@ -127,10 +146,16 @@ span.paren_expr {color: pink;}
 span.return_stmt {color: @keyword_color; }
 span.while_stmt  {color: @keyword_color; }
 
-span.end_utl {font-weight: bold; color: green; }
+span.eostmt {font-weight: bold; color: green; }
 
 /* extra class added by view */
 span.utl_delim {font-weight: bold; color: green; }
+
+@media (min-width: 1420px) {
+    .container {
+        width: 1370px;
+    }
+}
 
 /* Remaining syntax styles
 

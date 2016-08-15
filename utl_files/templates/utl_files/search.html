@@ -1,8 +1,53 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block page_header %}Macro {{ macro_name }}{% endblock %}
 
 {% block page_body %}
+  <div id="macro-name-search">
+   {% autoescape on %}
+    <form class="form-inline" id="macro-name-search-form" role="search">
+        <div class="form-group">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="macro name"
+                     aria-describedby="basic-addon1">
+              <span class="input-group-btn">
+                  <button class="btn btn-default" type="submit">Find Definition</button>
+              </span>
+            </div>
+        </div>
+
+        <div class="form-group" id="id_checkbox_group">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="id_certified_check"
+                     checked=""> Certified
+            </label>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="id_custom_check"
+                     checked=""> Custom
+            </label>
+        </div>
+
+        <div class="form-group">
+            <div id="id_site_div" class="dropdown col-lg-2">
+                <button id="id_site_btn" type="button" data-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false" aria-labelledby="id_site_label">
+                 Site<span class="caret"></span>
+                </button>
+                <label id="id_site_label">Select Site</label>
+                <ul id="id_site" class="dropdown-menu" aria-labelledby="id_site_label">
+                    <li>All Sites</li>
+                    {% for site in active_sites %}
+                    <li>{{ site }}</li>
+                    {% endfor %}
+                </ul>
+            </div> {# #id_site_div #}
+            <input type="hidden" id="selected_site"></input>
+        </div> {# .form-group #}
+    </form>
+   {% endautoescape %}
+</div>
   <div id="pkg-file-list" class= "col-md-3 btn-group-vertical" role="group"
        aria-label="List of files defining this macro">
        <h3>Macro Defined In...</h3>
@@ -29,6 +74,10 @@
 {% endblock %}
 
 {% block javascript_libraries %}
+<script src="{% static 'js/encoder.js' %}"></script>
+<script src="{% static 'js/utl_files_common.js' %}"></script>
+<script src="{% static 'js/utl_files_search.js' %}" />
+
 <script>(function () {
   "use strict";
 

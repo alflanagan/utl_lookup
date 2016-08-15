@@ -1,13 +1,14 @@
 # -*- coding:utf-8 -*-
 """Views of models in :py:mod:`utl_files`."""
-
-from django.shortcuts import render, get_object_or_404
-from django.http.response import Http404
-from jsonview.decorators import json_view
 import urllib
 
-from .models import Package, UTLFile, MacroRef, MacroDefinition, Application, CertifiedUsedBy
+from django.shortcuts import render, get_object_or_404
+from django import get_version
+from django.http.response import Http404
+from jsonview.decorators import json_view
+
 from papers.models import TownnewsSite
+from .models import Package, UTLFile, MacroRef, MacroDefinition, Application, CertifiedUsedBy
 
 # pylint: disable=no-member
 
@@ -20,7 +21,8 @@ def home(request):
         if pkg.site:
             active_sites.add(pkg.site.domain)
 
-    context = {"active_sites": active_sites}
+    context = {"active_sites": active_sites,
+               "djvers": get_version()}
     return render(request, 'utl_files/index.html', context)
 
 
@@ -47,7 +49,12 @@ def demo(request):  # pragma: no cover
 def search(request, macro_name):
     """A page to do macro searches -- will probably become tab on home."""
     macro_defs = MacroDefinition.objects.filter(name=macro_name)
-    context = {"macros": macro_defs, "macro_name": macro_name}
+    pkgs = Package.objects.all()
+    active_sites = set([pkg.site.domain for pkg in pkgs if pkg.site is not None])
+    active_sites = active_sites - {"certified"}
+
+    context = {"macros": macro_defs, "macro_name": macro_name, "active_sites": active_sites,
+               "djvers": get_version()}
     return render(request, 'utl_files/search.html', context)
 
 

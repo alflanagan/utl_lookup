@@ -6,7 +6,7 @@ if [[ -n "${VIRTUAL_ENV}" && -f "${VIRTUAL_ENV}/.project" ]]; then
 fi
 
 do_cover() {
-    # don't just run coverage run manage.py test
+    # don't just run `coverage run manage.py test`
     # because we want to see how each test file covers the associated module
     coverage run --source="$1.$2" --branch --append ./manage.py test "$1.test_$2"
 }

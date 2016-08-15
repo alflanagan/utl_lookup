@@ -113,7 +113,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 TNPACKAGE_FILES_ROOT = '/mnt/extra/Devel/utl_indexer/data/exported/'
 
 
-# monkey-patch for adding debug hook to Django exceptions
+# add debug hook to Django exceptions
 # Absolutely DO NOT put this in production
 def wing_debug_hook(*args, **kwargs):
     """Detect Wingware IDE and add extra hook for exceptions."""
