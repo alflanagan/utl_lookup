@@ -39,14 +39,17 @@ INSTALLED_APPS = ('django.contrib.admin',
                   'utl_files',
                   'papers', )
 
-MIDDLEWARE_CLASSES = ('django.contrib.sessions.middleware.SessionMiddleware',
-                      'django.middleware.common.CommonMiddleware',
-                      'django.middleware.csrf.CsrfViewMiddleware',
-                      'django.contrib.auth.middleware.AuthenticationMiddleware',
-                      'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-                      'django.contrib.messages.middleware.MessageMiddleware',
-                      'django.middleware.clickjacking.XFrameOptionsMiddleware',
-                      'django.middleware.security.SecurityMiddleware', )
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # see https://docs.djangoproject.com/en/1.10/ref/contrib/admin/admindocs/
+    'django.contrib.admindocs.middleware.XViewMiddleware',
+]
 
 ROOT_URLCONF = 'utl_lookup.urls'
 
