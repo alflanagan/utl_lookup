@@ -105,6 +105,7 @@ class Package(models.Model):
     site = models.ForeignKey(TownnewsSite,
                              null=True,
                              blank=True,
+                             on_delete=models.CASCADE,
                              help_text="For customized packages, the site that 'owns' the "
                              "customizations.")
 
