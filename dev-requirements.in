@@ -2,8 +2,6 @@
 coverage
 # a better interpreter environment
 ipython
-# autocomplete for python code
-jedi
 # check python code for style
 pep8
 # support defining external package requirements
@@ -12,5 +10,3 @@ pip-tools
 pylint
 # Generate documentation
 Sphinx
-# standard formatting for python code
-yapf

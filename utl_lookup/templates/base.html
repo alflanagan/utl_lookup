@@ -1,7 +1,6 @@
 {% load static %}
-{% load bootstrap3 %}
 <!DOCTYPE html>
-<html{% if request.LANGUAGE_CODE %} lang="{{ request.LANGUAGE_CODE }}"{% endif %}>
+<html {% if request.LANGUAGE_CODE %} lang="{{ request.LANGUAGE_CODE }}"{% endif %}>
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -13,8 +12,8 @@
 
     <title>{% block page_title %}{% endblock %}</title>
 
-    <!-- Bootstrap core CSS -->
-    {% bootstrap_css %}
+    <link rel="stylesheet" href="{% static 'styles/bootstrap.min.css' %}"  type="text/css" />
+    <link rel="stylesheet" href="{% static 'styles/bootstrap-theme.min.css' %}" type="text/css" />
     <link rel="stylesheet" href="{% static "styles/site.css" %}" type="text/css" media="screen" />
 
     <!-- Custom styles for this template -->
@@ -37,14 +36,10 @@
       </div>
       <div class="footer">
         <p class="django-ver">Powered by: <span class="django-ver">Django {{ djvers }}</span></p>
-      <div>
+      </div>
     </main>
-    <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
-    {% bootstrap_javascript %}
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    {% bootstrap_messages %}
+    <script type="text/javascript" src="{% static 'js/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
     {% block javascript_libraries %}
     {% endblock %}
   </body>

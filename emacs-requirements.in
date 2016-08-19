@@ -1,5 +1,10 @@
 # Additional external packages to support emacs. If you don't
 # use emacs you likely don't need these.
 autopep8
+# improved emacs python environment -- python package (also install elisp package)
 elpy
 importmagic
+# autocomplete for python code
+jedi
+# standard formatting for python code
+yapf

@@ -39,7 +39,6 @@ INSTALLED_APPS = ('django.contrib.admin',
                   'django.contrib.messages',
                   'django.contrib.staticfiles',
                   'django.contrib.admindocs',
-                  'bootstrap3',
                   'utl_files',
                   'papers', )
 
