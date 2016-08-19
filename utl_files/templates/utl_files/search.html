@@ -1,63 +1,61 @@
-{% extends 'base.html' %}
-
+{% extends 'utl_files/utl_files_base.html' %}
 {% load static %}
 
 {% block page_header %}Macro {{ macro_name }}{% endblock %}
 
 {% block page_body %}
+  {% autoescape on %}
   <div id="macro-name-search">
-   {% autoescape on %}
-    <form class="form-inline" id="macro-name-search-form" role="search">
-        <div class="form-group">
-            <div class="input-group">
-              <input type="text" class="form-control" placeholder="macro name"
-                     aria-describedby="basic-addon1">
-              <span class="input-group-btn">
-                  <button class="btn btn-default" type="submit">Find Definition</button>
-              </span>
-            </div>
+    <form class="form-inline" action="." method="get" id="macro-name-search-form" role="search">
+      <div class="form-group">
+        <div class="input-group">
+          <input type="text" class="form-control" placeholder="macro name"
+                 id="id_macro_name_input" aria-describedby="basic-addon1">
+            <span class="input-group-btn">
+              <button id="id_macro_name_submit" class="btn btn-default"
+                      type="submit">Find Definition</button>
+            </span>
         </div>
+      </div>
 
-        <div class="form-group" id="id_checkbox_group">
-            <label class="checkbox-inline">
-              <input type="checkbox" id="id_certified_check"
-                     checked=""> Certified
-            </label>
-            <label class="checkbox-inline">
-              <input type="checkbox" id="id_custom_check"
-                     checked=""> Custom
-            </label>
-        </div>
+      <div class="form-group" id="id_checkbox_group">
+        <label class="checkbox-inline">
+          <input type="checkbox" id="id_certified_check"
+                 checked=""> Certified
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="id_custom_check"
+                 checked=""> Custom
+        </label>
+      </div>
 
-        <div class="form-group">
-            <div id="id_site_div" class="dropdown col-lg-2">
-                <button id="id_site_btn" type="button" data-toggle="dropdown" aria-haspopup="true"
-                        aria-expanded="false" aria-labelledby="id_site_label">
-                 Site<span class="caret"></span>
-                </button>
-                <label id="id_site_label">Select Site</label>
-                <ul id="id_site" class="dropdown-menu" aria-labelledby="id_site_label">
-                    <li>All Sites</li>
-                    {% for site in active_sites %}
-                    <li>{{ site }}</li>
-                    {% endfor %}
-                </ul>
-            </div> {# #id_site_div #}
-            <input type="hidden" id="selected_site"></input>
-        </div> {# .form-group #}
+      <div class="form-group">
+        <div id="id_site_div" class="dropdown col-lg-2">
+          <button id="id_site_btn" type="button" data-toggle="dropdown" aria-haspopup="true"
+                  aria-expanded="false" aria-labelledby="id_site_label">
+            Site<span class="caret"></span>
+          </button>
+          <ul id="id_site" class="dropdown-menu" aria-label="Select Site">
+            <li>All Sites</li>
+            {% for site in active_sites %}
+            <li>{{ site }}</li>
+            {% endfor %}
+          </ul>
+        </div> {# #id_site_div #}
+        <input type="hidden" id="selected_site"></input>
+      </div> {# .form-group #}
     </form>
-   {% endautoescape %}
-</div>
+  </div>
   <div id="pkg-file-list" class= "col-md-3 btn-group-vertical" role="group"
        aria-label="List of files defining this macro">
-       <h3>Macro Defined In...</h3>
-      {% for macro in macros %}
-      <button type="button" class="btn btn-default btn-pick-one">
-        {{ macro.source.pkg.name }} [{{ macro.source.pkg.version }}]
-        <br>
-        {{ macro.source.file_path }}
-      </button>
-      {% endfor %}
+    <h3>Macro Defined In...</h3>
+    {% for macro in macros %}
+    <button type="button" class="btn btn-default btn-pick-one">
+      {{ macro.source.pkg.name }} [{{ macro.source.pkg.version }}]
+      <br>
+      {{ macro.source.file_path }}
+    </button>
+    {% endfor %}
   </div>
   <div id="macro-defn" class="col-md-6">
     <h3>Macro Definition</h3>
@@ -69,57 +67,13 @@
     <p class="annotation">Note: when there are multiple definitions of a macro, currently there
     is no way to determine which definition is in effect for each reference.</p>
   </div>
-</div>
-
+  {% endautoescape %}
 {% endblock %}
 
-{% block javascript_libraries %}
-<script src="{% static 'js/encoder.js' %}"></script>
-<script src="{% static 'js/utl_files_common.js' %}"></script>
-<script src="{% static 'js/utl_files_search.js' %}" />
-
-<script>(function () {
-  "use strict";
-
-  var macro_name = "{{ macro_name }}";
-
-  $("#pkg-file-list button").on("click", function () {
-    var pkg_selected, match, pkg_name, pkg_version, filename;
-
-    pkg_selected = this.innerHTML.trim();
-    match = /([^\ ]+)\ \[([0-9.]+)\].*/.exec(pkg_selected);
-    pkg_name = match[1];
-    pkg_version = match[2];
-    console.log(pkg_name, pkg_version);
-    match = /.*<br>\n(.+)/.exec(pkg_selected);
-    filename = match[1].trim();
-    console.log(filename);
-    $.ajax({
-      url: "/files/api/macro_defs/" + macro_name + "/" + pkg_name + "/" + pkg_version + "/",
-      success: function (data) {
-          var macro_id, macro_def;
-
-          macro_def = $.parseJSON(data);
-          macro_id = macro_def[0].id;
-          console.log("macro ID is " + macro_id);
-          $.ajax({
-            url: "/files/api/macro_def_text/" + macro_id + "/",
-            success: function (data) {
-                var lines;
-                $("#macro-code-display pre").remove();
-
-                // lines = data.split("\n");
-                $("#macro-code-display").append("<pre>" + data.replace("\t", "  ") + "</pre>");
-
-                //lines.forEach(function (line) {
-                //  $("#macro-code-display").append(line);
-                //});
-
-              } // success
-          }); // $.ajax
-        } // success
-    }); // $.ajax
-  }); //.on("click"
-}).call(this);
-</script>
+{% block page_libraries %}
+  <script src="{% static 'js/encoder.js' %}"></script>
+  <script>
+    const macro_name = "{{ macro_name }}";
+  </script>
+  <script src="{% static 'js/utl_files_search.js' %}" />
 {% endblock %}

@@ -1,103 +1,92 @@
-{% extends 'base.html' %}
+{% extends 'utl_files/utl_files_base.html' %}
 {% load static %}
-{% load bootstrap3 %}
-
-{% block page_css %}
-{% comment %}Note that jstree dark theme fails completely (?!?!) {% endcomment %}
-<link rel="stylesheet" href="{% static 'styles/jstree/style.min.css' %}" />
-{% endblock %}
 
 {% block page_body %}
-<div class="row center-block">
-  <div id="search-bar">
-    {% comment %}
+  {% autoescape on %}
+  <div class="row center-block">
+    <div id="search-bar">
+      {% comment %}
         after a LOT of work, I've concluded it is easier to describe
         the form manually here than it is to create custom forms,
         fields, widgets, templates, etc. for bootstrap 3 (which even
         crispy forms does not seem to handle as well as it should).
-    {% endcomment %}
- {% autoescape on %}
-    <form class="form-inline" id="package-context-form" role="search">
+      {% endcomment %}
+      <form class="form-inline" id="package-context-form" role="search">
 
-      <div id="id_site_div" class="dropdown col-lg-2">
-        <button id="id_site_label" type="button" data-toggle="dropdown" aria-haspopup="true"
-                aria-expanded="false">
-          Site<span class="caret"></span>
-        </button>
+        <div id="id_site_div" class="dropdown col-lg-2">
+          <button id="id_site_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+                  aria-expanded="false">
+             Site<span class="caret"></span>
+          </button>
         <ul id="id_site" class="dropdown-menu" aria_labelledby="id_site_label">
         {% for site in active_sites %}
           <li value="{{ site }}">{{ site }}</li>
         {% endfor %}
         </ul>
-      </div> {# id_site_div #}
-      <input type="hidden" id="selected_site"></input>
+        </div> {# id_site_div #}
+        <input type="hidden" id="selected_site"></input>
 
-      {# crazy idea: set col- classes based on widest content #}
-      <div id="id_global_skin_div" class="dropdown col-lg-3">
-        <button id="id_global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
-          aria-expanded="false" disabled="true">
-          Global Skin<span class="caret"></span>
-        </button>
-        <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="id_global_skin_label">
+        {# crazy idea: set col- classes based on widest content #}
+        <div id="id_global_skin_div" class="dropdown col-lg-3">
+          <button id="id_global_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+                aria-expanded="false" disabled="true">
+            Global Skin<span class="caret"></span>
+          </button>
+          <ul id="id_global_skin" class="dropdown-menu" aria-labelledby="id_global_skin_label">
+          </ul>
+        </div>
+
+        <div id="id_app_skin_div" class="droppdown col-lg-4">
+          <button id="id_app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
+                 aria-expanded="false" disabled="true">App Skin<span class="caret"></span>
+          </button>
+          <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="id_app_skin_label">
+          </ul>
+        </div>
+      </form>
+    </div> <!-- search-bar -->
+  </div> <!-- row -->
+  <div class="row center-block">
+    <div id="tree-panel" class="col-lg-3 panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Tree View</h3>
+      </div>
+      <div id="tree-view" class="panel-body">
+        <ul class="list-group" id="packages_list">
+          <li class="list-group-item" id="pkgs_global_list">Global</li>
+          <li class="list-group-item" id="pkgs_skin_list">Skin</li>
+          <li class="list-group-item" id="pkgs_blocks_list">Blocks</li>
+          <li class="list-group-item" id="pkgs_components_list">Components</li>
         </ul>
       </div>
-
-      <div id="id_app_skin_div" class="droppdown col-lg-4">
-        <button id="id_app_skin_label" type="button" data-toggle="dropdown" aria-haspopup="true"
-        aria-expanded="false" disabled="true">App Skin<span class="caret"></span>
-        </button>
-        <ul id="id_app_skin" class="dropdown-menu" aria-labelledby="id_app_skin_label">
-        </ul>
+    </div> <!-- tree-panel -->
+    <div id="tab-panel" class="col-lg-9 panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Details</h3>
       </div>
-    </form>
-  </div> <!-- search-bar -->
-</div> <!-- row -->
-<div class="row center-block">
-  <div id="tree-panel" class="col-lg-3 panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Tree View</h3>
-    </div>
-    <div id="tree-view" class="panel-body">
-      <ul class="list-group" id="packages_list">
-        <li class="list-group-item" id="pkgs_global_list">Global</li>
-        <li class="list-group-item" id="pkgs_skin_list">Skin</li>
-        <li class="list-group-item" id="pkgs_blocks_list">Blocks</li>
-        <li class="list-group-item" id="pkgs_components_list">Components</li>
-      </ul>
-    </div>
-  </div> <!-- tree-vew -->
-  <div id="tab-panel" class="col-lg-9 panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">Details</h3>
-    </div>
-    <div class="panel-body">
-      <ul class="nav nav-tabs">
-        <li id="files-tab" role="presentation" class="active"><a href="#">Files</a></li>
-        <li id="defs-tab" role="presentation"><a href="#">Definitions</a></li>
-        <li id="refs-tab" role="presentation"><a href="#">References</a></li>
-      </ul>
-      <div id="files-panel" class="panel-body">
-      <ul class="list_group" id="files-tree">
-        <li class="list-group-item" id="files-tree-root">/</li>
-      </ul> <!-- files-tree -->
-      </div> <!-- files-panel-->
-      <div id="defs-panel" class="panel-body">
+      <div class="panel-body">
+        <ul class="nav nav-tabs">
+          <li id="files-tab" role="presentation" class="active"><a href="#">Files</a></li>
+          <li id="defs-tab" role="presentation"><a href="#">Definitions</a></li>
+          <li id="refs-tab" role="presentation"><a href="#">References</a></li>
+        </ul>
+        <div id="files-panel" class="panel-body">
+          <ul class="list_group" id="files-tree">
+            <li class="list-group-item" id="files-tree-root">/</li>
+          </ul> <!-- files-tree -->
+        </div> <!-- files-panel-->
+        <div id="defs-panel" class="panel-body">
           <div id="source-display"></div>
-      </div> <!-- defs-panel-->
-      <div id="refs-panel" class="panel-body">
-      </div> <!-- refs-panel-->
-
-      <p></p>
-
-      </div>
-    </div>
-  </div> <!-- tab-panel -->
-</div> <!-- row -->
-{% endautoescape %}
+        </div> <!-- defs-panel-->
+        <div id="refs-panel" class="panel-body">
+        </div> <!-- refs-panel-->
+        <p></p>
+      </div> <!-- panel-body -->
+    </div> <!-- tab-panel -->
+  </div> <!-- row -->
+  {% endautoescape %}
 {% endblock %}
 
-{% block javascript_libraries %}
-<script src="{% static 'js/jstree.js' %}"></script>
-<script src="{% static 'js/utl_files_common.js' %}"></script>
-<script src="{% static 'js/utl_files_files.js' %}"></script>
+{% block page_libraries %}
+  <script src="{% static 'js/utl_files_files.js' %}"></script>
 {% endblock %}

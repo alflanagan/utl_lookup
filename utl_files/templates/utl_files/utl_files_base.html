@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block page_css %}
+  {% comment %}Note that jstree dark theme fails completely (?!?!) {% endcomment %}
+  <link rel="stylesheet" href="{% static 'styles/jstree/style.min.css' %}" />
+{% endblock %}
+
+{% block javascript_libraries %}
+  <script src="{% static 'js/jstree.min.js' %}"></script>
+  <script src="{% static 'js/utl_files_common.js' %}"></script>
+  {% block page_libraries %}
+  {% endblock %}
+{% endblock %}
