@@ -29,7 +29,8 @@ urlpatterns = [
     # macro. Add button to lookup to allow user to get "permanent" URL
 
     # search(request, macro_name)
-    url(r'^macro/(.+)/', views.search, name='search'),
+    url(r'^macro/', views.search, name='utl-files-views-search-all'),
+    url(r'^macro/(.+)/', views.search, name='utl_files-views-search'),
 
     # api_macro_refs(_, macro_name)
     url(r'api/macro_refs/(.+)/', views.api_macro_refs, name="api_macro_refs"),
@@ -41,6 +42,13 @@ urlpatterns = [
         name="api_macro_defs_ver"),
     url(r'api/macro_defs/([^/]+)/([^/]+)/', views.api_macro_defs, name="api_macro_defs_pkg"),
     url(r'api/macro_defs/([^/]+)/', views.api_macro_defs, name="api_macro_defs"),
+
+    # api_macro_defs_search(request, macro_name, search_certified, search_custom, search_site)
+    url(r'api/macro_defs_search/([^/]+)/', views.api_macro_defs_search, name="api_macro_defs_search_all"),
+    url(r'api/macro_defs_search/([^/]+)/([^/]+)/([^/]+)/', views.api_macro_defs_search,
+        name="api_macro_defs_search_by_type"),
+    url(r'api/macro_defs_search/([^/]+)/([^/]+)/([^/]+)/([^/]+)/', views.api_macro_defs_search,
+        name="api_macro_defs_search_by_site"),
 
     # api_macro_text(_, macro_id)
     url(r'api/macro_def_text/(\d+)/', views.api_macro_text, name="api_macro_text"),

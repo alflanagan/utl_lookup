@@ -46,9 +46,12 @@ def demo(request):  # pragma: no cover
     return render(request, 'utl_files/demo.html', context)
 
 
-def search(request, macro_name):
+def search(request, macro_name=None):
     """A page to do macro searches -- will probably become tab on home."""
-    macro_defs = MacroDefinition.objects.filter(name=macro_name)
+    if macro_name is None:
+        macro_defs = MacroDefinition.objects.all()
+    else:
+        macro_defs = MacroDefinition.objects.filter(name=macro_name)
     pkgs = Package.objects.all()
     active_sites = set([pkg.site.domain for pkg in pkgs if pkg.site is not None])
     active_sites = active_sites - {"certified"}
@@ -64,6 +67,47 @@ def api_macro_refs(_, macro_name):
     refs = MacroRef.objects.filter(macro_name=macro_name)
     refs = [ref.to_dict() for ref in refs]
     return refs
+
+
+def interpret_boolean(some_string):
+    if isinstance(some_string, bool):
+        return some_string
+    if some_string.lower() in {"yes", "true", "y"}:
+        return True
+    if some_string.lower() in {"no", "false", "n"}:
+        return False
+    raise Http404("Unrecoginzed boolean: '{}' -- use 'true' or 'false'".format(some_string))
+
+@json_view
+def api_macro_defs_search(_, macro_name, search_certified=True, search_custom=True,
+                          search_site=None):
+    """Search for macro definitions based on name, and optionally whether the macro's package is
+    certified or customized, and by site.
+
+    """
+    search_certified = interpret_boolean(search_certified)
+    search_custom = interpret_boolean(search_custom)
+
+    mdefs = MacroDefinition.objects.filter(name=macro_name)
+    if not mdefs.exists():
+        # we check this again below, but this avoids unnecessary work
+        raise Http404("No macro named '{}' was found.".format(macro_name))
+    if not search_certified and not search_custom:
+        raise Http404("Search must check custom packages, certified packages, or both.")
+
+    pkgs = Package.objects.all()
+    if not search_certified:
+        pkgs = pkgs.filter(is_certified=False)
+    elif not search_custom:
+        pkgs = pkgs.filter(is_certified=True)
+
+    if search_custom and search_site:
+        the_site = get_object_or_404(TownnewsSite, domain=search_site)
+        pkgs = pkgs.filter(site=the_site)
+
+    files = UTLFile.objects.filter(pkg__in=pkgs)
+    mdefs.filter(source__in=files)
+    return [mdef.to_dict() for mdef in mdefs]
 
 
 @json_view

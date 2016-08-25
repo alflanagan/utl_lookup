@@ -87,27 +87,50 @@
     }
 }
 
-.footer .django-ver {
-    margin-left: 10em;
-    margin-right: 10em;
+#footer {
+    min-height: 20px;
+    line-height: 20px;
     background-color: lightgrey;
+    padding-left: 20px;
 }
 
 #id_site_div.dropdown {
-    #id_site_btn {
-        width: 10em;
-    }
-    #id_site_label {
-        display: none;
-    }
+    /* gives a nice 'current item' highlight */
     #id_site li:hover {
         background-color: grey;
         color: white;
     }
 }
 
-#id_checkbox_group {
-    margin-left: 2em;
+.form-group {
+    margin-right: 1.5em;
+}
+
+#macro_defn_ul {
+    padding-left: 5px;
+    li {
+        list-style: none;
+        button {
+            text-align: left;
+        }
+    }
+}
+
+#macro-ref-list {
+    padding-left: 5px;
+    li {
+        list-style: none;
+    }
+}
+
+#macro-code-display {
+    overflow: scroll;
+    scroll-behavior: smooth;
+    height: 400px;
+}
+
+canvas {
+    border: 1px solid black;
 }
 
 /********************************/
@@ -134,12 +157,19 @@ span.else_stmt {color: @keyword_color; }
 span.elseif_stmt {color: @keyword_color; }
 span.expr {color: @id_color;}
 span.for_stmt {color: @keyword_color; }
-span.id {color: @id_color !important; }
+span.id {color: @id_color; }
 span.if_stmt  {color: @keyword_color; }
 span.include_stmt {color: black; font-style: italic;}
 span.literal {color: @literal_color; font-weight: bold;}
-span.macro_call {color: @keyword_color; }
-span.macro_decl {color: @keyword_color;}
+span.macro_call {color: darkgreen;
+                 .expr {
+                     color: darkgreen;
+                 }
+                 .id {
+                     color: darkgreen;
+                 }
+                }
+span.macro_decl {color: darkgreen; font-weight: bold;}
 span.macro_defn {color: green;}
 span.param_decl {color: plum; }
 span.paren_expr {color: pink;}

@@ -338,38 +338,60 @@ class searchTestCase(MacroTestCase):
 
     EXPECTED = {
         'photo_text': [
-            b'<div id="pkg-file-list"',
-            b'<button type="button"',
-            b'core-asset-index-lead_presentation [1.23.1]',
-            b'block.utl',
-            b'<button type="button"',
-            b'core-asset-index-map [1.21.1]',
-            b'block.utl',
+            b'<div id="macro-name-search"',
+            b'id="macro-name-search-form" role="search">',
+            b'<input type="text" ',
+            b'id="id_macro_name_input"',
+            b'<button id="id_macro_name_submit"',
+            b'<input type="checkbox"',
+            b'id="id_certified_check"',
+            b'<input type="checkbox"',
+            b'id="id_custom_check"',
+            b'id="id_site_btn"',
+            b'<ul id="id_site"',
+            b'<li>kearneyhub.com</li>',
             b'<div id="macro-defn"',
             b'<div id="macro-code-display"',
             b'<div id="macro-ref-display"', ],
         'time_updated': [
-            b'<div id="pkg-file-list"',
-            b'<button type="button"',
-            b'core-asset-index-map [1.21.1]',
-            b'block.utl',
+            b'<div id="macro-name-search"',
+            b'id="macro-name-search-form" role="search">',
+            b'<input type="text" ',
+            b'id="id_macro_name_input"',
+            b'<button id="id_macro_name_submit"',
+            b'<input type="checkbox"',
+            b'id="id_certified_check"',
+            b'<input type="checkbox"',
+            b'id="id_custom_check"',
+            b'id="id_site_btn"',
+            b'<ul id="id_site"',
+            b'<li>kearneyhub.com</li>',
             b'<div id="macro-defn"',
             b'<div id="macro-code-display"',
             b'<div id="macro-ref-display"', ],
         'build_slideshow_presentation_nav_items': [
-            b'<div id="pkg-file-list"',
-            b'<button type="button"',
-            b'core-slideshow-presentation-1-15-1-test_block [0.1]',
-            b'block.utl',
+            b'<div id="macro-name-search"',
+            b'id="macro-name-search-form" role="search">',
+            b'<input type="text" ',
+            b'id="id_macro_name_input"',
+            b'<button id="id_macro_name_submit"',
+            b'<input type="checkbox"',
+            b'id="id_certified_check"',
+            b'<input type="checkbox"',
+            b'id="id_custom_check"',
+            b'id="id_site_btn"',
+            b'<ul id="id_site"',
+            b'<li>kearneyhub.com</li>',
             b'<div id="macro-defn"',
             b'<div id="macro-code-display"',
-            b'<div id="macro-ref-display"', ], }
+            b'<div id="macro-ref-display"', ],
+    }
 
     def test_basic(self):
         """Simple unit test for :py:func:`utl_files.views.search`."""
         self.assertGreater(MacroDefinition.objects.count(), 3)
         for macro in MacroDefinition.objects.all():
-            request = make_wsgi_request('/files/macro/{}'.format(macro.name))
+            request = make_wsgi_request('/files/macro/{}/'.format(macro.name))
             response = views.search(request, macro.name)
             self.assertEqual(response.status_code, 200)
             for substring in self.EXPECTED[macro.name]:
@@ -1322,6 +1344,46 @@ class api_macros_for_site_with_skinsTestCase(TestCaseMixin, TestCase):
             exp_mdef = expected[mdef["name"]]
             self.assertDictContainsSubset(mdef, exp_mdef)
 
+
+class api_macro_defs_searchTestCase(MacroTestCase):
+    """Some unit tests for utl_files.views.api_macro_defs_search."""
+
+    def test_basic_call(self):
+        """Simple test of (successful) call."""
+        request = make_wsgi_request("/files/macro_defs_search/photo_text/true/true/")
+        results = views.api_macro_defs_search(request, "photo_text")
+        isinstance(results, HttpResponse)
+        self.assertEqual(results.status_code, 200)
+        json_str = results.content.decode(results.charset)
+        result_data = json.loads(json_str)
+        self.assertEqual(len(result_data), 2)
+        for mdefrec in result_data:
+            if mdefrec["pkg_version"] == "1.23.1":
+                self.assertDictContainsSubset(
+                    mdefrec,
+                    {"pkg_site": "http://kearneyhub.com",
+                     "pkg_version": "1.23.1",
+                     "pkg_name": "core-asset-index-lead_presentation",
+                     "line": 177,
+                     "pkg_certified": False,
+                     "pkg_download": "2016-03-09T22:41:50Z",
+                     "name": "photo_text",
+                     "end": 8359,
+                     "file": "includes/block.utl",
+                     "start": 7951})
+            else:
+                self.assertDictContainsSubset(
+                    mdefrec,
+                    {"pkg_site": "http://kearneyhub.com",
+                     "pkg_version": "1.21.1",
+                     "pkg_name": "core-asset-index-map",
+                     "line": 206,
+                     "pkg_certified": False,
+                     "pkg_download": "2016-03-09T22:41:50Z",
+                     "name": "photo_text",
+                     "end": 7694,
+                     "file": "block.utl",
+                     "start": 7359})
 
 # class api_file_text_w_syntaxTestCase(MacroTestCase):
 

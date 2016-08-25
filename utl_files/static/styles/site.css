@@ -68,23 +68,44 @@
   font-variant: small-caps;
   background-color: lightgrey;
 }
-.footer .django-ver {
-  margin-left: 10em;
-  margin-right: 10em;
+#footer {
+  min-height: 20px;
+  line-height: 20px;
   background-color: lightgrey;
+  padding-left: 20px;
 }
-#id_site_div.dropdown #id_site_btn {
-  width: 10em;
-}
-#id_site_div.dropdown #id_site_label {
-  display: none;
+#id_site_div.dropdown {
+  /* gives a nice 'current item' highlight */
 }
 #id_site_div.dropdown #id_site li:hover {
   background-color: grey;
   color: white;
 }
-#id_checkbox_group {
-  margin-left: 2em;
+.form-group {
+  margin-right: 1.5em;
+}
+#macro_defn_ul {
+  padding-left: 5px;
+}
+#macro_defn_ul li {
+  list-style: none;
+}
+#macro_defn_ul li button {
+  text-align: left;
+}
+#macro-ref-list {
+  padding-left: 5px;
+}
+#macro-ref-list li {
+  list-style: none;
+}
+#macro-code-display {
+  overflow: scroll;
+  scroll-behavior: smooth;
+  height: 400px;
+}
+canvas {
+  border: 1px solid black;
 }
 /********************************/
 /* syntax highlighting          */
@@ -136,7 +157,7 @@ span.for_stmt {
   color: blueviolet;
 }
 span.id {
-  color: slateblue !important;
+  color: slateblue;
 }
 span.if_stmt {
   color: blueviolet;
@@ -150,10 +171,17 @@ span.literal {
   font-weight: bold;
 }
 span.macro_call {
-  color: blueviolet;
+  color: darkgreen;
+}
+span.macro_call .expr {
+  color: darkgreen;
+}
+span.macro_call .id {
+  color: darkgreen;
 }
 span.macro_decl {
-  color: blueviolet;
+  color: darkgreen;
+  font-weight: bold;
 }
 span.macro_defn {
   color: green;
