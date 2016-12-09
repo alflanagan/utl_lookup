@@ -5,16 +5,15 @@
 #    pip-compile --output-file emacs-requirements.txt emacs-requirements.in
 #
 autopep8==1.2.4
-elpy==1.12.0
-flake8==3.0.4             # via elpy
+elpy==1.13.0
+flake8==3.2.1             # via elpy
 importmagic==0.1.7
 jedi==0.9.0
 mccabe==0.5.2             # via flake8
 pep8==1.7.0               # via autopep8
-pycodestyle==2.0.0        # via flake8
-pyflakes==1.2.3           # via flake8
-yapf==0.12.0
+pycodestyle==2.2.0        # via flake8
+pyflakes==1.3.0           # via flake8
+yapf==0.14.0
 
-# The following packages are commented out because they are
-# considered to be unsafe in a requirements file:
+# The following packages are considered to be unsafe in a requirements file:
 # setuptools                # via importmagic
