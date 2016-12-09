@@ -124,9 +124,13 @@
 }
 
 #macro-code-display {
-    overflow: scroll;
+    overflow-y: scroll;
     scroll-behavior: smooth;
-    height: 400px;
+    height: 350px;
+}
+
+#macro-code-display pre {
+    overflow-x: hidden;
 }
 
 canvas {
@@ -196,3 +200,13 @@ default_assignment
 statement
 statement_list
  */
+
+#macro-ref-display {
+    height: 150px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    border-width: 1px;
+    border-color: lightgrey;
+    border-radius: 5px;
+    border-style: solid;
+}
