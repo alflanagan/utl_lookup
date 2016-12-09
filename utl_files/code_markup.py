@@ -40,15 +40,31 @@ class ParsedSegment(object):
     def __init__(self, text: str, starts: Sequence[ASTNode],
                  ends: Sequence[ASTNode], is_document: bool):
         self.text = text
-        self.starts = list(starts)
-        self.ends = list(ends)
+        self._starts = list(starts)
+        self._ends = list(ends)
         self.is_doc = is_document
 
         # For retrieval of starts, we want the outer nodes first
         # For retrieval of ends, we want the inner nodes first
         # so we need to sort by size
-        self.starts.sort(key=self._ast_node_sort_key, reverse=True)
-        self.ends.sort(key=self._ast_node_sort_key)
+        self._starts.sort(key=self._ast_node_sort_key, reverse=True)
+        self._ends.sort(key=self._ast_node_sort_key)
+
+    @property
+    def starts(self):
+        if self._starts:
+            return self._starts
+        elif self._ends:
+            return []
+        return [ASTNode('null', {}, [])]
+
+    @property
+    def ends(self):
+        if self._ends:
+            return self._ends
+        if self._starts:
+            return []
+        return [ASTNode('null', {}, [])]
 
 
 class UTLTextParseIterator():

@@ -11,9 +11,10 @@
 # pylint: disable=too-few-public-methods
 
 # this script doesn't require Django database support
+import sys
 from unittest import TestCase, main
 
-from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator
+from utl_files.code_markup import UTLWithMarkup, UTLTextParseIterator, ParsedSegment
 from utl_lib.ast_node import ASTNode
 
 
@@ -268,6 +269,22 @@ class UTLTextParseIteratorTestCase(TestCase):
                                   {'statement_list', 'eostmt', 'utldoc', 'statement',
                                    'abbrev_if_stmt'}])
         self.assertSequenceEqual([part.is_doc for part in parts], [False] * 6)
+
+    def test_markup_whitespace(self):
+        test_doc = ('[% macro core_site_insert_classifiedsSearchTopFull;\n'
+                    '    /* real estate top tabs */\n'
+                    '    core_site_realestate_TopTabs;\n'
+                    'end; %]\n')
+        item1 = UTLTextParseIterator(test_doc)
+        parts = list(item1.parts)
+        self.assertEqual(len(parts), 13)
+        self.assertEqual(''.join([part.text for part in parts]), test_doc)
+        for part in parts:
+            isinstance(part, ParsedSegment)
+            part_str = "|".join([start.symbol for start in part.starts])
+            part_str += ": {} :".format(part.text)
+            part_str += "|".join([end.symbol for end in part.ends])
+            print(part_str)
 
 
 if __name__ == '__main__':
