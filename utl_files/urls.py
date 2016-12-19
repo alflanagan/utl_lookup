@@ -29,8 +29,8 @@ urlpatterns = [
     # macro. Add button to lookup to allow user to get "permanent" URL
 
     # search(request, macro_name)
-    url(r'^macro/', views.search, name='utl-files-views-search-all'),
     url(r'^macro/(.+)/', views.search, name='utl_files-views-search'),
+    url(r'^macro/', views.search, name='utl-files-views-search-all'),
 
     # api_macro_refs(_, macro_name)
     url(r'api/macro_refs/(.+)/', views.api_macro_refs, name="api_macro_refs"),
