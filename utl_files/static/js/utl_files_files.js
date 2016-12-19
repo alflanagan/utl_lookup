@@ -453,7 +453,9 @@ $(function () {
       $.getJSON("/files/api/file_text_w_syntax/" + file_id + "/")
         .done(
           data => {
-            let lines = data.text.split("\n")
+            let lines = data.text
+	    lines = lines.replace(/ /g, '&nbsp;')
+	    lines = lines.split("\n")
             this.clear_source()
             lines = lines.join("<br>")
             $("#source-display").html("<div></div>")
