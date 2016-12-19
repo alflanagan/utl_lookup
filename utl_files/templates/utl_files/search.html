@@ -85,7 +85,11 @@
 
 {% block page_libraries %}
   <script>
-    const macro_name = "{{ macro_name }}";
+   {% if macroName is None %}
+    const macroName = null;
+   {% else %}
+    const macroName = "{{ macroName }}";
+   {% endif %}
   </script>
   <script src="{% static 'js/utl_files_search.js' %}"></script>
 {% endblock %}

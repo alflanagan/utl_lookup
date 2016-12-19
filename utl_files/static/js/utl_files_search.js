@@ -125,10 +125,10 @@ $(function () {
    * HTML for displaying that information on the page.
    */
   const buildMacroRefLine = function (macroRef) {
-    let listItem = '<li><span class="pkg-name">Package: '
-    listItem += macroRef.pkg_name + ' (' + macroRef.pkg_version + ')'
-    listItem += '</span>  <span class="pkg-file">File: '
-    listItem += macroRef.file + ', line ' + macroRef.line
+    let listItem = '<li><span class="pkg-name">'
+    listItem += macroRef.pkg_name
+    listItem += '</span>/<span class="pkg-file">'
+    listItem += macroRef.file + ': ' + macroRef.line
     listItem += '</span></li>'
     return listItem
   }  // buildMacroRefLine()
@@ -160,7 +160,7 @@ $(function () {
     return $('<li></li>').append(newButton)
   } // buildMacroDefLine()
 
-  $('#id_macro_ame_submit').on('click', function (evt) {
+  $('#id_macro_name_submit').on('click', function (evt) {
     const macroName = $('#id_macro_name_input')[0].value
     const searchCertified = $(CERTIFIED_BOX)[0].checked
     const searchCustom = $(CUSTOM_BOX)[0].checked
@@ -195,6 +195,10 @@ $(function () {
     evt.preventDefault()
   }) // #id_macro_name_submit click
 
+  if (macroName !== null) {
+    $('#id_macro_name_input')[0].value = macroName
+    $('#id_macro_name_submit').trigger('click')
+  }
 })  // end module
 
 // Local Variables:

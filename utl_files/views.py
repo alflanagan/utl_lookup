@@ -56,7 +56,7 @@ def search(request, macro_name=None):
     active_sites = set([pkg.site.domain for pkg in pkgs if pkg.site is not None])
     active_sites = active_sites - {"certified"}
 
-    context = {"macros": macro_defs, "macro_name": macro_name, "active_sites": active_sites,
+    context = {"macros": macro_defs, "macroName": macro_name, "active_sites": active_sites,
                "djvers": get_version()}
     return render(request, 'utl_files/search.html', context)
 
